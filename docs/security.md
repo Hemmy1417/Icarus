@@ -52,6 +52,19 @@ Applied to this build, with where each one is met.
   what a model-diverse panel agrees on. When it splits, no majority is reached
   and nothing is recorded. That is a liveness cost, not a safety one: the
   milestone is untouched and the round can be asked again.
+- **A leader's prose, which consensus does not bind.** Validators agree the
+  decision, that every line and criterion was rated, and that the grounds
+  behind each finding hold. They do not compare the reasoning the panel
+  writes, nor the per-image readings. A leader whose findings a majority
+  reproduces could still record misleading wording beside them.
+
+  This cannot move money, and the reason is worth stating precisely: nothing
+  downstream reads that prose. An appeal re-reads only the evidence item ids
+  and the terms version from the round it reviews, and the evidence snapshot
+  is built from contract storage after consensus, carrying the digest this
+  contract computed when the bytes were filed. So the record a later panel
+  reconsiders was never authored by a leader. The prose is shown on the case
+  sheet as the panel's own words, and that is all it is.
 - **Workmanship and safety.** A photograph showing the right inverter on the
   right wall is not an electrical inspection.
 - **The network itself.** This runs on a test network whose validators, fee
