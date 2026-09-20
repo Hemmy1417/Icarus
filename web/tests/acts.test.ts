@@ -228,10 +228,30 @@ describe("assessment", () => {
 });
 
 describe("contesting a decision", () => {
-  it("is the owner's, inside the window, once", () => {
+  /*
+   * The party a decision went against contests it: an acceptance by the
+   * owner, a rejection by the installer. Offering it to the owner alone left
+   * an installer with a wrongly rejected milestone no recourse at all, which
+   * is the party the appeal exists to protect.
+   */
+  it("lets the owner contest an acceptance, and nobody else", () => {
     const m = milestone({ state: "ACCEPTED", standing: standing() });
     expect(act(actsFor(OWNER, m), "open_appeal")?.available).toBe(true);
     expect(act(actsFor(INSTALLER, m), "open_appeal")).toBeUndefined();
+    expect(act(actsFor(STRANGER, m), "open_appeal")).toBeUndefined();
+  });
+
+  it("lets the installer contest a rejection, and nobody else", () => {
+    const m = milestone({ state: "REJECTED", standing: standing({ decision: "REJECTED" }) });
+    const a = act(actsFor(INSTALLER, m), "open_appeal");
+    expect(a?.available).toBe(true);
+    expect(a?.reason).toMatch(/contest the rejection/i);
+    expect(act(actsFor(OWNER, m), "open_appeal")).toBeUndefined();
+  });
+
+  it("names the decision it is contesting, rather than saying it twice over", () => {
+    const accepted = milestone({ state: "ACCEPTED", standing: standing() });
+    expect(act(actsFor(OWNER, accepted), "open_appeal")?.reason).toMatch(/contest the acceptance/i);
   });
 
   it("closes a minute early, because a round takes time to land", () => {
@@ -344,6 +364,18 @@ describe("closing, which the contract lets anyone do", () => {
 });
 
 describe("the project", () => {
+  it("lets anyone add escrow, because the contract does", () => {
+    // Only the owner takes it back. A third party underwriting the work is a
+    // thing the contract allows, so the interface does not quietly forbid it.
+    expect(projectActs(project(), STRANGER).find((a) => a.id === "fund_project")?.available).toBe(true);
+    expect(projectActs(project(), OWNER).find((a) => a.id === "fund_project")?.available).toBe(true);
+    expect(projectActs(project(), STRANGER).find((a) => a.id === "withdraw_escrow")).toBeUndefined();
+  });
+
+  it("offers nothing to somebody with no wallet connected", () => {
+    expect(projectActs(project(), "")).toEqual([]);
+  });
+
   it("offers the installer a signature only while it is proposed", () => {
     const acts = projectActs(project({ state: "PROPOSED", installer_accepted_at: null }), INSTALLER);
     expect(acts.find((a) => a.id === "accept_project")?.available).toBe(true);

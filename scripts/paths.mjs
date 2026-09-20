@@ -119,18 +119,20 @@ async function step(name, role, fn, args, { value = 0n, refused = null } = {}) {
 say(`paths on ${ADDRESS}`);
 
 /*
- * close_milestone requires the deadline to have passed, and add_milestone
- * requires it to be in the future, so the only way to prove closing live is
- * to write a short deadline and wait it out.
+ * Two deadlines, because the two things being proved want opposite ones.
  *
- * It is computed when the milestone is actually proposed, not at the top of
- * the run: every write on this network takes the better part of a minute, so
- * a deadline set before four of them has already expired by the time it is
- * read. The window has to outlast the six writes that follow the proposal,
- * because the refusal wall that proves closing is refused early needs the
- * deadline still standing when it runs.
+ * Revising a schedule needs its deadline still standing, and every write on
+ * this network takes the better part of a minute; one was measured taking
+ * fifty nine, so a window sized for the happy case is a run that fails on a
+ * slow afternoon. Closing needs the deadline passed, and waiting out a long
+ * one would make the run useless.
+ *
+ * So the terms milestone gets a generous window and the milestone that is
+ * closed gets a short one, proposed immediately before it is waited out.
+ * Neither is hostage to how the other went.
  */
-const DEADLINE_MS = 9 * 60_000;
+const TERMS_DEADLINE_MS = 90 * 60_000;
+const CLOSE_DEADLINE_MS = 3 * 60_000;
 let deadline = "";
 
 const created = await step("open", "OWNER", "create_project", [
@@ -192,8 +194,8 @@ const terms = (over = {}) => JSON.stringify({
   ...over,
 });
 
-deadline = new Date(Date.now() + DEADLINE_MS).toISOString().replace(/\.\d+Z$/, "Z");
-say(`the milestone's deadline is ${deadline}, to be waited out before it is closed`);
+deadline = new Date(Date.now() + TERMS_DEADLINE_MS).toISOString().replace(/\.\d+Z$/, "Z");
+say(`the terms milestone runs until ${deadline}`);
 const added = await step("milestone.propose", "OWNER", "add_milestone", [pid, terms()]);
 const mid = jsonFrom(added.text)?.milestone_id;
 assert(mid, "no milestone id came back");
@@ -205,10 +207,8 @@ if (!run.steps["terms.sign"]) {
 
 // 5. The installer signs those terms. This is accept_version on version 1.
 await step("terms.sign", "INSTALLER", "accept_version", [mid, 1]);
-if (!run.steps["milestone.close"]) {
-  const signed = await view("get_milestone", [mid]);
-  assert(signed.state === "AWAITING_EVIDENCE", `signing left it ${signed.state}`);
-}
+const signed = await view("get_milestone", [mid]);
+assert(signed.state === "AWAITING_EVIDENCE", `signing left it ${signed.state}`);
 
 // 6. The owner revises the schedule. It binds only when the installer signs.
 await step("terms.revise", "OWNER", "propose_version", [mid, terms({
@@ -253,21 +253,30 @@ await step("wall.lapse_without_appeal", "STRANGER", "lapse_appeal", [mid],
 await step("wall.close_before_deadline", "STRANGER", "close_milestone", [mid],
            { refused: "the deadline has not passed" });
 
-// 9. Close it once the deadline has passed. Nobody accepted it, so its
-//    reservation returns to the owner's free escrow.
-const left = Date.parse(deadline) - Date.now();
+// 9. Closing, on a milestone of its own with a short deadline, so the wait
+//    is three minutes rather than the terms milestone's ninety.
+deadline = new Date(Date.now() + CLOSE_DEADLINE_MS).toISOString().replace(/\.\d+Z$/, "Z");
+const shortLived = await step("closeable.propose", "OWNER", "add_milestone", [pid, terms({
+  title: "Milestone nobody accepted (demonstration)",
+})]);
+const closeMid = jsonFrom(shortLived.text)?.milestone_id;
+assert(closeMid, "no closeable milestone id came back");
+
+const reservedBeforeClose = BigInt((await view("get_project", [pid])).reserved_wei);
+const closesAt = Date.parse(deadline);
+const left = closesAt - Date.now();
 if (left > 0) {
-  say(`waiting ${Math.ceil(left / 1000)} s for the deadline, to close a milestone nobody accepted`);
+  say(`waiting ${Math.ceil(left / 1000)} s for its deadline, to close a milestone nobody accepted`);
   await sleep(left + 5_000);
 }
-const closing = await step("milestone.close", "STRANGER", "close_milestone", [mid]);
-const closed = await view("get_milestone", [mid]);
+const closing = await step("milestone.close", "STRANGER", "close_milestone", [closeMid]);
+const closed = await view("get_milestone", [closeMid]);
 assert(closed.state === "CLOSED", `closing left it ${closed.state}`);
-const released = await view("get_project", [pid]);
-if (closing.fresh) assert(BigInt(released.reserved_wei) === reservedBefore - 1n * GEN,
-       `closing released ${reservedBefore - BigInt(released.reserved_wei)} rather than the payment`);
-if (closing.fresh) assert(BigInt(released.unreserved_wei) === 1n * GEN,
-       `free escrow is ${released.unreserved_wei} after the reservation returned`);
+if (closing.fresh) {
+  const released = await view("get_project", [pid]);
+  assert(BigInt(released.reserved_wei) === reservedBeforeClose - 1n * GEN,
+         `closing released ${reservedBeforeClose - BigInt(released.reserved_wei)} rather than the payment`);
+}
 say("closed by a stranger, and the reservation returned to the owner's free escrow");
 
 // 10. Cancelling, which is only open before the installer signs. The

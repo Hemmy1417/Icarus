@@ -138,6 +138,14 @@ layer and the scripts both treat as transient.
 The published run needed no retries: every round reached a majority on its
 first asking.
 
+Those are the usual figures, not the worst. One ordinary write, a schedule
+revision carrying no consensus round at all, was sent at 21:13 and finalized
+at 22:12: **fifty nine minutes**. Nothing about it was unusual except the
+hour. Anything that assumes a write lands within its own window has to be
+written for that, which is why the run that exercises terms and escrow gives
+its milestone a ninety minute deadline and uses a second, short lived
+milestone for the one case that needs a deadline to have passed.
+
 ## Images
 
 Measured: at most two images per prompt, and the runner's decoder reads PNG

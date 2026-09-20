@@ -49,6 +49,19 @@ export function projectActs(p: Project, addr: string): Act[] {
   const who = roleIn(p, addr);
   const acts: Act[] = [];
 
+  /*
+   * Anyone may add escrow to a project; only the owner takes it back. A
+   * third party underwriting the work is a thing the contract allows, so the
+   * interface does not quietly forbid it.
+   */
+  if (addr) {
+    acts.push(
+      p.state === "CANCELLED"
+        ? no("fund_project", "This project was cancelled.")
+        : ok("fund_project", "Add to the escrow this project pays its milestones from."),
+    );
+  }
+
   if (who === "INSTALLER") {
     acts.push(
       p.state === "PROPOSED"
@@ -72,11 +85,6 @@ export function projectActs(p: Project, addr: string): Act[] {
 
   if (who === "OWNER") {
     const unreserved = BigInt(p.unreserved_wei);
-    acts.push(
-      p.state === "CANCELLED"
-        ? no("fund_project", "The project was cancelled.")
-        : ok("fund_project", "Add to the escrow this project pays its milestones from."),
-    );
     acts.push(
       unreserved > 0n
         ? ok("withdraw_escrow", "Take back escrow no milestone has reserved.")
@@ -221,8 +229,18 @@ export function milestoneActs({
     );
   }
 
-  /* appeal */
-  if (who === "OWNER") {
+  /*
+   * A decision is contested by the party it went against: an acceptance by
+   * the owner, a rejection by the installer. Offering it to the owner alone
+   * left an installer with a wrongly rejected milestone no recourse at all,
+   * which is the party the appeal exists to protect.
+   */
+  const contestedBy: Role | null =
+    standing?.decision === "ACCEPTED" ? "OWNER"
+      : standing?.decision === "REJECTED" ? "INSTALLER"
+        : null;
+
+  if (who && (who === contestedBy || (!contestedBy && who !== "INSPECTOR"))) {
     const windowOpen =
       !!standing?.appealable && !standing.appealed && nowMs < ms(standing.window_ends) - MARGIN_MS;
     acts.push(
@@ -233,7 +251,12 @@ export function milestoneActs({
           : standing.appealed
             ? no("open_appeal", "This decision has already been contested once.")
             : windowOpen
-              ? ok("open_appeal", "Contest the decision and have a fresh panel judge it again.")
+              ? ok(
+                  "open_appeal",
+                  standing.decision === "ACCEPTED"
+                    ? "Contest the acceptance; a fresh panel judges the case again."
+                    : "Contest the rejection; a fresh panel judges the case again.",
+                )
               : no("open_appeal", "The window for contesting this decision has closed."),
     );
   }
