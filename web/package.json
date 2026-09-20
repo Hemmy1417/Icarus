@@ -19,6 +19,7 @@
   "dependencies": {
     "@genlayer/transaction-kit": "0.1.0-rc.2",
     "@genlayer/transaction-kit-react": "0.1.0-rc.2",
+    "exifr": "7.1.3",
     "genlayer-js": "2.0.0-rc.1",
     "next": "16.3.5",
     "react": "19.3.0",

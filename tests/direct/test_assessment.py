@@ -416,6 +416,45 @@ class TestConsensusRulesTheSweepFound:
         assert any("the leader's round failed" in line for line in prints())
 
 
+class TestBlindnessFailsClosed:
+    """The rule that a node which cannot see the evidence cannot vote is only
+    as good as the way a node reports that it could see. Measured on Studio
+    Next: a validator that received no image answered readable true and used
+    shows to explain that nothing had arrived, so the contract counted a blind
+    node as a reader. Both halves of the correction are pinned here."""
+
+    def test_a_reading_that_omits_the_flag_is_not_a_sighted_reading(self, module, c):
+        """The flag is the claim. An answer that never makes it is not one."""
+        _, mid = active_milestone(module, c)
+        items = two_images(module, c, mid)
+        blank = {"images": [{"n": i + 1, "shows": "An inverter on a wall.",
+                             "labels": [], "concerns": []} for i in range(2)]}
+        with pytest.raises(err(module)):
+            assess(module, c, mid, items, v_look=blank)
+        assert any("did not receive the images" in line for line in prints())
+
+    def test_a_reading_with_nothing_in_it_is_not_a_sighted_reading(self, module, c):
+        """Claiming to have seen while describing nothing is not a reading.
+        The flag is the claim; the description is what makes it checkable."""
+        _, mid = active_milestone(module, c)
+        items = two_images(module, c, mid)
+        empty = {"images": [{"n": i + 1, "readable": True, "shows": "",
+                             "labels": [], "concerns": []} for i in range(2)]}
+        with pytest.raises(err(module)):
+            assess(module, c, mid, items, v_look=empty)
+        assert any("did not receive the images" in line for line in prints())
+
+    def test_a_node_is_told_what_the_flag_means_and_not_to_answer_in_prose(self, module, c):
+        """Failing closed on a missing flag only helps if a sighted node knows
+        to set it. The prompt has to carry that, so the wording is pinned."""
+        _, mid = active_milestone(module, c)
+        assess(module, c, mid, two_images(module, c, mid))
+        prompt = [p["prompt"] for p in prompts(kind="look", role="leader")][0]
+        assert "readable: true only if an actual image reached you" in prompt
+        assert "leave shows empty" in prompt
+        assert "Never use shows to report that an image is missing" in prompt
+
+
 class TestPromptIntegrity:
     def test_party_text_cannot_forge_or_close_a_fence(self, module, c):
         """A caption or a document body is content. If it could close its own

@@ -1,4 +1,4 @@
-/** Shared chain config and transport for every STRUCTURA script. */
+/** Shared chain config and transport for every ICARUS script. */
 import { studioDevnet } from "genlayer-js/chains";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -20,7 +20,7 @@ export async function rpc(method, params) {
     try {
       const res = await fetch(RPC, {
         method: "POST",
-        headers: { "content-type": "application/json", "user-agent": "Mozilla/5.0 structura-scripts" },
+        headers: { "content-type": "application/json", "user-agent": "Mozilla/5.0 icarus-scripts" },
         body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
       });
       const text = await res.text();

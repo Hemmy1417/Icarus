@@ -20,6 +20,28 @@ class TestFiling:
         assert it["bytes"] == len(c.get_image(eid))
         assert it["version"] == 1
 
+    def test_a_document_can_be_read_back_as_it_was_filed(self, module, c):
+        """Evidence that decided a milestone has to be readable by whoever
+        reads the decision. A datasheet naming the right model that still
+        does not pay is unverifiable if the reader can see only that some
+        document exists."""
+        _, mid = active_milestone(module, c)
+        body = "Growatt PV Grid Inverter. Model name MOD 4000TL3-X. Max output power 4000 W."
+        eid = document(module, c, mid, title="Inverter datasheet", text=body)
+        assert c.get_item_text(eid) == body
+
+    def test_a_declaration_can_be_read_back_although_no_panel_reads_it(self, module, c):
+        """A reader can see for themselves that it was never put to a panel."""
+        _, mid = active_milestone(module, c)
+        eid = declaration(module, c, mid, text="We consider this milestone complete.")
+        assert "complete" in c.get_item_text(eid)
+
+    def test_an_image_is_not_offered_as_text(self, module, c):
+        _, mid = active_milestone(module, c)
+        eid = image(module, c, mid, caption="The array")
+        with pytest.raises(err(module), match="not a document"):
+            c.get_item_text(eid)
+
     def test_only_the_parties_file(self, module, c):
         _, mid = active_milestone(module, c)
         as_(module, STRANGER)

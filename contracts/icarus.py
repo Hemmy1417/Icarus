@@ -735,6 +735,21 @@ class Icarus(gl.contract.Contract):
         return json.dumps(self._item(eid), sort_keys=True)
 
     @gl.public.view
+    def get_item_text(self, eid: str) -> str:
+        """The body of a document or a declaration, as it was filed.
+
+        Evidence that decided a milestone has to be readable by anybody who
+        reads the decision. A datasheet that names exactly the right model
+        and still does not pay is the clearest thing this contract does, and
+        it cannot be checked by a person who can see only that a document
+        exists. Declarations are returned too: they are never read by a
+        panel, and a reader can see for themselves that they were not."""
+        it = self._item(eid)
+        if it["kind"] not in ("DOCUMENT", "DECLARATION"):
+            _refuse(f"{eid} is not a document held by this contract")
+        return self.item_text.get(eid) or ""
+
+    @gl.public.view
     def get_image(self, eid: str) -> bytes:
         data = self.item_bytes.get(eid)
         if data is None:
@@ -1313,6 +1328,12 @@ class Icarus(gl.contract.Contract):
             "- concerns: anything that would matter to somebody deciding whether work was "
             "done, such as an image that appears to show a different site, a screen or a "
             "printout photographed instead of equipment, or damage.\n"
+            "- readable: true only if an actual image reached you for that number and "
+            "you could see it. If no image reached you, or you cannot process it, set "
+            "readable false for that number and leave shows empty. Never use shows to "
+            "report that an image is missing: a node that did not receive the evidence "
+            "says so in readable, because a node that cannot see the evidence is not "
+            "permitted to vote on it.\n"
             "Answer STRICT JSON: {\"images\": [{\"n\": 1, \"readable\": true, "
             "\"shows\": \"...\", \"labels\": [\"...\"], \"concerns\": [\"...\"]}]}")
 
@@ -1346,7 +1367,15 @@ class Icarus(gl.contract.Contract):
                     if isinstance(candidate, dict) and int(candidate.get("n") or 0) == n:
                         row = candidate
                         break
-                readable = bool(row.get("readable", True)) and bool(row.get("shows"))
+                # Fail closed. A node counts as a reader only when it says so
+                # itself: an answer that omits the flag, or that describes the
+                # evidence without claiming to have seen it, is not a sighted
+                # reading. Measured on Studio Next: a validator that received no
+                # image reported readable true and used shows to explain that
+                # nothing had arrived, which let a blind node vote. Defaulting to
+                # true made the blindness rule depend on a model remembering a
+                # field it was never told the meaning of.
+                readable = bool(row.get("readable", False)) and bool(row.get("shows"))
                 if not readable:
                     received = False
                 labels = [_clean(x, LINE_MAX) for x in (row.get("labels") or [])

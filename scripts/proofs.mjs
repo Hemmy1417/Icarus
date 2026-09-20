@@ -223,18 +223,43 @@ async function image(key, role, mid, file, caption, { line = "", req = "R1", ori
   return jsonFrom(rec.text)?.item_id;
 }
 
-async function assessment(key, mid, items) {
-  const rec = await step(key, "INSTALLER", "request_assessment", [mid, JSON.stringify(items)]);
-  const round = await readJson("get_round", [mid, jsonFrom(rec.text).round]);
-  if (!run.steps[key].nodes) {
-    const { nodes } = await dumpReceipt(rec.hash);
-    run.steps[key].nodes = nodes.map((n) => ({ rotation: n.rotation, from: n.from,
-                                               vote: n.vote, model: n.model }));
-    save();
+const SIGHTED_ATTEMPTS = 3;
+
+/**
+ * Ask a panel to assess a milestone, and report what it found.
+ *
+ * A proof that turns on what a photograph shows is only a proof when the
+ * panel could see the photograph. On this network a leader sometimes
+ * receives no image at all; the contract correctly refuses to let a node
+ * that cannot see establish anything, but the finding that comes back then
+ * demonstrates the network's blindness rather than the rule under test. A
+ * case passed `sighted` is asked again, within the assessments the terms
+ * allow, until a panel that actually read the evidence reports on it. Every
+ * attempt stays in the log under its own name.
+ */
+async function assessment(key, mid, items, { sighted = false } = {}) {
+  for (let ask = 1; ; ask++) {
+    const name = ask === 1 ? key : `${key}.again-${ask}`;
+    const rec = await step(name, "INSTALLER", "request_assessment", [mid, JSON.stringify(items)]);
+    const round = await readJson("get_round", [mid, jsonFrom(rec.text).round]);
+    if (!run.steps[name].nodes) {
+      const { nodes } = await dumpReceipt(rec.hash);
+      run.steps[name].nodes = nodes.map((n) => ({ rotation: n.rotation, from: n.from,
+                                                  vote: n.vote, model: n.model }));
+      save();
+    }
+    const readings = round.notes?.images ?? [];
+    const unread = readings.filter((r) => !r.readable).length;
+    say(`${name}: ${round.decision}  lines ${JSON.stringify(round.lines)}  `
+      + `criteria ${JSON.stringify(round.criteria)}  quality ${round.quality}`
+      + (readings.length ? `  read ${readings.length - unread} of ${readings.length} images` : ""));
+    if (!sighted || !unread) return round;
+    assert(ask < SIGHTED_ATTEMPTS,
+           `${key}: the panel never read the evidence in ${ask} assessments, `
+           + "so this case proves nothing about what the images show");
+    say(`${key}: the panel did not read ${unread} of ${readings.length} images; `
+      + `asking again (${ask + 1} of ${SIGHTED_ATTEMPTS})`);
   }
-  say(`${key}: ${round.decision}  lines ${JSON.stringify(round.lines)}  `
-    + `criteria ${JSON.stringify(round.criteria)}  quality ${round.quality}`);
-  return round;
 }
 
 const WALL_SPEC = "One string inverter mounted on the plant room wall, its d.c. and a.c. "
@@ -306,7 +331,7 @@ await step("paper.datasheet", "INSTALLER", "submit_document",
             "Growatt PV Grid Inverter. Model name MOD 4000TL3-X. Max output power 4000 W. "
             + "Nominal output voltage 3W/N/PE 230/400 a.c.V. The unit supplied and installed "
             + "on this project is the model named above."]);
-const paperRound = await assessment("paper.assess", paperMid, [paperFront]);
+const paperRound = await assessment("paper.assess", paperMid, [paperFront], { sighted: true });
 assert(paperRound.decision !== "ACCEPTED",
        `a paper identification paid: ${paperRound.decision}`);
 assert(paperRound.lines.E1 !== "INSTALLED",
@@ -321,7 +346,7 @@ const wrongFront = await image("mismatch.inverter", "INSTALLER", wrongMid, "grow
                                "The inverter on the wall", { line: "E1" });
 const wrongPlate = await image("mismatch.plate", "INSTALLER", wrongMid, "growatt-nameplate",
                                "The rating plate on the same unit", { line: "E1", origin: "NAMEPLATE" });
-const wrongRound = await assessment("mismatch.assess", wrongMid, [wrongFront, wrongPlate]);
+const wrongRound = await assessment("mismatch.assess", wrongMid, [wrongFront, wrongPlate], { sighted: true });
 assert(wrongRound.decision !== "ACCEPTED",
        `a plate reading another product paid: ${wrongRound.decision}`);
 
@@ -336,7 +361,7 @@ const gapPlate = await image("battery.plate", "INSTALLER", gapMid, "growatt-name
                              "The rating plate on the same unit", { line: "E1", origin: "NAMEPLATE" });
 await step("battery.says", "INSTALLER", "submit_declaration",
            [gapMid, "The battery was delivered and commissioned with the system."]);
-const gapRound = await assessment("battery.assess", gapMid, [gapFront, gapPlate]);
+const gapRound = await assessment("battery.assess", gapMid, [gapFront, gapPlate], { sighted: true });
 assert(gapRound.decision !== "ACCEPTED", `a missing battery paid: ${gapRound.decision}`);
 assert(gapRound.lines.E2 !== "INSTALLED", `the battery line stood on nothing: ${gapRound.lines.E2}`);
 assert(!JSON.stringify(gapRound).includes("delivered and commissioned"),

@@ -18,6 +18,14 @@ REPO = pathlib.Path(__file__).resolve().parents[2]
 TEXT = (REPO / "contracts" / "icarus.py").read_text(encoding="utf-8")
 
 MUTATIONS = [
+    # -- blindness: a node votes only on evidence it says it saw ------------
+    ("a node that never claims to have seen the image counts as a reader",
+     '                readable = bool(row.get("readable", False)) and bool(row.get("shows"))',
+     '                readable = bool(row.get("readable", True)) and bool(row.get("shows"))'),
+    ("a reading with nothing in it counts as a reader",
+     '                readable = bool(row.get("readable", False)) and bool(row.get("shows"))',
+     '                readable = bool(row.get("readable", False))'),
+
     # ── grounding: the floor and its mirror, which are the product ──────────
     ("a line is installed on paperwork alone",
      '        if status == "INSTALLED" and not saw_image:', "        if False:"),
