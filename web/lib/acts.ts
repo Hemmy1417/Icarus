@@ -82,12 +82,20 @@ export function projectActs(p: Project, addr: string): Act[] {
         ? ok("withdraw_escrow", "Take back escrow no milestone has reserved.")
         : no("withdraw_escrow", "Every funded amount is reserved against a milestone."),
     );
+    /*
+     * Cancelling is only open before the installer signs. Once they have,
+     * the project stands and its milestones are closed one at a time: the
+     * owner cannot unwind an agreement the other party has entered.
+     */
     acts.push(
       p.state === "CANCELLED"
-        ? no("cancel_project", "The project was already cancelled.")
-        : p.milestone_summaries.some((m) => m.state === "FINALIZED")
-          ? no("cancel_project", "A milestone has already settled, so the project stands.")
-          : ok("cancel_project", "Close the project and release what it holds."),
+        ? no("cancel_project", "This project was already cancelled.")
+        : p.state !== "PROPOSED"
+          ? no(
+              "cancel_project",
+              "The installer has signed, so this stands. Close its milestones instead.",
+            )
+          : ok("cancel_project", "Cancel it, before the installer has signed, and take the escrow back."),
     );
     acts.push(
       p.state === "CANCELLED"

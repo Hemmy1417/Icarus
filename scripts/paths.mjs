@@ -268,14 +268,38 @@ assert(BigInt(released.unreserved_wei) === 1n * GEN,
        `free escrow is ${released.unreserved_wei} after the reservation returned`);
 say("closed by a stranger, and the reservation returned to the owner's free escrow");
 
-// 10. The project itself, with nothing settled on it.
-await step("project.cancel", "OWNER", "cancel_project", [pid]);
-const cancelled = await view("get_project", [pid]);
+// 10. Cancelling, which is only open before the installer signs. The
+//     project above is signed, so it cannot be cancelled and says so; a
+//     second, unsigned project is opened to prove the cancellation itself.
+await step("wall.cancel_signed", "OWNER", "cancel_project", [pid],
+           { refused: "a project the installer signed cannot be cancelled" });
+
+const spare = await step("spare.open", "OWNER", "create_project", [
+  JSON.stringify({
+    title: "Unsigned project (demonstration)",
+    description: "Opened to prove that a project can be cancelled before the installer signs.",
+    site: "Demonstration site",
+    system_type: "COMMERCIAL_SOLAR",
+    capacity_kw: "4",
+    installer: KEYS.INSTALLER.addr,
+    inspector: "",
+    appeal_window_seconds: 600,
+  }),
+], { value: 1n * GEN });
+const sparePid = jsonFrom(spare.text)?.project_id;
+assert(sparePid, "no second project id came back");
+
+if (!run.steps["project.cancel"]) {
+  const unsigned = await view("get_project", [sparePid]);
+  assert(unsigned.state === "PROPOSED", `a fresh project should be proposed, was ${unsigned.state}`);
+}
+await step("project.cancel", "OWNER", "cancel_project", [sparePid]);
+const cancelled = await view("get_project", [sparePid]);
 assert(cancelled.state === "CANCELLED", `cancelling left it ${cancelled.state}`);
-say("the project is cancelled");
+say("cancelled before the installer signed; the signed project stands");
 
 say("");
 say("proved live: fund_project, accept_inspector_role, propose_version, accept_version,");
-say("withdraw_escrow, close_milestone, cancel_project, and four refusal walls.");
+say("withdraw_escrow, close_milestone, cancel_project, and five refusal walls.");
 say("not reachable in a run: lapse_appeal, which needs three days to pass.");
 say("every path passed");

@@ -356,7 +356,17 @@ describe("the project", () => {
     expect(projectActs(full, OWNER).find((a) => a.id === "withdraw_escrow")?.available).toBe(false);
   });
 
-  it("refuses to cancel once a milestone has settled", () => {
+  it("cancels only before the installer signs", () => {
+    const proposed = project({ state: "PROPOSED", installer_accepted_at: null });
+    expect(projectActs(proposed, OWNER).find((a) => a.id === "cancel_project")?.available).toBe(true);
+    const a = projectActs(project(), OWNER).find((x) => x.id === "cancel_project");
+    expect(a?.available).toBe(false);
+    expect(a?.reason).toMatch(/installer has signed/i);
+  });
+
+  it("never offers to cancel a project that has settled a milestone", () => {
+    // Unreachable by construction, since a settled milestone means the
+    // installer signed, but asserted so the two rules cannot drift apart.
     const p = project({
       milestone_summaries: [{
         milestone_id: "ms-00001", index: 0, title: "", milestone_type: "COMMISSIONING",
@@ -365,9 +375,7 @@ describe("the project", () => {
         standing: null, appeal: null,
       }],
     });
-    const a = projectActs(p, OWNER).find((x) => x.id === "cancel_project");
-    expect(a?.available).toBe(false);
-    expect(a?.reason).toMatch(/already settled/i);
+    expect(projectActs(p, OWNER).find((x) => x.id === "cancel_project")?.available).toBe(false);
   });
 });
 
