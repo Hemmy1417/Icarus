@@ -78,9 +78,9 @@ describe("who a viewer is", () => {
 });
 
 describe("a stranger is offered nothing", () => {
-  it("cannot file, assess, contest or close", () => {
+  it("cannot file evidence, ask for an assessment, or contest a decision", () => {
     const acts = actsFor(STRANGER, milestone());
-    for (const id of ["submit_image", "submit_document", "request_assessment", "open_appeal", "close_milestone"]) {
+    for (const id of ["submit_image", "submit_document", "request_assessment", "open_appeal"]) {
       expect(act(acts, id), `${id} should not be offered to a stranger`).toBeUndefined();
     }
   });
@@ -88,6 +88,44 @@ describe("a stranger is offered nothing", () => {
   it("is still offered the permissionless acts, which cannot change an outcome", () => {
     const m = milestone({ state: "ACCEPTED", standing: standing({ window_ends: iso(NOW - 1) }) });
     expect(act(actsFor(STRANGER, m), "finalize")?.available).toBe(true);
+  });
+});
+
+describe("terms, which the contract makes asymmetric", () => {
+  /*
+   * The owner proposes a schedule; the installer signs it. Offering either
+   * act to the other party would be a button that always fails, and an
+   * earlier version of this offered both to both.
+   */
+  it("lets only the owner propose a revision", () => {
+    expect(act(actsFor(OWNER, milestone()), "propose_version")?.available).toBe(true);
+    expect(act(actsFor(INSTALLER, milestone()), "propose_version")).toBeUndefined();
+    expect(act(actsFor(STRANGER, milestone()), "propose_version")).toBeUndefined();
+  });
+
+  it("lets only the installer sign one", () => {
+    const m = milestone({ pending_version: 2 });
+    expect(act(actsFor(INSTALLER, m), "accept_version")?.available).toBe(true);
+    expect(act(actsFor(OWNER, m), "accept_version")).toBeUndefined();
+  });
+
+  it("tells the installer plainly when nothing is waiting on them", () => {
+    const a = act(actsFor(INSTALLER, milestone()), "accept_version");
+    expect(a?.available).toBe(false);
+    expect(a?.reason).toMatch(/no proposed terms/i);
+  });
+
+  it("stops revising once a decision stands", () => {
+    const m = milestone({ state: "ACCEPTED", standing: standing() });
+    const a = act(actsFor(OWNER, m), "propose_version");
+    expect(a?.available).toBe(false);
+    expect(a?.reason).toMatch(/decision that stands/i);
+  });
+
+  it("stops revising at the cap the contract sets", () => {
+    const base = milestone();
+    const m = milestone({ versions: [base.versions[0]!, base.versions[0]!, base.versions[0]!] });
+    expect(act(actsFor(OWNER, m), "propose_version")?.available).toBe(false);
   });
 });
 
@@ -115,6 +153,64 @@ describe("evidence", () => {
   it("says a declaration is never read, so nobody mistakes it for evidence", () => {
     const said = act(actsFor(OWNER, milestone()), "submit_declaration")?.reason ?? "";
     expect(said).toMatch(/never read by the panel/i);
+  });
+});
+
+describe("the recovery path, which is where a milestone usually lives", () => {
+  /*
+   * A rejection or an undetermined finding is not the end: it is exactly
+   * where the installer files more evidence and asks again. An earlier
+   * version of this layer allowed filing only while a milestone was awaiting
+   * evidence, which shut that door and was caught by driving the real forms.
+   */
+  for (const state of ["REJECTED", "UNDETERMINED"] as const) {
+    it(`lets a party file again after a ${state.toLowerCase()} finding`, () => {
+      const m = milestone({ state, standing: standing({ decision: state }) });
+      expect(act(actsFor(INSTALLER, m), "submit_image")?.available).toBe(true);
+      expect(act(actsFor(OWNER, m), "submit_document")?.available).toBe(true);
+    });
+
+    it(`lets the installer ask again after a ${state.toLowerCase()} finding`, () => {
+      const m = milestone({ state, standing: standing({ decision: state }) });
+      expect(act(actsFor(INSTALLER, m), "request_assessment")?.available).toBe(true);
+    });
+  }
+
+  it("shuts filing on a standing acceptance, and says to appeal instead", () => {
+    const m = milestone({ state: "ACCEPTED", standing: standing() });
+    const a = act(actsFor(INSTALLER, m), "submit_image");
+    expect(a?.available).toBe(false);
+    expect(a?.reason).toMatch(/open an appeal/i);
+  });
+
+  it("shuts filing once the milestone has settled", () => {
+    for (const state of ["FINALIZED", "CLOSED"] as const) {
+      expect(act(actsFor(INSTALLER, milestone({ state })), "submit_image")?.available).toBe(false);
+    }
+  });
+
+  it("shuts filing before the terms are signed", () => {
+    const m = milestone({ state: "AWAITING_TERMS", current_version: 0 });
+    expect(act(actsFor(INSTALLER, m), "submit_image")?.available).toBe(false);
+  });
+
+  it("makes an inspector accept the role before filing", () => {
+    const p = project({ inspector: INSPECTOR, inspector_accepted_at: null });
+    const a = act(actsFor(INSPECTOR, milestone(), p), "submit_image");
+    expect(a?.available).toBe(false);
+    expect(a?.reason).toMatch(/accept the inspector role/i);
+  });
+
+  it("asks for an assessment from the installer alone", () => {
+    expect(act(actsFor(OWNER, milestone()), "request_assessment")).toBeUndefined();
+    expect(act(actsFor(INSTALLER, milestone()), "request_assessment")?.available).toBe(true);
+  });
+
+  it("refuses an assessment while an appeal is open", () => {
+    const m = milestone({ state: "APPEALED" });
+    const a = act(actsFor(INSTALLER, m), "request_assessment");
+    expect(a?.available).toBe(false);
+    expect(a?.reason).toMatch(/readjudication/i);
   });
 });
 
@@ -196,6 +292,54 @@ describe("settlement", () => {
       expect(a?.available).toBe(false);
       expect(a?.reason).toMatch(/until a panel accepts/i);
     }
+  });
+});
+
+describe("closing, which the contract lets anyone do", () => {
+  /*
+   * The contract has no sender check on close_milestone, and real conditions
+   * on when. An earlier version of the acts layer offered it to the owner
+   * alone and ignored the deadline, which was wrong in both directions.
+   */
+  const past = iso(NOW - 86_400_000);
+  const future = iso(NOW + 86_400_000);
+
+  const withDeadline = (deadline: string, over: Partial<Milestone> = {}) =>
+    milestone({
+      versions: [{ ...milestone().versions[0]!, deadline }],
+      ...over,
+    });
+
+  it("is offered to a stranger once the deadline has passed", () => {
+    expect(act(actsFor(STRANGER, withDeadline(past)), "close_milestone")?.available).toBe(true);
+  });
+
+  it("is withheld while the deadline still stands", () => {
+    const a = act(actsFor(OWNER, withDeadline(future)), "close_milestone");
+    expect(a?.available).toBe(false);
+    expect(a?.reason).toMatch(/deadline has not passed/i);
+  });
+
+  it("is withheld while a decision can still be contested", () => {
+    const m = withDeadline(past, { state: "REJECTED", standing: standing({ decision: "REJECTED" }) });
+    const a = act(actsFor(OWNER, m), "close_milestone");
+    expect(a?.available).toBe(false);
+    expect(a?.reason).toMatch(/still be contested/i);
+  });
+
+  it("refuses an acceptance, which settles rather than closes", () => {
+    const m = withDeadline(past, { state: "ACCEPTED", standing: standing() });
+    const a = act(actsFor(OWNER, m), "close_milestone");
+    expect(a?.available).toBe(false);
+    expect(a?.reason).toMatch(/settled rather than closed/i);
+  });
+
+  it("refuses while an appeal is open", () => {
+    const m = withDeadline(past, {
+      state: "APPEALED",
+      appeal: { reviewed_round: 1, reason: "", opened_at: iso(NOW), evidence_ends: iso(NOW), by: OWNER },
+    });
+    expect(act(actsFor(OWNER, m), "close_milestone")?.available).toBe(false);
   });
 });
 

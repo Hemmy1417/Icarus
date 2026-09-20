@@ -276,7 +276,10 @@ function ActionArea({
       <Acts
         acts={acts}
         args={{
-          accept_version: [mid],
+          // accept_version names the version being signed, not just the
+          // milestone: signing "whatever is pending" would be ambiguous the
+          // moment a second revision existed.
+          accept_version: [mid, m.pending_version ?? m.current_version],
           propose_version: [mid],
           request_assessment: [mid, "[]"],
           open_appeal: [mid],

@@ -1,0 +1,194 @@
+{
+  "address": "0x38b195DF0E491F2B53347fb856D50090cE1C7823",
+  "writes": {
+    "accept_inspector_role": {
+      "params": [
+        "pid"
+      ],
+      "types": [
+        "string"
+      ],
+      "payable": false
+    },
+    "accept_project": {
+      "params": [
+        "pid"
+      ],
+      "types": [
+        "string"
+      ],
+      "payable": false
+    },
+    "accept_version": {
+      "params": [
+        "mid",
+        "version"
+      ],
+      "types": [
+        "string",
+        "int"
+      ],
+      "payable": false
+    },
+    "add_milestone": {
+      "params": [
+        "pid",
+        "terms_json"
+      ],
+      "types": [
+        "string",
+        "string"
+      ],
+      "payable": false
+    },
+    "cancel_project": {
+      "params": [
+        "pid"
+      ],
+      "types": [
+        "string"
+      ],
+      "payable": false
+    },
+    "claim": {
+      "params": [],
+      "types": [],
+      "payable": false
+    },
+    "close_milestone": {
+      "params": [
+        "mid"
+      ],
+      "types": [
+        "string"
+      ],
+      "payable": false
+    },
+    "create_project": {
+      "params": [
+        "params_json"
+      ],
+      "types": [
+        "string"
+      ],
+      "payable": true
+    },
+    "decide_appeal": {
+      "params": [
+        "mid"
+      ],
+      "types": [
+        "string"
+      ],
+      "payable": false
+    },
+    "finalize": {
+      "params": [
+        "mid"
+      ],
+      "types": [
+        "string"
+      ],
+      "payable": false
+    },
+    "fund_project": {
+      "params": [
+        "pid"
+      ],
+      "types": [
+        "string"
+      ],
+      "payable": true
+    },
+    "lapse_appeal": {
+      "params": [
+        "mid"
+      ],
+      "types": [
+        "string"
+      ],
+      "payable": false
+    },
+    "open_appeal": {
+      "params": [
+        "mid",
+        "reason"
+      ],
+      "types": [
+        "string",
+        "string"
+      ],
+      "payable": false
+    },
+    "propose_version": {
+      "params": [
+        "mid",
+        "terms_json"
+      ],
+      "types": [
+        "string",
+        "string"
+      ],
+      "payable": false
+    },
+    "request_assessment": {
+      "params": [
+        "mid",
+        "named_json"
+      ],
+      "types": [
+        "string",
+        "string"
+      ],
+      "payable": false
+    },
+    "submit_declaration": {
+      "params": [
+        "mid",
+        "text"
+      ],
+      "types": [
+        "string",
+        "string"
+      ],
+      "payable": false
+    },
+    "submit_document": {
+      "params": [
+        "mid",
+        "meta_json",
+        "text"
+      ],
+      "types": [
+        "string",
+        "string",
+        "string"
+      ],
+      "payable": false
+    },
+    "submit_image": {
+      "params": [
+        "mid",
+        "meta_json",
+        "data"
+      ],
+      "types": [
+        "string",
+        "string",
+        "bytes"
+      ],
+      "payable": false
+    },
+    "withdraw_escrow": {
+      "params": [
+        "pid",
+        "amount_wei"
+      ],
+      "types": [
+        "string",
+        "string"
+      ],
+      "payable": false
+    }
+  }
+}

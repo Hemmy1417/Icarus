@@ -10,6 +10,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
+import { ClaimBar } from "./ClaimBar";
 import { WalletDock } from "./WalletDock";
 import { CONTRACT_CONFIGURED, IS_RECORD } from "@/lib/config";
 
@@ -73,6 +74,8 @@ export function Shell({ children }: { children: ReactNode }) {
           </p>
         </div>
       ) : null}
+
+      <ClaimBar />
 
       <main className="flex-1">{children}</main>
 

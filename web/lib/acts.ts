@@ -121,41 +121,57 @@ export function milestoneActs({
   const acts: Act[] = [];
   const terms = m.versions.find((v) => v.version === m.current_version) ?? null;
   const deadlinePassed = !!terms && nowMs > ms(terms.deadline) - MARGIN_MS;
-  const open = m.state === "AWAITING_EVIDENCE";
   const standing = m.standing;
 
-  /* terms */
-  if (who === "OWNER" || who === "INSTALLER") {
-    const pending = m.pending_version !== null;
-    const mine = who === "OWNER";
-    if (pending) {
-      acts.push(
-        ok(
-          "accept_version",
-          mine
-            ? "Terms are waiting on a signature; whichever party did not propose them signs."
-            : "Sign the terms the other party proposed.",
-        ),
-      );
-    }
+  /*
+   * Terms are asymmetric, and the contract is explicit about it: the owner
+   * proposes a schedule and the installer signs it. Offering either act to
+   * the other party would be a button that always fails.
+   */
+  if (who === "OWNER") {
     acts.push(
       m.state === "CLOSED" || m.state === "FINALIZED"
         ? no("propose_version", "This milestone is finished, so its terms cannot change.")
-        : config && m.versions.length >= config.max_versions_per_milestone
-          ? no("propose_version", "These terms have been revised as often as the contract allows.")
-          : ok("propose_version", "Propose a new schedule; it binds only when both parties sign."),
+        : m.state === "ACCEPTED" || m.state === "APPEALED"
+          ? no("propose_version", "New terms cannot replace a decision that stands.")
+          : config && m.versions.length >= config.max_versions_per_milestone
+            ? no("propose_version", "These terms have been revised as often as the contract allows.")
+            : ok("propose_version", "Propose a new schedule; it binds only once the installer signs."),
     );
   }
 
-  /* evidence */
+  if (who === "INSTALLER") {
+    const pending = m.pending_version !== null;
+    acts.push(
+      pending
+        ? ok("accept_version", "Sign the terms the owner proposed. They bind when you do.")
+        : no("accept_version", "There are no proposed terms waiting on your signature."),
+    );
+  }
+
+  /*
+   * Evidence closes on a settled milestone and on a standing acceptance, and
+   * nowhere else. A rejection or an undetermined finding is precisely where
+   * an installer files more and asks again, so withholding it there would
+   * shut the door on the recovery path the contract is built around.
+   */
   if (who) {
-    const filing = open
-      ? deadlinePassed
-        ? no("submit_image", "The deadline has passed, so nothing further can be filed.")
-        : ok("submit_image", "File a photograph; its bytes are held and hashed by the contract.")
-      : m.state === "APPEALED"
-        ? ok("submit_image", "File a photograph the appeal will read, within its evidence period.")
-        : no("submit_image", "This milestone is not open for evidence.");
+    const filing =
+      m.state === "FINALIZED" || m.state === "CLOSED"
+        ? no("submit_image", "This milestone has settled, so its record is closed.")
+        : m.state === "ACCEPTED"
+          ? no("submit_image", "An acceptance stands. To contest it, open an appeal; every party may then file.")
+          : m.state === "AWAITING_TERMS"
+            ? no("submit_image", "The terms are not signed yet, so there is nothing to file against.")
+            : p.state !== "ACTIVE"
+              ? no("submit_image", "Evidence is filed once the installer has signed the project.")
+              : who === "INSPECTOR" && !p.inspector_accepted_at
+                ? no("submit_image", "Accept the inspector role first.")
+                : m.state === "APPEALED"
+                  ? ok("submit_image", "File a photograph the appeal will read, within its evidence period.")
+                  : deadlinePassed
+                    ? no("submit_image", "The deadline has passed, so nothing further can be filed.")
+                    : ok("submit_image", "File a photograph; its bytes are held and hashed by the contract.");
     acts.push(filing);
     acts.push({
       ...filing,
@@ -173,18 +189,27 @@ export function milestoneActs({
     });
   }
 
-  /* assessment */
-  if (who === "INSTALLER" || who === "OWNER") {
+  /*
+   * Only the installer asks for an assessment, and they may ask again after a
+   * rejection or an undetermined finding, up to the cap the terms allow.
+   */
+  if (who === "INSTALLER") {
     const used = m.version_assessments;
     const cap = config?.max_assessments_per_version ?? Infinity;
     acts.push(
-      !open
-        ? no("request_assessment", "This milestone is not open for evidence.")
-        : deadlinePassed
-          ? no("request_assessment", "The deadline has passed; this milestone can only be closed.")
-          : used >= cap
-            ? no("request_assessment", "These terms have had every assessment they allow.")
-            : ok("request_assessment", "Ask a panel to read the evidence against the schedule."),
+      m.state === "FINALIZED" || m.state === "CLOSED"
+        ? no("request_assessment", "This milestone has settled.")
+        : m.state === "ACCEPTED"
+          ? no("request_assessment", "An acceptance already stands on this milestone.")
+          : m.state === "APPEALED"
+            ? no("request_assessment", "An appeal is open; it is decided by readjudication.")
+            : m.state === "AWAITING_TERMS"
+              ? no("request_assessment", "The terms are not signed yet.")
+              : deadlinePassed
+                ? no("request_assessment", "The deadline has passed; this milestone can only be closed.")
+                : used >= cap
+                  ? no("request_assessment", "These terms have had every assessment they allow.")
+                  : ok("request_assessment", "Ask a panel to read the evidence against the schedule."),
     );
   }
 
@@ -236,15 +261,32 @@ export function milestoneActs({
           : no("finalize", "The window for contesting this acceptance has not closed."),
   );
 
-  if (who === "OWNER") {
-    acts.push(
-      m.state === "FINALIZED"
-        ? no("close_milestone", "This milestone has settled.")
-        : m.state === "CLOSED"
-          ? no("close_milestone", "This milestone is closed.")
-          : ok("close_milestone", "Close the milestone and release what it reserved."),
-    );
-  }
+  /*
+   * Closing is permissionless too, and it has real conditions: the deadline
+   * must have passed and any standing appeal window must have closed. An
+   * earlier version of this offered it to the owner alone and ignored both,
+   * which was wrong twice over: it withheld an act the contract allows, and
+   * it offered one the contract would refuse.
+   */
+  const closeBlocked =
+    m.state === "FINALIZED" || m.state === "CLOSED"
+      ? "This milestone has already settled."
+      : m.state === "ACCEPTED"
+        ? "An acceptance stands, so this is settled rather than closed."
+        : m.state === "APPEALED"
+          ? "An appeal is open. Decide it, or let it lapse."
+          : !terms
+            ? "There are no terms in force to close against."
+            : nowMs <= ms(terms.deadline)
+              ? "The deadline has not passed."
+              : standing?.appealable && standing.window_ends && nowMs <= ms(standing.window_ends)
+                ? "A decision can still be contested."
+                : null;
+  acts.push(
+    closeBlocked
+      ? no("close_milestone", closeBlocked)
+      : ok("close_milestone", "Close it, and release what it reserved to the owner's escrow."),
+  );
 
   return acts;
 }

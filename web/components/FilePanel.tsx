@@ -114,9 +114,15 @@ export function FilePanel({
       setProblem("A document needs its text.");
       return;
     }
+    // A declaration takes only its text: the contract records it and never
+    // puts it to a panel, so there is no metadata for it to be described by.
+    if (kind === "DECLARATION") {
+      setSigning({ method: "submit_declaration", args: [milestoneId, body.trim()] });
+      return;
+    }
     if (reference.trim()) meta.reference = reference.trim();
     setSigning({
-      method: kind === "DOCUMENT" ? "submit_document" : "submit_declaration",
+      method: "submit_document",
       args: [milestoneId, JSON.stringify(meta), body.trim()],
     });
   }
@@ -144,9 +150,15 @@ export function FilePanel({
             key={k}
             type="button"
             onClick={() => {
+              // Clear what belongs to the kind being left. Carrying a
+              // reference typed under "a document" into a declaration would
+              // file something the person never meant to say.
               setKind(k);
               setSigning(null);
               setProblem("");
+              setReference("");
+              if (k === "IMAGE") setBody("");
+              else setImage(null);
             }}
             className={`display rounded-pill px-4 py-2 text-[15px] ${
               kind === k ? "bg-graphite text-canvas-white" : "border border-mist text-steel hover:bg-fog"
