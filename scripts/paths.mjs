@@ -233,14 +233,18 @@ say("the revision binds only once both parties have signed it");
 const held = await view("get_project", [pid]);
 const free = BigInt(held.unreserved_wei);
 const reservedBefore = BigInt(held.reserved_wei);
-if (!run.steps["escrow.withdraw"]) assert(free > 0n, "nothing was unreserved to withdraw");
+// All but one payment's worth: the milestone that gets closed further down
+// still has to reserve its own, and an escrow emptied here would refuse it.
+const taking = free > 1n * GEN ? free - 1n * GEN : 0n;
+if (!run.steps["escrow.withdraw"]) assert(taking > 0n, "nothing was free to withdraw");
 await step("escrow.withdraw", "OWNER", "withdraw_escrow", [pid,
-           (free > 0n ? free : 1n).toString()]);
+           (taking > 0n ? taking : 1n).toString()]);
 const after = await view("get_project", [pid]);
-assert(BigInt(after.unreserved_wei) === 0n, `unreserved is ${after.unreserved_wei} after a full withdrawal`);
+assert(BigInt(after.unreserved_wei) === free - taking,
+       `unreserved is ${after.unreserved_wei} after withdrawing ${taking}`);
 assert(BigInt(after.reserved_wei) === reservedBefore,
        `reserved went ${reservedBefore} to ${after.reserved_wei} during a withdrawal`);
-say(`withdrew ${free} wei; the milestone's reservation was untouched`);
+say(`withdrew ${taking} wei; the milestone's reservation was untouched`);
 
 // 8. Walls worth proving: a stranger cannot revise or withdraw, and an
 //    appeal cannot be lapsed when there is no appeal.
