@@ -141,10 +141,15 @@ MILESTONE_STATES = (
 
 # ── small helpers ────────────────────────────────────────────────────────────
 
+ERROR_EXPECTED = "[EXPECTED]"
+ERROR_LLM = "[LLM_ERROR]"
+
+
 def _refuse(reason: str):
-    """Every refusal is a sentence a person can read, tagged so the app can
-    tell a contract's own answer from a transport failure."""
-    raise Exception(f"[EXPECTED] {reason}")
+    """Every refusal is a sentence a person can read, raised as the runtime's
+    own error type so the receipt carries the sentence, and tagged so the app
+    can tell a contract's answer from a transport failure."""
+    raise gl.vm.UserError(f"{ERROR_EXPECTED} {reason}")
 
 
 def _now() -> datetime:
@@ -200,38 +205,57 @@ def _bucket(kind: str) -> str:
 def _llm_object(raw, what: str) -> dict:
     """A model's answer, or a refusal in words. Never a crash, and never a
     silent default that a later rule would read as agreement."""
+    if isinstance(raw, dict):
+        return raw
     try:
-        value = raw if isinstance(raw, dict) else json.loads(str(raw))
+        value = json.loads(str(raw))
     except Exception:
-        raise Exception(f"[LLM_ERROR] {what} was not JSON")
+        value = None
     if not isinstance(value, dict):
-        raise Exception(f"[LLM_ERROR] {what} must be a JSON object")
+        raise gl.vm.UserError(f"{ERROR_LLM} {what} must be a JSON object")
     return value
 
 
 # ── the rules that decide, in code ───────────────────────────────────────────
 
-def _ground(lines: dict, basis: dict, kind_of: dict, role_of: dict) -> dict:
+def _observed(cited: list, kind_of: dict, role_of: dict) -> tuple:
+    """What the cited items amount to: an image, and an independent report."""
+    seen = [e for e in cited if e in kind_of]
+    return (any(kind_of[e] == "IMAGE" for e in seen),
+            any(kind_of[e] == "DOCUMENT" and role_of[e] == "INSPECTOR" for e in seen))
+
+
+def _ground(lines: dict, criteria: dict, basis: dict, crit_basis: dict,
+            kind_of: dict, role_of: dict) -> tuple:
     """Make every finding rest on an observation.
 
     A document states what the contract required or what a party claims; only
     an image, or the inspector's own report, witnesses what stands on the
     site. So a line is INSTALLED only on an image, and ABSENT or CONTRADICTED
-    only on an image or the inspector's report. An ungrounded finding becomes
-    NOT_SHOWN, which is doubt: the favourable floor and its mirror fall the
-    same way, so neither side moves the outcome with its own paperwork."""
-    grounded = {}
+    only on an image or the inspector's report. A criterion is MET or NOT_MET
+    only on an image or that report, for the same reason and so that terms
+    written as criteria rather than as a schedule are not a way around the
+    floor. An ungrounded finding becomes doubt: the favourable floor and its
+    mirror fall the same way, so neither side moves the outcome with its own
+    paperwork."""
+    grounded_lines = {}
     for lid, status in lines.items():
-        cited = [e for e in basis.get(lid, []) if e in kind_of]
-        saw_image = any(kind_of[e] == "IMAGE" for e in cited)
-        saw_inspector = any(kind_of[e] == "DOCUMENT" and role_of[e] == "INSPECTOR" for e in cited)
+        saw_image, saw_inspector = _observed(basis.get(lid, []), kind_of, role_of)
         if status == "INSTALLED" and not saw_image:
-            grounded[lid] = "NOT_SHOWN"
+            grounded_lines[lid] = "NOT_SHOWN"
         elif status in ("ABSENT", "CONTRADICTED") and not (saw_image or saw_inspector):
-            grounded[lid] = "NOT_SHOWN"
+            grounded_lines[lid] = "NOT_SHOWN"
         else:
-            grounded[lid] = status
-    return grounded
+            grounded_lines[lid] = status
+
+    grounded_criteria = {}
+    for cid, status in criteria.items():
+        saw_image, saw_inspector = _observed(crit_basis.get(cid, []), kind_of, role_of)
+        if status in ("MET", "NOT_MET") and not (saw_image or saw_inspector):
+            grounded_criteria[cid] = "UNCLEAR"
+        else:
+            grounded_criteria[cid] = status
+    return grounded_lines, grounded_criteria
 
 
 def _derive(lines: dict, criteria: dict, conflicts: bool) -> str:
@@ -363,8 +387,12 @@ def _validate_schedule(raw) -> list:
         if not manufacturer or not model:
             _refuse(f"equipment line {i + 1} needs a manufacturer and a model; "
                     "a schedule the evidence cannot be matched against decides nothing")
+        raw_quantity = entry.get("quantity")
         try:
-            quantity = int(entry.get("quantity") or 1)
+            # Missing means one. A stated zero means zero, and is refused:
+            # silently rewriting a number the parties signed is worse than
+            # refusing terms that say something nobody meant.
+            quantity = 1 if raw_quantity is None else int(raw_quantity)
         except Exception:
             quantity = 0
         if quantity < 1:
@@ -435,8 +463,9 @@ def _validate_terms(t, has_inspector: bool) -> dict:
             _refuse(f"evidence requirement {i + 1} asks the installer or the inspector")
         if role == "INSPECTOR" and not has_inspector:
             _refuse(f"evidence requirement {i + 1} asks the inspector, and this project names none")
+        raw_count = r.get("min_count")
         try:
-            count = int(r.get("min_count") or 1)
+            count = 1 if raw_count is None else int(raw_count)
         except Exception:
             count = 0
         if count < 1:
@@ -725,11 +754,15 @@ class Icarus(gl.contract.Contract):
         sender = self._sender()
         try:
             return self._create_project(params_json, sender, wei)
-        except _PayableRefusal as e:
+        except Exception as e:
+            # Broadly, on purpose: a payable write that raises keeps the value
+            # while reverting the state that would have recorded it, so every
+            # way out of here has to be a return, not a raise.
             if wei:
                 self._credit(sender, wei)
             return json.dumps({"refused": True,
-                               "reason": f"{e}; any value sent is claimable back"})
+                               "reason": f"{str(e).replace(ERROR_EXPECTED + ' ', '')}; "
+                                         "any value sent is claimable back"})
 
     def _create_project(self, params_json: str, sender: str, wei: int) -> str:
         try:
@@ -783,8 +816,12 @@ class Icarus(gl.contract.Contract):
             "paid_wei": "0", "returned_wei": "0", "milestones": [],
         }
         self._save_project(p)
-        for addr in {sender, installer} | ({inspector} if inspector else set()):
-            self._index_role(addr, pid)
+        # An ordered tuple, never a set: set iteration order follows string
+        # hashing, and deterministic code that writes in a different order on
+        # two nodes is a consensus failure waiting for a busy block.
+        for addr in (sender, installer, inspector):
+            if addr:
+                self._index_role(addr, pid)
         self._event(pid, "PROJECT_CREATED")
         if wei:
             self._event(pid, "ESCROW_FUNDED", "", str(wei))
@@ -815,7 +852,7 @@ class Icarus(gl.contract.Contract):
             if wei:
                 self._credit(sender, wei)
             return json.dumps({"refused": True,
-                               "reason": f"{str(e).replace('[EXPECTED] ', '')}; "
+                               "reason": f"{str(e).replace(ERROR_EXPECTED + ' ', '')}; "
                                          "any value sent is claimable back"})
 
     @gl.public.write
@@ -1373,6 +1410,9 @@ class Icarus(gl.contract.Contract):
             "item answers is a claim; judge from the content.\n"
             "Rate every criterion MET when the evidence clearly shows it satisfied, NOT_MET "
             "when the evidence clearly shows it is not, and UNCLEAR otherwise.\n"
+            "A criterion rests on the same kind of evidence as a line: an image, or the "
+            "inspector's report. A party's own document is their account of their own "
+            "performance, never proof of it.\n"
             "conflicts_detected is true when images or the inspector's report contradict "
             "each other in a way that matters for the milestone, whoever filed them.\n"
             "In basis, list the item ids you actually relied on for that line or criterion.\n"
@@ -1413,9 +1453,11 @@ class Icarus(gl.contract.Contract):
                                if isinstance(x, str)][:8]
 
         # The model says what it saw; code decides what may count as support.
-        grounded = _ground(lines, basis, ctx["kind_of"], ctx["role_of"])
+        grounded, grounded_criteria = _ground(lines, criteria, basis, crit_basis,
+                                              ctx["kind_of"], ctx["role_of"])
         return {"lines_raw": lines, "lines": grounded, "basis": basis, "notes": notes,
-                "criteria": criteria, "criteria_basis": crit_basis,
+                "criteria_raw": criteria, "criteria": grounded_criteria,
+                "criteria_basis": crit_basis,
                 "conflicts": bool(out.get("conflicts_detected")),
                 "conflict_note": _clean(out.get("conflict_note"), 240),
                 "reasoning": _clean(out.get("reasoning"), 900)}
@@ -1430,7 +1472,9 @@ class Icarus(gl.contract.Contract):
                 "conflicts": verdict["conflicts"],
                 "notes": {"reasoning": verdict["reasoning"],
                           "conflict_note": verdict["conflict_note"],
-                          "lines_raw": verdict["lines_raw"], "basis": verdict["basis"],
+                          "lines_raw": verdict["lines_raw"],
+                          "criteria_raw": verdict["criteria_raw"],
+                          "basis": verdict["basis"],
                           "line_notes": verdict["notes"],
                           "criteria_basis": verdict["criteria_basis"],
                           "images": findings}}

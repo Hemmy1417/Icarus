@@ -263,3 +263,49 @@ class TestConsensus:
         with pytest.raises(err(module)):
             assess(module, c, mid, items, v_judge=RuntimeError("model unavailable"))
         assert any("could not judge the evidence" in line for line in prints())
+
+
+class TestCriteriaAreGroundedToo:
+    def test_a_criterion_is_never_met_on_a_party_document_alone(self, module, c):
+        """Otherwise terms written as criteria rather than as a schedule would
+        be a way around the floor."""
+        _, mid = active_milestone(module, c)
+        a = image(module, c, mid, caption="The array", line="E1")
+        b = image(module, c, mid, caption="The inverter", line="E2", origin="NAMEPLATE")
+        theirs = document(module, c, mid, title="Commissioning report",
+                          text="We commissioned the system and it performs to specification.")
+        out = assess(module, c, mid, [a, b, theirs],
+                     judge=judge_answer({"E1": "INSTALLED", "E2": "INSTALLED", "E3": "INSTALLED"},
+                                        {"C1": "MET"},
+                                        basis={"E1": [a], "E2": [b], "E3": [a],
+                                               "C1": [theirs]}))
+        assert out["criteria"]["C1"] == "UNCLEAR"
+        assert out["decision"] == "UNDETERMINED"
+
+    def test_the_inspector_can_establish_a_criterion(self, module, c):
+        _, mid = active_milestone(module, c, inspector=INSPECTOR)
+        a = image(module, c, mid, caption="The array", line="E1")
+        b = image(module, c, mid, caption="The inverter", line="E2", origin="NAMEPLATE")
+        report = document(module, c, mid, who=INSPECTOR, title="Site inspection",
+                          text="The array follows the approved layout and orientation.")
+        out = assess(module, c, mid, [a, b],
+                     judge=judge_answer({"E1": "INSTALLED", "E2": "INSTALLED", "E3": "INSTALLED"},
+                                        {"C1": "MET"},
+                                        basis={"E1": [a], "E2": [b], "E3": [a],
+                                               "C1": [report]}))
+        assert out["criteria"]["C1"] == "MET"
+        assert out["decision"] == "ACCEPTED"
+
+    def test_an_ungrounded_rejection_of_a_criterion_falls_to_doubt_as_well(self, module, c):
+        _, mid = active_milestone(module, c)
+        a = image(module, c, mid, caption="The array", line="E1")
+        b = image(module, c, mid, caption="The inverter", line="E2", origin="NAMEPLATE")
+        theirs = document(module, c, mid, who=OWNER, title="Owner's note",
+                          text="The orientation looks wrong to us.")
+        out = assess(module, c, mid, [a, b],
+                     judge=judge_answer({"E1": "INSTALLED", "E2": "INSTALLED", "E3": "INSTALLED"},
+                                        {"C1": "NOT_MET"},
+                                        basis={"E1": [a], "E2": [b], "E3": [a],
+                                               "C1": [theirs]}))
+        assert out["criteria"]["C1"] == "UNCLEAR"
+        assert out["decision"] == "UNDETERMINED", "doubt, never a rejection, on one party's word"

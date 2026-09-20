@@ -38,7 +38,7 @@ def terms(**over):
     return json.dumps(t)
 
 
-def project_params(installer, **over):
+def project_params(installer=None, **over):
     p = {"title": "50 kW commercial rooftop solar", "description": "Demonstration project",
          "site": "Plot 14, Canal Road", "system_type": "COMMERCIAL_SOLAR",
          "capacity_kw": "50", "installer": installer, "inspector": "",
