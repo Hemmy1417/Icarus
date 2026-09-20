@@ -15,7 +15,7 @@
  * sentences have their references written out before they are shown.
  */
 import Link from "next/link";
-import { use, useState } from "react";
+import { use, useState, useSyncExternalStore } from "react";
 
 import { Acts } from "@/components/Acts";
 import { Loading, ReadFailure, Tag } from "@/components/bits";
@@ -30,6 +30,8 @@ import {
   moment, referenceNames, relative, writeOut,
 } from "@/lib/present";
 import { getMilestone, getProject, getRound } from "@/lib/read";
+import { roundTx } from "@/lib/txlog";
+import { txUrl } from "@/lib/chain";
 import type {
   Config, EvidenceItem, Milestone, Project as ProjectRecord, Round, TermsVersion,
 } from "@/lib/types";
@@ -221,19 +223,7 @@ export default function CaseSheet({ params }: { params: Promise<{ mid: string }>
         nowMs={nowMs}
       />
 
-      {r ? (
-        <footer className="border-t border-mist py-14">
-          <div className="flex flex-wrap items-center gap-8">
-            <span className="type-caption">Read {moment(r.at)}</span>
-            <Link
-              href={`/milestones/${mid}/rounds/${r.round}`}
-              className="display text-[15px] text-graphite underline decoration-ember decoration-2 underline-offset-[6px] hover:decoration-graphite"
-            >
-              What each node saw
-            </Link>
-          </div>
-        </footer>
-      ) : null}
+      {r ? <Footer mid={mid} round={r} /> : null}
     </div>
   );
 }
@@ -298,5 +288,62 @@ function ActionArea({
         />
       ) : null}
     </section>
+  );
+}
+
+/**
+ * Where a decision came from. A contract cannot know its own transaction
+ * hash, so the pairing is either one this browser watched land or one from
+ * the published proof log, and the page says which rather than presenting
+ * either as the chain's own word.
+ */
+function Footer({ mid, round: r }: { mid: string; round: Round }) {
+  /*
+   * Read through useSyncExternalStore rather than an effect: the pairing
+   * lives in this browser's storage, which is an external store, and it
+   * changes when a write this page watched lands. The snapshot is a string
+   * so it stays referentially stable across renders.
+   */
+  const packed = useSyncExternalStore(
+    (onChange) => {
+      window.addEventListener("icarus:changed", onChange);
+      return () => window.removeEventListener("icarus:changed", onChange);
+    },
+    () => {
+      const found = roundTx(mid, r.round);
+      return found ? `${found.hash}|${found.source}` : "";
+    },
+    () => "",
+  );
+  const [hash, source] = packed.split("|");
+  const tx = hash ? { hash, source: source ?? "" } : null;
+
+  return (
+    <footer className="border-t border-mist py-14">
+      <div className="flex flex-wrap items-center gap-8">
+        <span className="type-caption">Read {moment(r.at)}</span>
+        <Link
+          href={`/milestones/${mid}/rounds/${r.round}`}
+          className="display text-[15px] text-graphite underline decoration-ember decoration-2 underline-offset-[6px] hover:decoration-graphite"
+        >
+          What each node saw
+        </Link>
+        {tx ? (
+          <a
+            href={txUrl(tx.hash)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="display text-[15px] text-graphite underline decoration-ember decoration-2 underline-offset-[6px] hover:decoration-graphite"
+          >
+            The transaction that decided it
+          </a>
+        ) : null}
+      </div>
+      {tx ? (
+        <p className="type-caption mt-4">
+          Paired from {tx.source}, because a contract cannot know its own transaction hash.
+        </p>
+      ) : null}
+    </footer>
   );
 }

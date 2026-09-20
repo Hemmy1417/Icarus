@@ -11,6 +11,7 @@
  *
  * A proposal binds nothing until the installer signs it.
  */
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use, useState } from "react";
 
@@ -18,6 +19,7 @@ import { Button, Loading, ReadFailure } from "@/components/bits";
 import { TxPanel, type TxOutcome } from "@/components/TxPanel";
 import { CONTRACT_ADDRESS } from "@/lib/config";
 import { useTransactionKit } from "@/lib/kit";
+import { roleIn } from "@/lib/acts";
 import { equipmentRole, gen, milestoneType, parseGen } from "@/lib/present";
 import { getProject } from "@/lib/read";
 import type { Project } from "@/lib/types";
@@ -85,6 +87,36 @@ export default function Propose({ params }: { params: Promise<{ pid: string }> }
   }
 
   const p = project.data;
+
+  /*
+   * Only the owner proposes milestones, and not on a cancelled project. A
+   * form that anyone can fill in and sign, only for the contract to refuse
+   * it, costs them a fee to learn what this page already knows.
+   */
+  const who = roleIn(p, wallet.address);
+  const barred =
+    p.state === "CANCELLED"
+      ? "This project was cancelled, so nothing further can be proposed on it."
+      : !wallet.address
+        ? "Connect the owner's wallet to propose a milestone here."
+        : who !== "OWNER"
+          ? "Only the owner proposes milestones on this project."
+          : null;
+
+  if (barred) {
+    return (
+      <div className={`${frame} py-24`}>
+        <h1 className="type-heading">{p.title}</h1>
+        <p className="mt-6 max-w-[52ch] text-[17px] leading-[1.6] text-steel">{barred}</p>
+        <p className="type-caption mt-8">
+          <Link href={`/projects/${pid}`} className="hover:text-graphite">
+            Back to the site
+          </Link>
+        </p>
+      </div>
+    );
+  }
+
   const set = (i: number, patch: Partial<Line>) =>
     setLines(lines.map((l, k) => (k === i ? { ...l, ...patch } : l)));
 
