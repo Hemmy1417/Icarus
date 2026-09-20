@@ -1316,14 +1316,29 @@ class Icarus(gl.contract.Contract):
             "Answer STRICT JSON: {\"images\": [{\"n\": 1, \"readable\": true, "
             "\"shows\": \"...\", \"labels\": [\"...\"], \"concerns\": [\"...\"]}]}")
 
+    def _ask_about(self, prompt: str, images: list) -> dict:
+        """One reading of one pair of images, with a second attempt.
+
+        Measured on Studio Next across several runs: a node's answer is
+        sometimes rejected by the runtime before this contract sees it, for
+        returning an object and then continuing to talk, and a route
+        sometimes delivers no image at all. Both leave a node unable to
+        judge, and a node that cannot judge cannot vote, so every lost
+        reading is a lost vote and rounds fail for want of sighted nodes.
+        One retry costs a prompt and recovers most of them."""
+        try:
+            return _llm_object(gl.nondet.exec_prompt(prompt, response_format="json",
+                                                     images=images), "the image reading")
+        except Exception:
+            return _llm_object(gl.nondet.exec_prompt(prompt, response_format="json",
+                                                     images=images), "the image reading")
+
     def _look_all(self, ctx: dict) -> tuple:
         """Look at the images two at a time, the runtime's limit per prompt."""
         findings, received = [], True
         for start in range(0, len(ctx["images"]), IMAGES_PER_PROMPT):
             pair = ctx["images"][start:start + IMAGES_PER_PROMPT]
-            raw = gl.nondet.exec_prompt(self._look_prompt(pair), response_format="json",
-                                        images=[data for _, data in pair])
-            out = _llm_object(raw, "the image reading")
+            out = self._ask_about(self._look_prompt(pair), [data for _, data in pair])
             rows = out.get("images") or []
             for n, (it, _) in enumerate(pair, start=1):
                 row = {}
@@ -1438,8 +1453,12 @@ class Icarus(gl.contract.Contract):
             "\"conflicts_detected\": true|false, \"conflict_note\": \"<short, or empty>\"}")
 
     def _decide(self, ctx: dict, findings: list) -> dict:
-        raw = gl.nondet.exec_prompt(self._judge_prompt(ctx, findings), response_format="json")
-        out = _llm_object(raw, "the judgment")
+        try:
+            out = _llm_object(gl.nondet.exec_prompt(self._judge_prompt(ctx, findings),
+                                                    response_format="json"), "the judgment")
+        except Exception:
+            out = _llm_object(gl.nondet.exec_prompt(self._judge_prompt(ctx, findings),
+                                                    response_format="json"), "the judgment")
 
         rows = {}
         for row in out.get("lines") or []:

@@ -497,3 +497,40 @@ class TestTheStatusesAreUnambiguous:
         assert "a different product from the one the schedule names" in prompt
         assert "disagrees with the SCHEDULE is not a contradiction" in prompt
         assert "two pieces of evidence disagree with each other" in prompt
+
+
+class TestANodeGetsASecondAttempt:
+    def test_a_reading_the_runtime_rejects_is_tried_once_more(self, module, c):
+        """Measured live: the runtime rejects an answer that is an object
+        followed by prose, before the contract sees it, and a route sometimes
+        delivers no image. A node that cannot read cannot vote, so rounds were
+        failing for want of sighted nodes rather than for want of agreement."""
+        _, mid = active_milestone(module, c)
+        items = two_images(module, c, mid)
+        good = look_all(n_images=2)
+        out = assess(module, c, mid, items,
+                     look=[RuntimeError("invalid nondeterministic response"), good],
+                     judge=judge_answer({"E1": "INSTALLED", "E2": "INSTALLED", "E3": "INSTALLED"},
+                                        {"C1": "MET"},
+                                        basis={k: items for k in ("E1", "E2", "E3", "C1")}))
+        assert out["decision"] == "ACCEPTED"
+        assert len(prompts(kind="look", role="leader")) == 2, "the reading was not retried"
+
+    def test_a_judgment_the_runtime_rejects_is_tried_once_more(self, module, c):
+        _, mid = active_milestone(module, c)
+        items = two_images(module, c, mid)
+        good = judge_answer({"E1": "INSTALLED", "E2": "INSTALLED", "E3": "INSTALLED"},
+                            {"C1": "MET"}, basis={k: items for k in ("E1", "E2", "E3", "C1")})
+        out = assess(module, c, mid, items,
+                     judge=[RuntimeError("invalid nondeterministic response"), good])
+        assert out["decision"] == "ACCEPTED"
+        assert len(prompts(kind="judge", role="leader")) == 2, "the judgment was not retried"
+
+    def test_two_failures_in_a_row_still_lose_the_vote(self, module, c):
+        """The retry is a second attempt, not a guarantee."""
+        _, mid = active_milestone(module, c)
+        items = two_images(module, c, mid)
+        with pytest.raises(Exception):          # the round fails; nothing is written
+            assess(module, c, mid, items,
+                   judge=[RuntimeError("rejected"), RuntimeError("rejected again")])
+        assert milestone(c, mid)["rounds_count"] == 0
