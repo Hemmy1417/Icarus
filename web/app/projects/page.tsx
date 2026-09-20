@@ -46,6 +46,14 @@ export default function Record() {
         <p className="mt-6 max-w-[52ch] text-[18px] leading-[1.55] text-steel">
           Every case on this deployment, read from the contract as this page loads.
         </p>
+        <p className="mt-8">
+          <Link
+            href="/projects/new"
+            className="display text-[17px] text-graphite underline decoration-ember decoration-2 underline-offset-[6px] hover:decoration-graphite"
+          >
+            Open a site of your own
+          </Link>
+        </p>
       </header>
 
       {page.loading ? <Loading what="the record" /> : null}

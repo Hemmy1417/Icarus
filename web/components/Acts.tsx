@@ -8,6 +8,7 @@
  * and an unavailable act is listed with its reason in words. That way a
  * person learns why a window has closed without paying a fee to find out.
  */
+import Link from "next/link";
 import { useState } from "react";
 
 import { Button, Card, Hairline } from "./bits";
@@ -61,13 +62,15 @@ const INPUT: Partial<Record<ActId, Input>> = {
   },
 };
 
-/** Acts handled by their own page, because they need a whole form. */
+/**
+ * Acts that need a whole form. Each either links to the page that carries it
+ * or points at the panel below, so an act is never offered with nowhere to
+ * go. `href` is filled by the page that knows its own ids.
+ */
 const ELSEWHERE: Partial<Record<ActId, string>> = {
-  add_milestone: "Propose it with its equipment schedule",
-  propose_version: "Revise the schedule",
-  submit_image: "File it with the evidence panel below",
-  submit_document: "File it with the evidence panel below",
-  submit_declaration: "Record it with the evidence panel below",
+  submit_image: "Use the evidence panel below",
+  submit_document: "Use the evidence panel below",
+  submit_declaration: "Use the evidence panel below",
 };
 
 /** The round writes take minutes, so the panel says what is happening. */
@@ -79,11 +82,14 @@ const WORKING: Partial<Record<ActId, string>> = {
 export function Acts({
   acts,
   args,
+  links = {},
   heading = "What you can do here",
 }: {
   acts: Act[];
   /** The leading arguments each write takes, before any the person supplies. */
   args: Partial<Record<ActId, unknown[]>>;
+  /** Acts carried by their own page, and where that page is. */
+  links?: Partial<Record<ActId, string>>;
   heading?: string;
 }) {
   const kit = useTransactionKit();
@@ -160,6 +166,10 @@ export function Acts({
                 <div className="shrink-0">
                   {!a.available ? (
                     <span className="type-caption">Not available</span>
+                  ) : links[a.id] ? (
+                    <Link href={links[a.id]!}>
+                      <Button>{LABEL[a.id]}</Button>
+                    </Link>
                   ) : elsewhere ? (
                     <span className="type-caption">{elsewhere}</span>
                   ) : (

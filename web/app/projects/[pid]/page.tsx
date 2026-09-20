@@ -129,6 +129,7 @@ export default function Site({ params }: { params: Promise<{ pid: string }> }) {
               cancel_project: [pid],
               add_milestone: [pid],
             }}
+            links={{ add_milestone: `/projects/${pid}/propose` }}
             heading="What you can do on this site"
           />
         </section>
