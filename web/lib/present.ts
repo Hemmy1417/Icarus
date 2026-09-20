@@ -215,7 +215,7 @@ export function lineName(line: {
  */
 export function prose(text: string | null | undefined): string {
   return String(text ?? "")
-    .replace(/[ --]/g, " ")
+    .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, " ")
     .replace(/[ \t]+/g, " ")
     .trim();
 }
@@ -230,6 +230,21 @@ export const LINE_NOTE_MAX = 200;
 
 export function wasCut(text: string | null | undefined): boolean {
   return String(text ?? "").length >= LINE_NOTE_MAX;
+}
+
+/**
+ * The contract's own sentence from a refused write, tidied into one. The
+ * wording is the contract's and is never replaced: a refusal a person reads
+ * should be the reason the chain gave, not this app's paraphrase of it.
+ */
+export function refusal(text: string): string {
+  const body = String(text ?? "")
+    .replace(/\[EXPECTED\]|\[LLM_ERROR\]/g, "")
+    .replace(/^[\s:]+/, "")
+    .trim();
+  if (!body) return "The contract refused this action.";
+  const sentence = body[0]!.toUpperCase() + body.slice(1);
+  return /[.!?]$/.test(sentence) ? sentence : `${sentence}.`;
 }
 
 const GEN_WEI = 10n ** 18n;

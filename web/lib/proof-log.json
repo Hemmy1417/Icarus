@@ -1,15 +1,15 @@
 {
-  "address": "0x6270C4b2b3702a63Baf82f6e85b828167B177AC3",
-  "source_commit": "5796b65",
-  "finished_at": "2026-09-20T17:50:10.386Z",
+  "address": "0x38b195DF0E491F2B53347fb856D50090cE1C7823",
+  "source_commit": "2314191",
+  "finished_at": "2026-09-20T18:59:58.056Z",
   "rounds": {
-    "ms-00001/1": "0x55e75365a70edc2afc2eeacda981be4b706df921e47b995471b1813087989023",
-    "ms-00002/1": "0x108a09fd7aa44ef77d1706a604cf9619a69849ae983cb82a9f147518e5c15ac9",
-    "ms-00003/1": "0xf02b2763acc95e2d4bcc31419d55d8878edef5ec4bebb9508b664d3ef16750d9",
-    "ms-00004/1": "0x13c5aee50fac7091c92ea7d31d19b8f622f309d7897309cebe32e02f57314836",
-    "ms-00005/1": "0xec08c61caeaba79af9095066ee8033e9756076f06c9b89215c95667a40eefee6",
-    "ms-00006/1": "0x1018326371c202287b74c0b3eb3a660f3be2013c5db58b64a56686413b4b327f",
-    "ms-00002/2": "0xb97e5a08c53139c45a143d91433e26ab1fa0a524a3b7cafd03ab4785e5bdb0df"
+    "ms-00001/1": "0xc4b3ebd9abe5d349c794c25a1b968699473a5d56f97ceea43a4b55f20c107532",
+    "ms-00002/1": "0xd748e1211fd1238da9b0478e6b1913c4b8649ac1fd0321b88429f97b4e6ee4c6",
+    "ms-00003/1": "0xa0c939b2895639dff79afe2a7fe53112c56fa923dec771b59ec5d15381d70a47",
+    "ms-00004/1": "0x03a07333b80506d631d874e1b65d114a8c04627a95fae7b7bf360a8ea49b706a",
+    "ms-00005/1": "0x80fb23670c3db16a4c3d71a4c4fc02dc07875a2f0dacd479123bdf68ae27dad8",
+    "ms-00006/1": "0x603984211f681914ee9b1f0810ba097fc2c2ecb72ab1382d6264f60a0a83961c",
+    "ms-00002/2": "0xa4e9a59d9db4b171b032b1077a106ea8c4cc211f00854e1514939b5c7ad603d8"
   },
   "proofs": [
     {
@@ -20,9 +20,9 @@
       "lines": {
         "E1": "INSTALLED"
       },
-      "seconds": 88,
-      "hash": "0x55e75365a70edc2afc2eeacda981be4b706df921e47b995471b1813087989023",
-      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x55e75365a70edc2afc2eeacda981be4b706df921e47b995471b1813087989023"
+      "seconds": 97,
+      "hash": "0xc4b3ebd9abe5d349c794c25a1b968699473a5d56f97ceea43a4b55f20c107532",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0xc4b3ebd9abe5d349c794c25a1b968699473a5d56f97ceea43a4b55f20c107532"
     },
     {
       "step": "appealcase.assess",
@@ -32,9 +32,9 @@
       "lines": {
         "E1": "INSTALLED"
       },
-      "seconds": 62,
-      "hash": "0x108a09fd7aa44ef77d1706a604cf9619a69849ae983cb82a9f147518e5c15ac9",
-      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x108a09fd7aa44ef77d1706a604cf9619a69849ae983cb82a9f147518e5c15ac9"
+      "seconds": 82,
+      "hash": "0xd748e1211fd1238da9b0478e6b1913c4b8649ac1fd0321b88429f97b4e6ee4c6",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0xd748e1211fd1238da9b0478e6b1913c4b8649ac1fd0321b88429f97b4e6ee4c6"
     },
     {
       "step": "appeal.decide",
@@ -42,9 +42,9 @@
       "round": 2,
       "decision": "ACCEPTED",
       "lines": null,
-      "seconds": 103,
-      "hash": "0xb97e5a08c53139c45a143d91433e26ab1fa0a524a3b7cafd03ab4785e5bdb0df",
-      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0xb97e5a08c53139c45a143d91433e26ab1fa0a524a3b7cafd03ab4785e5bdb0df"
+      "seconds": 64,
+      "hash": "0xa4e9a59d9db4b171b032b1077a106ea8c4cc211f00854e1514939b5c7ad603d8",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0xa4e9a59d9db4b171b032b1077a106ea8c4cc211f00854e1514939b5c7ad603d8"
     },
     {
       "step": "paper.assess",
@@ -52,11 +52,11 @@
       "round": 1,
       "decision": "UNDETERMINED",
       "lines": {
-        "E1": "NOT_SHOWN"
+        "E1": "UNIDENTIFIED"
       },
-      "seconds": 59,
-      "hash": "0xf02b2763acc95e2d4bcc31419d55d8878edef5ec4bebb9508b664d3ef16750d9",
-      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0xf02b2763acc95e2d4bcc31419d55d8878edef5ec4bebb9508b664d3ef16750d9"
+      "seconds": 72,
+      "hash": "0xa0c939b2895639dff79afe2a7fe53112c56fa923dec771b59ec5d15381d70a47",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0xa0c939b2895639dff79afe2a7fe53112c56fa923dec771b59ec5d15381d70a47"
     },
     {
       "step": "mismatch.assess",
@@ -66,9 +66,9 @@
       "lines": {
         "E1": "ABSENT"
       },
-      "seconds": 147,
-      "hash": "0x13c5aee50fac7091c92ea7d31d19b8f622f309d7897309cebe32e02f57314836",
-      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x13c5aee50fac7091c92ea7d31d19b8f622f309d7897309cebe32e02f57314836"
+      "seconds": 70,
+      "hash": "0x03a07333b80506d631d874e1b65d114a8c04627a95fae7b7bf360a8ea49b706a",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x03a07333b80506d631d874e1b65d114a8c04627a95fae7b7bf360a8ea49b706a"
     },
     {
       "step": "battery.assess",
@@ -79,9 +79,9 @@
         "E1": "INSTALLED",
         "E2": "NOT_SHOWN"
       },
-      "seconds": 66,
-      "hash": "0xec08c61caeaba79af9095066ee8033e9756076f06c9b89215c95667a40eefee6",
-      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0xec08c61caeaba79af9095066ee8033e9756076f06c9b89215c95667a40eefee6"
+      "seconds": 86,
+      "hash": "0x80fb23670c3db16a4c3d71a4c4fc02dc07875a2f0dacd479123bdf68ae27dad8",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x80fb23670c3db16a4c3d71a4c4fc02dc07875a2f0dacd479123bdf68ae27dad8"
     },
     {
       "step": "offgrid.assess",
@@ -93,23 +93,10 @@
         "E2": "INSTALLED",
         "E3": "INSTALLED"
       },
-      "seconds": 64,
-      "hash": "0x1018326371c202287b74c0b3eb3a660f3be2013c5db58b64a56686413b4b327f",
-      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x1018326371c202287b74c0b3eb3a660f3be2013c5db58b64a56686413b4b327f"
+      "seconds": 82,
+      "hash": "0x603984211f681914ee9b1f0810ba097fc2c2ecb72ab1382d6264f60a0a83961c",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x603984211f681914ee9b1f0810ba097fc2c2ecb72ab1382d6264f60a0a83961c"
     }
   ],
-  "no_consensus": [
-    {
-      "step": "flagship.assess",
-      "hash": "0xf50a906e25b4479e80eab7b692144f667da075e4730877de86b656bbb5e86079",
-      "at": "2026-09-20T16:40:31.215Z",
-      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0xf50a906e25b4479e80eab7b692144f667da075e4730877de86b656bbb5e86079"
-    },
-    {
-      "step": "appeal.decide",
-      "hash": "0xcb2ae5eb1cf299e7651755f8381643f0628a55600b7ddf86e094454d10f0b144",
-      "at": "2026-09-20T17:27:27.624Z",
-      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0xcb2ae5eb1cf299e7651755f8381643f0628a55600b7ddf86e094454d10f0b144"
-    }
-  ]
+  "no_consensus": []
 }
