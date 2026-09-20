@@ -1,0 +1,159 @@
+@import "tailwindcss";
+
+/*
+ * ICARUS. An editorial data observatory printed on warm paper. The page is a
+ * 1200px column of alternating white and ash bands; depth is surface contrast
+ * and hairlines, never a shadow. Headings are set in a whisper weight at 400
+ * and never bolder. A single ember orange marks a finding, underlines a link
+ * and draws the one line on a schedule that matters; it is never a fill for a
+ * button, and no other chromatic colour is admitted. Status is carried by
+ * words and position, because accepted, rejected and undetermined are not
+ * good, bad and warning. The full contract this file answers to is in
+ * docs/design.md.
+ */
+
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: var(--font-space-grotesk), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  --color-graphite: #202020;
+  --color-canvas-white: #ffffff;
+  --color-ash: #efefef;
+  --color-fog: #f5f5f5;
+  --color-ivory: #ebe6dd;
+  --color-steel: #4d4d4d;
+  --color-slate: #828282;
+  --color-mist: #e8e8e8;
+  --color-ember: #ff682c;
+  --color-brass: #816729;
+
+  --radius-button: 0px;
+  --radius-card: 8px;
+  --radius-data: 20px;
+  --radius-tag: 20px;
+  --radius-pill: 200px;
+
+  --spacing-section: 80px;
+  --spacing-card: 40px;
+  --spacing-element: 20px;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  background: var(--color-canvas-white);
+}
+
+body {
+  background: var(--color-canvas-white);
+  color: var(--color-steel);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: #ffd9c9;
+  color: var(--color-graphite);
+}
+
+/*
+ * The display face carries every heading, nav item and button label at weight
+ * 400 with -0.02em tracking. The whisper weight is the signature of this
+ * reference, so synthetic bolding is refused outright rather than left to
+ * each component to remember.
+ */
+@utility display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: var(--color-graphite);
+}
+
+@utility type-display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 66px;
+  line-height: 0.91;
+  letter-spacing: -1.32px;
+  color: var(--color-graphite);
+}
+
+@utility type-heading-lg {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 40px;
+  line-height: 1.2;
+  letter-spacing: -0.8px;
+  color: var(--color-graphite);
+}
+
+@utility type-heading {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 32px;
+  line-height: 1.19;
+  letter-spacing: -0.64px;
+  color: var(--color-graphite);
+}
+
+@utility type-subheading {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  color: var(--color-graphite);
+}
+
+@utility type-caption {
+  font-size: 14px;
+  line-height: 1.43;
+  color: var(--color-slate);
+}
+
+/* A machine value: an identifier, a digest, a quantity read off a plate. */
+@utility figure {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: var(--color-graphite);
+}
+
+/* The reference forbids a bolder cut of the display face anywhere. */
+h1,
+h2,
+h3,
+h4,
+button,
+nav a {
+  font-synthesis-weight: none;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

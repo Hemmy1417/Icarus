@@ -60,6 +60,7 @@ async function balance(role) {
 }
 
 const ROUNDS = new Set(["request_assessment", "decide_appeal"]);
+const ROUND_ATTEMPTS = 3;
 
 /**
  * One signed write, remembered by name so a rerun skips what already landed.
@@ -72,46 +73,57 @@ async function step(name, role, fn, args, { value = 0n, transfer = false, refuse
     return run.steps[name];
   }
   run.pending ??= {};
-  let hash = run.pending[name];
-  if (hash) {
-    say(`${name}: waiting again on ${hash}, sent earlier`);
-  } else {
-    for (let attempt = 0; ; attempt++) {
-      try {
-        const client = clientFor(role);
-        const fees = transfer
-          ? await transferFees(client, { address: ADDRESS, functionName: fn, args, value })
-          : await plainFees(client);
-        hash = await client.writeContract({ address: ADDRESS, functionName: fn, args, value, fees });
-        break;
-      } catch (e) {
-        if (attempt >= 4) throw e;
-        say(`${name}: send failed (${String(e.message).slice(0, 80)}), retrying`);
-        await sleep(8000 * (attempt + 1));
+  // A round is read and judged by a panel that must reach a majority. When it
+  // cannot, the write is UNDETERMINED: nothing was recorded and the milestone
+  // is untouched, so asking again is safe and draws a fresh panel. On this
+  // network that happens often enough to matter, and why is measured in
+  // docs/PROBE-REPORT.md. Every attempt is kept in run.no_consensus so the
+  // proof log reports the rounds that failed, not only the one that carried.
+  const attempts = ROUNDS.has(fn) ? ROUND_ATTEMPTS : 1;
+  let hash, t, secs;
+  for (let ask = 1; ; ask++) {
+    hash = run.pending[name];
+    if (hash) {
+      say(`${name}: waiting again on ${hash}, sent earlier`);
+    } else {
+      for (let attempt = 0; ; attempt++) {
+        try {
+          const client = clientFor(role);
+          const fees = transfer
+            ? await transferFees(client, { address: ADDRESS, functionName: fn, args, value })
+            : await plainFees(client);
+          hash = await client.writeContract({ address: ADDRESS, functionName: fn, args, value, fees });
+          break;
+        } catch (e) {
+          if (attempt >= 4) throw e;
+          say(`${name}: send failed (${String(e.message).slice(0, 80)}), retrying`);
+          await sleep(8000 * (attempt + 1));
+        }
       }
+      run.pending[name] = hash;
+      save();
+      say(`${name}: ${role} ${fn} ${hash}`);
     }
-    run.pending[name] = hash;
-    save();
-    say(`${name}: ${role} ${fn} ${hash}`);
-  }
-  const t0 = Date.now();
-  let t;
-  try {
-    t = await waitFinal(hash, { label: name, tries: ROUNDS.has(fn) ? 450 : 150 });
-  } catch (e) {
-    if (/UNDETERMINED|CANCELED/.test(e.message)) {
-      // No consensus: nothing was recorded. A rerun sends the step again.
+    const t0 = Date.now();
+    try {
+      t = await waitFinal(hash, { label: name, tries: ROUNDS.has(fn) ? 450 : 150 });
+      secs = Math.round((Date.now() - t0) / 1000);
+      break;
+    } catch (e) {
+      if (!/UNDETERMINED|CANCELED/.test(e.message)) throw e;
       delete run.pending[name];
       (run.no_consensus ??= []).push({ name, hash, at: new Date().toISOString() });
       save();
+      if (ask >= attempts) throw e;
+      say(`${name}: no majority, so nothing was recorded; asking again `
+        + `(${ask + 1} of ${attempts})`);
+      await sleep(15000);
     }
-    throw e;
   }
   delete run.pending[name];
   const leader = leaderOf(t);
   const ok = leader?.execution_result === "SUCCESS";
   const text = resultText(leader);
-  const secs = Math.round((Date.now() - t0) / 1000);
   say(`${name}: ${t.status} ${t.result_name} leader=${leader?.execution_result} in ${secs} s`);
   if (refused) {
     assert(!ok, `${name} should have been refused`);
@@ -382,4 +394,15 @@ assert((await readJson("get_balance", [KEYS.INSTALLER.addr])).claimable === "0",
        "the ledger still owes after a claim");
 
 say(`stats ${JSON.stringify(await readJson("get_stats", []))}`);
+
+// Rounds that reached no majority recorded nothing and were asked again. They
+// are reported because a run that only shows the attempt that carried is not
+// reporting what this network does.
+const missed = run.no_consensus ?? [];
+if (missed.length) {
+  say(`${missed.length} round(s) reached no majority and were asked again:`);
+  for (const r of missed) say(`  ${r.name} ${r.hash}`);
+} else {
+  say("every round reached a majority on its first asking");
+}
 say("every proof passed");
