@@ -1,105 +1,122 @@
 "use client";
 
 /**
- * Every project on this deployment. A project is a site with an owner, an
- * installer and an escrow; its milestones are what actually get judged, so
- * each row carries the milestone counts rather than making a reader open it
- * to find out whether anything has happened.
+ * The record, as an index.
+ *
+ * Every milestone a panel has read, one row each, ordered newest first. A
+ * row carries the site, what was contracted and what was found, and nothing
+ * else; a reader who wants the evidence opens the case. Projects that have
+ * nothing to show yet are listed below, quietly.
  */
 import Link from "next/link";
 
-import { Band, Card, Empty, Heading, Loading, ReadFailure, Tag } from "@/components/bits";
-import { gen, milestoneState, plural, projectState, systemType } from "@/lib/present";
+import { Loading, ReadFailure } from "@/components/bits";
+import { decision, gen, milestoneState, plural } from "@/lib/present";
 import { getProject, listProjects } from "@/lib/read";
-import type { Project } from "@/lib/types";
+import type { MilestoneSummary, Project } from "@/lib/types";
 import { useChain } from "@/lib/useChain";
 
-function Row({ p }: { p: Project }) {
-  const decided = p.milestone_summaries.filter((m) => m.rounds_count > 0);
-  const settled = p.milestone_summaries.filter((m) => m.state === "FINALIZED");
-  return (
-    <Link href={`/projects/${p.project_id}`} className="block">
-      <Card className="transition-colors hover:bg-fog">
-        <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
-          <div className="min-w-0 max-w-[640px]">
-            <h3 className="type-subheading">{p.title}</h3>
-            <p className="mt-3 text-[15px] leading-[1.55] text-steel">{p.description}</p>
-            <div className="mt-5 flex flex-wrap gap-3">
-              <Tag muted>{systemType(p.system_type)}</Tag>
-              {p.site ? <Tag muted>{p.site}</Tag> : null}
-              <Tag muted>{projectState(p.state)}</Tag>
-            </div>
-          </div>
-          <dl className="flex shrink-0 gap-10 md:flex-col md:gap-4 md:text-right">
-            <div>
-              <dt className="type-caption">Milestones</dt>
-              <dd className="figure text-[15px] text-graphite">{p.milestone_summaries.length}</dd>
-            </div>
-            <div>
-              <dt className="type-caption">Decided</dt>
-              <dd className="figure text-[15px] text-graphite">{decided.length}</dd>
-            </div>
-            <div>
-              <dt className="type-caption">Settled</dt>
-              <dd className="figure text-[15px] text-graphite">{settled.length}</dd>
-            </div>
-            <div>
-              <dt className="type-caption">Escrow</dt>
-              <dd className="figure text-[15px] text-graphite">{gen(p.escrow_wei)}</dd>
-            </div>
-          </dl>
-        </div>
-
-        {p.milestone_summaries.length ? (
-          <ul className="mt-8 flex flex-wrap gap-3 border-t border-mist pt-5">
-            {p.milestone_summaries.map((m) => (
-              <li key={m.milestone_id}>
-                <Tag muted={m.state !== "FINALIZED"}>
-                  {m.title}: {milestoneState(m.state).toLowerCase()}
-                </Tag>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-      </Card>
-    </Link>
-  );
+interface Row {
+  m: MilestoneSummary;
+  site: string;
+  projectId: string;
 }
 
-export default function Projects() {
-  const page = useChain("projects", async (fresh) => {
-    const list = await listProjects(0, 20, fresh);
-    const rows = await Promise.all(list.project_ids.map((id) => getProject(id, fresh)));
-    return { total: list.total, projects: rows.filter((p): p is Project => !!p) };
+export default function Record() {
+  const page = useChain("record", async (fresh) => {
+    const list = await listProjects(0, 24, fresh);
+    const projects = (await Promise.all(list.project_ids.map((id) => getProject(id, fresh))))
+      .filter((p): p is Project => !!p);
+    const rows: Row[] = projects.flatMap((p) =>
+      p.milestone_summaries.map((m) => ({ m, site: p.title, projectId: p.project_id })),
+    );
+    return {
+      read: rows.filter((r) => r.m.rounds_count > 0).reverse(),
+      waiting: rows.filter((r) => r.m.rounds_count === 0).reverse(),
+      projects: projects.length,
+    };
   });
 
   return (
-    <Band tone="white">
-      <Heading
-        eyebrow="The record"
-        title="Projects"
-        lead="Every project on this deployment, read from the contract as this page loads."
-      />
+    <div className="mx-auto w-full max-w-[1200px] px-5 md:px-10">
+      <header className="py-20">
+        <h1 className="text-[clamp(40px,6vw,76px)] font-normal leading-[0.95] tracking-[-0.03em] text-graphite [font-family:var(--font-display)]">
+          The record
+        </h1>
+        <p className="mt-6 max-w-[52ch] text-[18px] leading-[1.55] text-steel">
+          Every case on this deployment, read from the contract as this page loads.
+        </p>
+      </header>
 
-      {page.loading ? <Loading what="the projects" /> : null}
-      {page.error ? <ReadFailure what="the projects" /> : null}
+      {page.loading ? <Loading what="the record" /> : null}
+      {page.error ? <ReadFailure what="the record" /> : null}
 
       {page.data ? (
-        page.data.projects.length === 0 ? (
-          <Empty>No project has been opened on this deployment yet.</Empty>
-        ) : (
-          <>
-            <p className="type-caption mb-5">
-              {plural(page.data.total, "project")} on this deployment.
-            </p>
-            <div className="flex flex-col gap-5">
-              {page.data.projects.map((p) => (
-                <Row key={p.project_id} p={p} />
-              ))}
-            </div>
-          </>
-        )
+        <>
+          {page.data.read.length === 0 ? (
+            <p className="text-[15px] text-slate">No case has been read yet.</p>
+          ) : (
+            <ul className="border-t border-mist">
+              {page.data.read.map(({ m, site }) => {
+                const said = m.standing ? decision(m.standing.decision) : milestoneState(m.state);
+                return (
+                  <li key={m.milestone_id}>
+                    <Link
+                      href={`/milestones/${m.milestone_id}`}
+                      className="group grid gap-4 border-b border-mist py-10 md:grid-cols-[minmax(0,1fr)_minmax(0,320px)] md:items-baseline md:gap-12"
+                    >
+                      <div className="min-w-0">
+                        <p className="type-caption">{site}</p>
+                        <p className="mt-3 text-[26px] leading-[1.2] tracking-[-0.02em] text-graphite [font-family:var(--font-display)]">
+                          {m.title}
+                        </p>
+                      </div>
+                      <div className="md:text-right">
+                        <p className="text-[26px] leading-[1.2] tracking-[-0.02em] text-graphite [font-family:var(--font-display)] group-hover:underline group-hover:decoration-ember group-hover:decoration-2 group-hover:underline-offset-[6px]">
+                          {said}
+                        </p>
+                        <p className="type-caption mt-2">
+                          {gen(m.payment_wei)}
+                          {m.state === "FINALIZED" ? ", settled" : ""}
+                          {m.standing?.appealed ? ", contested" : ""}
+                        </p>
+                      </div>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+
+          {page.data.waiting.length ? (
+            <section className="py-20">
+              <h2 className="display mb-8 text-[14px] uppercase tracking-[0.12em] text-slate">
+                Waiting on evidence
+              </h2>
+              <ul className="flex flex-col gap-4">
+                {page.data.waiting.map(({ m, site }) => (
+                  <li key={m.milestone_id}>
+                    <Link
+                      href={`/milestones/${m.milestone_id}`}
+                      className="flex flex-wrap items-baseline justify-between gap-4 text-[15px] text-steel hover:text-graphite"
+                    >
+                      <span>
+                        {m.title}
+                        <span className="type-caption"> {site}</span>
+                      </span>
+                      <span className="type-caption">{milestoneState(m.state)}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          <p className="type-caption border-t border-mist py-10">
+            {plural(page.data.projects, "project")} on this deployment.
+          </p>
+        </>
       ) : null}
-    </Band>
+    </div>
   );
 }

@@ -76,23 +76,16 @@ export function Shell({ children }: { children: ReactNode }) {
 
       <main className="flex-1">{children}</main>
 
-      <footer className="bg-ash">
-        <div className="mx-auto w-full max-w-[1200px] px-5 py-10 md:px-10">
-          <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-            <Wordmark />
-            <nav className="flex flex-wrap items-center gap-5">
-              {NAV.map((item) => (
-                <Link key={item.href} href={item.href} className="type-caption hover:text-graphite">
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
-          </div>
-          <p className="type-caption mt-5 max-w-[640px]">
-            A milestone pays when the evidence shows the equipment the contract named was
-            installed. Nothing on these pages is a statement by this site: every figure is read
-            from the contract when the page loads.
-          </p>
+      <footer className="border-t border-mist">
+        <div className="mx-auto flex w-full max-w-[1200px] flex-wrap items-center justify-between gap-6 px-5 py-12 md:px-10">
+          <Wordmark />
+          <nav className="flex flex-wrap items-center gap-6">
+            {NAV.map((item) => (
+              <Link key={item.href} href={item.href} className="type-caption hover:text-graphite">
+                {item.label}
+              </Link>
+            ))}
+          </nav>
         </div>
       </footer>
     </div>

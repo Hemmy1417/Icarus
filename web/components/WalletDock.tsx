@@ -2,16 +2,16 @@
 
 /**
  * The wallet, as the one graphite button the reference puts on the right of
- * the nav pill. A connected address is machine text, so it is shortened and
- * set in Inter with tabular figures: the only identifier the interface shows
- * outside a verification view, because a person needs to know which account
- * is about to sign.
+ * the nav pill.
+ *
+ * The connected address is machine text and never reaches the page surface.
+ * It is shown inside the dropdown, where somebody has asked which account is
+ * about to sign, which is the one moment they need to know.
  */
 import { useEffect, useRef, useState } from "react";
 
 import { Button } from "./bits";
 import { useWallet } from "@/lib/wallet";
-import { shortAddress } from "@/lib/present";
 
 export function WalletDock() {
   const w = useWallet();
@@ -45,7 +45,7 @@ export function WalletDock() {
           aria-expanded={open}
           className="display rounded-pill bg-canvas-white px-4 py-2 text-[14px] text-graphite"
         >
-          <span className="figure">{shortAddress(w.address)}</span>
+          Connected
         </button>
         {open ? (
           <div className="absolute right-0 top-[calc(100%+8px)] w-[300px] rounded-card border border-mist bg-canvas-white p-5">

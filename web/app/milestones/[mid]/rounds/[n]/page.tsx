@@ -1,42 +1,45 @@
 "use client";
 
 /**
- * One reading, in full: what each node saw in each photograph, what it made
- * of each line and each criterion, and which of those the contract actually
- * used. This is the page a sceptic reads, so it withholds nothing and
- * summarises nothing.
+ * What each node actually saw.
+ *
+ * This is the page for a reader who does not believe the verdict. Before
+ * judging anything, every node is asked only to describe what is visible and
+ * transcribe any text on a label, without being shown the schedule; those
+ * readings are kept, and they are reproduced here verbatim. A node that
+ * received no image says so, and says nothing else.
  */
+import Link from "next/link";
 import { use } from "react";
 
+import { Loading, ReadFailure } from "@/components/bits";
 import {
-  Band, DataCard, EmberLink, Empty, Field, Heading, Loading, ReadFailure, Tag,
-} from "@/components/bits";
-import {
-  criterionStatus, decision, itemKind, itemName, lineStatus, moment, prose, quality, roleLower,
-  roundName, shortDigest, wasCut,
+  decision, lineName, lineStatus, moment, prose, quality, referenceNames, roleLower, roundName, writeOut,
 } from "@/lib/present";
-import { getRound } from "@/lib/read";
-import type { ImageReading, Round } from "@/lib/types";
+import { getMilestone, getRound } from "@/lib/read";
+import type { ImageReading, Milestone, Round } from "@/lib/types";
 import { useChain } from "@/lib/useChain";
 
-function Reading({ r }: { r: ImageReading }) {
+
+function Reading({ r, n }: { r: ImageReading; n: number }) {
+  const ordinal = ["first", "second", "third", "fourth", "fifth", "sixth"][n] ?? `${n + 1}th`;
   return (
-    <li className="border-t border-mist px-10 py-6 first:border-t-0">
-      <div className="flex flex-wrap items-center gap-3">
-        <Tag>{itemKind("IMAGE", r.origin)}</Tag>
-        <Tag muted>Filed by the {roleLower(r.role)}</Tag>
-        {r.claimed_line ? <Tag muted>Offered for line {r.claimed_line}</Tag> : null}
-      </div>
+    <li className="border-t border-mist py-10">
+      <p className="type-caption">
+        The {ordinal} item, filed by the {roleLower(r.role)}
+      </p>
 
       {r.readable ? (
         <>
-          <p className="mt-5 text-[15px] leading-[1.6] text-steel">{prose(r.shows)}</p>
+          <p className="mt-5 max-w-[62ch] text-[17px] leading-[1.6] text-steel">
+            {prose(r.shows)}
+          </p>
           {r.labels.length ? (
-            <div className="mt-5">
-              <p className="type-caption mb-2">Text read on labels, transcribed as it was read</p>
-              <ul className="flex flex-col gap-1">
+            <div className="mt-8">
+              <p className="type-caption mb-3">Text it could read on a label</p>
+              <ul className="flex flex-col gap-1.5">
                 {r.labels.map((label, i) => (
-                  <li key={i} className="figure text-[14px] leading-[1.5] text-graphite">
+                  <li key={i} className="figure text-[15px] leading-[1.45] text-graphite">
                     {prose(label)}
                   </li>
                 ))}
@@ -46,12 +49,12 @@ function Reading({ r }: { r: ImageReading }) {
             <p className="type-caption mt-4">No text on a label was legible.</p>
           )}
           {r.concerns.length ? (
-            <div className="mt-5">
-              <p className="type-caption mb-2">What the panel thought worth flagging</p>
-              <ul className="flex flex-col gap-1">
-                {r.concerns.map((concern, i) => (
+            <div className="mt-8">
+              <p className="type-caption mb-3">What it thought worth flagging</p>
+              <ul className="flex flex-col gap-1.5">
+                {r.concerns.map((c, i) => (
                   <li key={i} className="text-[15px] leading-[1.5] text-steel">
-                    {prose(concern)}
+                    {prose(c)}
                   </li>
                 ))}
               </ul>
@@ -59,16 +62,16 @@ function Reading({ r }: { r: ImageReading }) {
           ) : null}
         </>
       ) : (
-        <p className="mt-5 text-[15px] leading-[1.6] text-steel">
-          This node did not receive the image, so it could see nothing either way. A node that
-          cannot see the evidence votes against every outcome rather than guessing at one.
+        <p className="mt-5 max-w-[62ch] text-[17px] leading-[1.6] text-steel">
+          This node never received the photograph, so it could see nothing either way. A node
+          that cannot see the evidence votes against every outcome rather than guessing at one.
         </p>
       )}
     </li>
   );
 }
 
-export default function RoundPage({
+export default function ReadingPage({
   params,
 }: {
   params: Promise<{ mid: string; n: string }>;
@@ -76,192 +79,117 @@ export default function RoundPage({
   const { mid, n } = use(params);
   const number = Number(n);
   const round = useChain<Round | null>(`round.${mid}.${number}`, () => getRound(mid, number));
+  const milestone = useChain<Milestone | null>(`milestone.${mid}`, (fresh) =>
+    getMilestone(mid, fresh),
+  );
 
-  if (round.loading) {
-    return (
-      <Band tone="white">
-        <Loading what="this reading" />
-      </Band>
-    );
-  }
-  if (round.error) {
-    return (
-      <Band tone="white">
-        <ReadFailure what="this reading" />
-      </Band>
-    );
-  }
+  const frame = "mx-auto w-full max-w-[1200px] px-5 md:px-10";
+
+  if (round.loading) return <div className={`${frame} py-24`}><Loading what="this reading" /></div>;
+  if (round.error) return <div className={`${frame} py-24`}><ReadFailure what="this reading" /></div>;
   if (!round.data) {
     return (
-      <Band tone="white">
-        <Heading title="No such reading" lead="This milestone has no reading by that number." />
-      </Band>
+      <div className={`${frame} py-24`}>
+        <h1 className="type-heading">Nothing here</h1>
+        <p className="mt-4 text-[15px] text-steel">This case has no reading by that number.</p>
+      </div>
     );
   }
 
   const r = round.data;
-  const lineIds = Object.keys(r.lines).sort();
-  const critIds = Object.keys(r.criteria).sort();
+  const terms = milestone.data?.versions.find((v) => v.version === r.version);
+  const lines = terms?.equipment ?? [];
+  const names = referenceNames(lines, terms?.criteria ?? []);
 
   return (
-    <>
-      <Band tone="white">
-        <div className="max-w-[820px]">
-          <p className="type-caption mb-5 uppercase tracking-[0.08em] text-slate">
-            {roundName(r.kind, r.round)}
-            {r.reviewed_round ? `, reviewing round ${r.reviewed_round}` : ""}
-          </p>
-          <h1 className="type-heading-lg">{decision(r.decision)}</h1>
-          <blockquote className="mt-6 border-l-2 border-mist pl-5 text-[18px] leading-[1.6] text-steel">
-            {r.notes.reasoning}
-            <cite className="type-caption mt-2 block not-italic">The panel&apos;s own words.</cite>
-          </blockquote>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Tag muted>Evidence {quality(r.quality).toLowerCase()}</Tag>
-            <Tag muted>Recorded {moment(r.at)}</Tag>
-            <Tag muted>Terms version {r.version}</Tag>
+    <div className={frame}>
+      <header className="border-b border-mist py-20">
+        <p className="type-caption">
+          {roundName(r.kind, r.round)}
+          {r.reviewed_round ? ", judging the case again from the start" : ""}
+        </p>
+        <h1 className="mt-6 text-[clamp(44px,7vw,92px)] font-normal leading-[0.92] tracking-[-0.03em] text-graphite [font-family:var(--font-display)]">
+          {decision(r.decision)}
+        </h1>
+        <p className="mt-8 max-w-[62ch] text-[18px] leading-[1.55] text-steel">
+          {writeOut(r.notes.reasoning, names)}
+        </p>
+        {r.appeal_reason ? (
+          <div className="mt-10 max-w-[62ch] border-l-2 border-ember pl-6">
+            <p className="type-caption mb-2">The owner contested the earlier decision, saying</p>
+            <p className="text-[17px] leading-[1.6] text-steel">{prose(r.appeal_reason)}</p>
+            <p className="type-caption mt-3">
+              The panel is told this is an argument about the evidence, and cannot itself
+              establish or refute anything.
+            </p>
           </div>
-          <p className="type-caption mt-8">
-            <EmberLink href={`/milestones/${mid}`}>Back to the milestone</EmberLink>
-          </p>
+        ) : null}
+        <div className="mt-10 flex flex-wrap items-center gap-6">
+          <span className="type-caption">Evidence {quality(r.quality).toLowerCase()}</span>
+          <span className="type-caption">Read {moment(r.at)}</span>
+          <Link href={`/milestones/${mid}`} className="type-caption hover:text-graphite">
+            Back to the case
+          </Link>
         </div>
-      </Band>
+      </header>
 
-      <Band tone="ash">
-        <Heading
-          eyebrow="Line by line"
-          title="What the panel found"
-          lead="The lines and criteria the contract used to derive the decision are marked; the others were recorded but did not change the outcome."
-        />
-        <DataCard>
+      <section className="py-20">
+        <h2 className="display mb-4 text-[14px] uppercase tracking-[0.12em] text-slate">
+          Before it judged anything
+        </h2>
+        <p className="mb-10 max-w-[62ch] text-[17px] leading-[1.6] text-steel">
+          Each node was asked only to describe what it could see and transcribe any text on a
+          label. It was not shown the schedule, so it could not read the expected answer into the
+          picture.
+        </p>
+        {r.notes.images.length === 0 ? (
+          <p className="text-[15px] text-slate">No photograph was put to this panel.</p>
+        ) : (
           <ul>
-            {lineIds.map((id) => {
-              const drove = r.decisive.lines.includes(id);
-              const basis = r.notes.basis[id] ?? [];
+            {r.notes.images.map((reading, i) => (
+              <Reading key={`${reading.item_id}-${i}`} r={reading} n={i} />
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {lines.length ? (
+        <section className="border-t border-mist py-20">
+          <h2 className="display mb-10 text-[14px] uppercase tracking-[0.12em] text-slate">
+            Then, line by line
+          </h2>
+          <ul>
+            {lines.map((l) => {
+              const drove = r.decisive.lines.includes(l.id);
+              const note = r.notes.line_notes[l.id];
               return (
-                <li key={id} className="border-t border-mist px-10 py-6 first:border-t-0">
-                  <div className="flex flex-col gap-3 md:flex-row md:items-baseline md:justify-between">
-                    <span className="figure text-[15px] text-slate">Line {id}</span>
-                    <span
-                      className={`display text-[17px] ${
-                        drove ? "underline decoration-ember decoration-2 underline-offset-4" : ""
-                      }`}
-                    >
-                      {lineStatus(r.lines[id] ?? "")}
-                    </span>
+                <li
+                  key={l.id}
+                  className="grid gap-4 border-t border-mist py-8 md:grid-cols-[minmax(0,1fr)_minmax(0,300px)] md:gap-12"
+                >
+                  <div className="min-w-0">
+                    <p className="text-[20px] leading-[1.25] tracking-[-0.02em] text-graphite [font-family:var(--font-display)]">
+                      {lineName(l)}
+                    </p>
+                    {note ? (
+                      <p className="mt-3 max-w-[58ch] text-[15px] leading-[1.55] text-steel">
+                        {writeOut(note, names)}
+                      </p>
+                    ) : null}
                   </div>
-                  {r.notes.line_notes[id] ? (
-                    <blockquote className="mt-4 max-w-[720px] border-l-2 border-mist pl-5 text-[15px] leading-[1.55] text-steel">
-                      {prose(r.notes.line_notes[id])}
-                      {wasCut(r.notes.line_notes[id]) ? "…" : ""}
-                      <cite className="type-caption mt-2 block not-italic">
-                        The panel&apos;s own words
-                        {wasCut(r.notes.line_notes[id])
-                          ? ", cut where the contract caps a note at 200 characters."
-                          : "."}
-                      </cite>
-                    </blockquote>
-                  ) : null}
-                  <p className="type-caption mt-3">
-                    {basis.length
-                      ? `Rested on ${basis.map((e) => itemName(e)).join(", ")}.`
-                      : "Rested on nothing the panel cited."}
-                    {r.notes.lines_raw[id] && r.notes.lines_raw[id] !== r.lines[id]
-                      ? ` The panel said ${lineStatus(r.notes.lines_raw[id] ?? "").toLowerCase()}; the contract downgraded it because what it rested on could not carry that finding.`
-                      : ""}
+                  <p
+                    className={`text-[20px] leading-[1.25] tracking-[-0.02em] text-graphite [font-family:var(--font-display)] md:text-right ${
+                      drove ? "underline decoration-ember decoration-2 underline-offset-[6px]" : ""
+                    }`}
+                  >
+                    {r.lines[l.id] ? lineStatus(r.lines[l.id]!) : "Not rated"}
                   </p>
                 </li>
               );
             })}
           </ul>
-        </DataCard>
-
-        {critIds.length ? (
-          <div className="mt-10">
-            <h3 className="type-subheading mb-5">Criteria</h3>
-            <DataCard>
-              <ul>
-                {critIds.map((id) => {
-                  const drove = r.decisive.criteria.includes(id);
-                  const basis = r.notes.criteria_basis[id] ?? [];
-                  return (
-                    <li
-                      key={id}
-                      className="border-t border-mist px-10 py-6 first:border-t-0"
-                    >
-                      <div className="flex flex-col gap-3 md:flex-row md:items-baseline md:justify-between">
-                        <span className="figure text-[15px] text-slate">Criterion {id}</span>
-                        <span
-                          className={`display text-[17px] ${
-                            drove ? "underline decoration-ember decoration-2 underline-offset-4" : ""
-                          }`}
-                        >
-                          {criterionStatus(r.criteria[id] ?? "")}
-                        </span>
-                      </div>
-                      <p className="type-caption mt-3">
-                        {basis.length
-                          ? `Rested on ${basis.map((e) => itemName(e)).join(", ")}.`
-                          : "Rested on nothing the panel cited."}
-                      </p>
-                    </li>
-                  );
-                })}
-              </ul>
-            </DataCard>
-          </div>
-        ) : null}
-      </Band>
-
-      <Band tone="white">
-        <Heading
-          eyebrow="The reading itself"
-          title="What the panel saw in each photograph"
-          lead="Before judging anything, the panel is asked only to describe what is visible and transcribe any text it can read. It is not told what the schedule says, so it cannot read the answer into the picture."
-        />
-        {r.notes.images.length === 0 ? (
-          <Empty>No photograph was put to this panel.</Empty>
-        ) : (
-          <DataCard>
-            <ul>
-              {r.notes.images.map((reading, i) => (
-                <Reading key={`${reading.item_id}-${i}`} r={reading} />
-              ))}
-            </ul>
-          </DataCard>
-        )}
-      </Band>
-
-      <Band tone="ash">
-        <Heading
-          title="The evidence this reading held"
-          lead="Recorded with the round, so a later reader knows exactly which items were in front of the panel."
-        />
-        <DataCard>
-          <ul>
-            {r.evidence.map((e) => (
-              <li
-                key={e.item_id}
-                className="flex flex-col gap-2 border-t border-mist px-10 py-5 first:border-t-0 md:flex-row md:items-baseline md:justify-between"
-              >
-                <span className="text-[15px] text-graphite">
-                  {itemName(e.item_id)}, {itemKind(e.kind).toLowerCase()} from the{" "}
-                  {roleLower(e.role)}
-                  {e.new ? ", filed for the appeal" : ""}
-                </span>
-                <span className="figure text-[13px] text-slate">{shortDigest(e.sha256)}</span>
-              </li>
-            ))}
-          </ul>
-        </DataCard>
-        <div className="mt-10 grid gap-5 md:grid-cols-3">
-          <Field label="Reading">{roundName(r.kind, r.round)}</Field>
-          <Field label="Asked for by">a party to the project</Field>
-          <Field label="Evidence judged">
-            {r.evidence.length} {r.evidence.length === 1 ? "item" : "items"}
-          </Field>
-        </div>
-      </Band>
-    </>
+        </section>
+      ) : null}
+    </div>
   );
 }

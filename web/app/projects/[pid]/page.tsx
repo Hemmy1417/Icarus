@@ -1,215 +1,138 @@
 "use client";
 
 /**
- * One project: who is party to it, what it holds in escrow, and the
- * milestones it will be judged in. The money is stated plainly because an
- * escrow a reader cannot see the shape of is a reason not to trust the
- * thing; reserved, unreserved and paid are three different facts and are
- * shown as three.
+ * A site, and the cases running on it.
+ *
+ * The escrow is stated as three separate facts, because reserved, unreserved
+ * and paid are three different things and collapsing them would hide which
+ * money is actually committed. Everything else here is a list of cases.
  */
 import Link from "next/link";
 import { use } from "react";
 
-import {
-  Band, Card, DataCard, Empty, Field, Heading, Loading, ReadFailure, Tag,
-} from "@/components/bits";
-import {
-  day, decision, gen, milestoneState, milestoneType, moment, plural, projectState, relative,
-  roleLower, systemType,
-} from "@/lib/present";
-import { getEvents, getProject } from "@/lib/read";
-import { roleIn } from "@/lib/acts";
-import type { MilestoneSummary, Project } from "@/lib/types";
+import { Acts } from "@/components/Acts";
+import { Loading, ReadFailure } from "@/components/bits";
+import { projectActs } from "@/lib/acts";
+import { day, decision, gen, milestoneState, projectState, systemType } from "@/lib/present";
+import { getProject } from "@/lib/read";
+import type { Project } from "@/lib/types";
 import { useChain } from "@/lib/useChain";
-import { eventKind } from "@/lib/present";
+import { useWallet } from "@/lib/wallet";
 
-function MilestoneRow({ m, nowMs }: { m: MilestoneSummary; nowMs: number }) {
-  const standing = m.standing;
-  return (
-    <li className="border-t border-mist first:border-t-0">
-      <Link href={`/milestones/${m.milestone_id}`} className="block px-10 py-6 hover:bg-fog">
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          <div className="min-w-0 max-w-[560px]">
-            <div className="type-caption mb-1">{milestoneType(m.milestone_type)}</div>
-            <h4 className="text-[17px] leading-[1.35] text-graphite">{m.title}</h4>
-            <div className="mt-3 flex flex-wrap gap-3">
-              <Tag muted>{plural(m.schedule_lines, "schedule line")}</Tag>
-              <Tag muted>
-                {m.rounds_count
-                  ? plural(m.rounds_count, "reading")
-                  : "not yet read"}
-              </Tag>
-              <Tag muted>Due {day(m.deadline)}</Tag>
-            </div>
-          </div>
-          <div className="shrink-0 md:w-[240px] md:text-right">
-            <div className="display text-[17px]">{milestoneState(m.state)}</div>
-            {standing ? (
-              <div className="type-caption mt-1">
-                {decision(standing.decision)} on {day(standing.at)}
-                {standing.appealed ? ", contested" : ""}
-              </div>
-            ) : null}
-            {standing?.appealable && !standing.appealed && standing.window_ends ? (
-              <div className="type-caption mt-1">
-                Open to challenge {relative(standing.window_ends, nowMs)}
-              </div>
-            ) : null}
-            <div className="figure mt-3 text-[15px] text-graphite">{gen(m.payment_wei)}</div>
-          </div>
-        </div>
-      </Link>
-    </li>
-  );
-}
-
-export default function ProjectPage({ params }: { params: Promise<{ pid: string }> }) {
+export default function Site({ params }: { params: Promise<{ pid: string }> }) {
   const { pid } = use(params);
+  const wallet = useWallet();
   const project = useChain<Project | null>(`project.${pid}`, (fresh) => getProject(pid, fresh));
-  const events = useChain(`events.${pid}`, (fresh) => getEvents(pid, 0, 30, fresh));
 
-  if (project.loading) {
-    return (
-      <Band tone="white">
-        <Loading what="this project" />
-      </Band>
-    );
-  }
-  if (project.error) {
-    return (
-      <Band tone="white">
-        <ReadFailure what="this project" />
-      </Band>
-    );
-  }
+  const frame = "mx-auto w-full max-w-[1200px] px-5 md:px-10";
+
+  if (project.loading) return <div className={`${frame} py-24`}><Loading what="this site" /></div>;
+  if (project.error) return <div className={`${frame} py-24`}><ReadFailure what="this site" /></div>;
   if (!project.data) {
     return (
-      <Band tone="white">
-        <Heading title="No such project" lead="Nothing on this deployment carries that name." />
-      </Band>
+      <div className={`${frame} py-24`}>
+        <h1 className="type-heading">Nothing here</h1>
+        <p className="mt-4 text-[15px] text-steel">No site on this deployment carries that name.</p>
+      </div>
     );
   }
 
   const p = project.data;
-  const nowMs = new Date(p.now).getTime();
-  // The log records an address; a page says which party that was, or nothing.
-  const actor = (addr: string) => roleIn(p, addr);
+  const acts = projectActs(p, wallet.address);
 
   return (
-    <>
-      <Band tone="white">
-        <div className="max-w-[820px]">
-          <p className="type-caption mb-5 uppercase tracking-[0.08em] text-slate">
-            {systemType(p.system_type)}
-          </p>
-          <h1 className="type-heading-lg">{p.title}</h1>
-          <p className="mt-5 text-[18px] leading-[1.6] text-steel">{p.description}</p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Tag muted>{projectState(p.state)}</Tag>
-            {p.site ? <Tag muted>{p.site}</Tag> : null}
-            {p.capacity_kw ? <Tag muted>{p.capacity_kw} kW</Tag> : null}
-            <Tag muted>Opened {day(p.created_at)}</Tag>
-          </div>
+    <div className={frame}>
+      <header className="border-b border-mist py-20">
+        <p className="type-caption">{systemType(p.system_type)}</p>
+        <h1 className="mt-6 max-w-[18ch] text-[clamp(40px,6vw,76px)] font-normal leading-[0.95] tracking-[-0.03em] text-graphite [font-family:var(--font-display)]">
+          {p.title}
+        </h1>
+        <p className="mt-8 max-w-[58ch] text-[18px] leading-[1.55] text-steel">{p.description}</p>
+        <div className="mt-10 flex flex-wrap items-center gap-6">
+          <span className="type-caption">{projectState(p.state)}</span>
+          {p.site ? <span className="type-caption">{p.site}</span> : null}
+          {p.capacity_kw ? <span className="type-caption">{p.capacity_kw} kW</span> : null}
+          <span className="type-caption">
+            {p.inspector ? "An inspector is appointed" : "No independent inspector"}
+          </span>
         </div>
-      </Band>
+      </header>
 
-      <Band tone="ash">
-        <div className="grid gap-5 md:grid-cols-2">
-          <Card>
-            <h3 className="type-subheading mb-6">The parties</h3>
-            <div className="flex flex-col gap-5">
-              <Field label="Owner">Opened this project on {day(p.created_at)}</Field>
-              <Field label="Installer">
-                {p.installer_accepted_at
-                  ? `Signed on ${day(p.installer_accepted_at)}`
-                  : "Has not signed yet"}
-              </Field>
-              <Field label="Inspector">
-                {!p.inspector
-                  ? "None appointed; nothing independent witnesses this site"
-                  : p.inspector_accepted_at
-                    ? `Accepted on ${day(p.inspector_accepted_at)}`
-                    : "Appointed, has not accepted"}
-              </Field>
-              <Field label="Challenge window">
-                A decision can be contested for{" "}
-                {Math.round(p.appeal_window_seconds / 60)} minutes after it is recorded
-              </Field>
-            </div>
-          </Card>
-
-          <Card>
-            <h3 className="type-subheading mb-6">The escrow</h3>
-            <div className="flex flex-col gap-5">
-              <Field label="Funded">
-                <span className="figure">{gen(p.funded_wei)}</span>
-              </Field>
-              <Field label="Reserved against milestones">
-                <span className="figure">{gen(p.reserved_wei)}</span>
-              </Field>
-              <Field label="Unreserved">
-                <span className="figure">{gen(p.unreserved_wei)}</span>
-              </Field>
-              <Field label="Paid out">
-                <span className="figure">{gen(p.paid_wei)}</span>
-              </Field>
-            </div>
-            <p className="type-caption mt-6">
-              A payment is never pushed. It becomes a claim the installer draws from the
-              contract themselves.
-            </p>
-          </Card>
-        </div>
-      </Band>
-
-      <Band tone="white">
-        <Heading
-          title="Milestones"
-          lead="Each one is judged on its own equipment schedule, against the evidence filed for it."
-        />
+      <section className="py-20">
+        <h2 className="display mb-10 text-[14px] uppercase tracking-[0.12em] text-slate">
+          The cases
+        </h2>
         {p.milestone_summaries.length === 0 ? (
-          <Empty>No milestone has been proposed on this project yet.</Empty>
+          <p className="text-[15px] text-slate">No case has been proposed on this site yet.</p>
         ) : (
-          <DataCard>
-            <ul>
-              {p.milestone_summaries.map((m) => (
-                <MilestoneRow key={m.milestone_id} m={m} nowMs={nowMs} />
-              ))}
-            </ul>
-          </DataCard>
-        )}
-      </Band>
-
-      <Band tone="ash">
-        <Heading
-          title="What has happened"
-          lead="The project's own log, in the order the contract recorded it."
-        />
-        {events.loading ? <Loading what="the log" /> : null}
-        {events.error ? <ReadFailure what="the log" /> : null}
-        {events.data ? (
-          events.data.events.length === 0 ? (
-            <Empty>Nothing has been recorded yet.</Empty>
-          ) : (
-            <DataCard>
-              <ul>
-                {[...events.data.events].reverse().map((e) => (
-                  <li
-                    key={e.n}
-                    className="flex flex-col gap-2 border-t border-mist px-10 py-5 first:border-t-0 md:flex-row md:items-baseline md:justify-between"
+          <ul className="border-t border-mist">
+            {p.milestone_summaries.map((m) => {
+              const said = m.standing ? decision(m.standing.decision) : milestoneState(m.state);
+              return (
+                <li key={m.milestone_id}>
+                  <Link
+                    href={`/milestones/${m.milestone_id}`}
+                    className="group grid gap-4 border-b border-mist py-9 md:grid-cols-[minmax(0,1fr)_minmax(0,300px)] md:items-baseline md:gap-12"
                   >
-                    <span className="text-[15px] text-graphite">{eventKind(e.kind)}</span>
-                    <span className="type-caption">
-                      {actor(e.by) ? `by the ${roleLower(actor(e.by) as string)}, ` : ""}
-                      {moment(e.at)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </DataCard>
-          )
-        ) : null}
-      </Band>
-    </>
+                    <p className="text-[24px] leading-[1.2] tracking-[-0.02em] text-graphite [font-family:var(--font-display)]">
+                      {m.title}
+                    </p>
+                    <div className="md:text-right">
+                      <p className="text-[24px] leading-[1.2] tracking-[-0.02em] text-graphite [font-family:var(--font-display)] group-hover:underline group-hover:decoration-ember group-hover:decoration-2 group-hover:underline-offset-[6px]">
+                        {said}
+                      </p>
+                      <p className="type-caption mt-2">
+                        {gen(m.payment_wei)}, due {day(m.deadline)}
+                      </p>
+                    </div>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      <section className="grid gap-10 border-t border-mist py-20 md:grid-cols-3">
+        <div>
+          <p className="type-caption">Held in escrow</p>
+          <p className="figure mt-3 text-[32px] leading-none tracking-[-0.02em] text-graphite [font-family:var(--font-display)]">
+            {gen(p.escrow_wei)}
+          </p>
+        </div>
+        <div>
+          <p className="type-caption">Committed to cases</p>
+          <p className="figure mt-3 text-[32px] leading-none tracking-[-0.02em] text-graphite [font-family:var(--font-display)]">
+            {gen(p.reserved_wei)}
+          </p>
+        </div>
+        <div>
+          <p className="type-caption">Paid out</p>
+          <p className="figure mt-3 text-[32px] leading-none tracking-[-0.02em] text-graphite [font-family:var(--font-display)]">
+            {gen(p.paid_wei)}
+          </p>
+        </div>
+        <p className="type-caption md:col-span-3">
+          A payment is never pushed. It becomes a claim the installer draws themselves.
+        </p>
+      </section>
+
+      {acts.length ? (
+        <section className="border-t border-mist py-20">
+          <Acts
+            acts={acts}
+            args={{
+              accept_project: [pid],
+              accept_inspector_role: [pid],
+              fund_project: [pid],
+              withdraw_escrow: [pid],
+              cancel_project: [pid],
+              add_milestone: [pid],
+            }}
+            heading="What you can do on this site"
+          />
+        </section>
+      ) : null}
+    </div>
   );
 }

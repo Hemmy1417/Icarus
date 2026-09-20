@@ -247,6 +247,60 @@ export function refusal(text: string): string {
   return /[.!?]$/.test(sentence) ? sentence : `${sentence}.`;
 }
 
+/**
+ * A panel writes in the record's own vocabulary: it cites items as ev-000001
+ * and schedule lines as E1, because that is what it was shown. A page must
+ * not. This writes those references out into the words a reader already has
+ * in front of them, so the panel's sentence survives intact while no machine
+ * identifier reaches the page.
+ *
+ * Only references are touched. The panel's wording, its findings and its
+ * reasoning are never altered, because rewriting those would be editing the
+ * record rather than presenting it. A replacement that lands at the start of
+ * a sentence is capitalised, so substituting for an identifier does not
+ * leave the prose ungrammatical.
+ */
+const ORDINALS = ["first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth"];
+
+/**
+ * The words to write a panel's references out into. A schedule line is named
+ * by its role, and only disambiguated by model when two lines share one: a
+ * model number is a product identifier and lowercasing it to fit a sentence
+ * would mangle the very thing the schedule is about.
+ */
+export function referenceNames(
+  lines: Array<{ id: string; role: string; model?: string }>,
+  criteria: Array<{ id: string }> = [],
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  const roles = lines.map((l) => l.role);
+  for (const l of lines) {
+    const alone = roles.filter((r) => r === l.role).length === 1;
+    const role = equipmentRole(l.role).toLowerCase();
+    out[l.id] = alone || !l.model ? `the ${role}` : `the ${role} (${l.model})`;
+  }
+  criteria.forEach((c, i) => {
+    out[c.id] = `the ${ORDINALS[i] ?? "next"} condition`;
+  });
+  return out;
+}
+
+export function writeOut(
+  text: string | null | undefined,
+  names: Record<string, string> = {},
+): string {
+  const written = prose(text)
+    .replace(/ev-0*(\d+)/gi, (_m, digits: string) => {
+      const word = ORDINALS[parseInt(digits, 10) - 1];
+      return word ? `the ${word} item` : "an item";
+    })
+    .replace(/\b([EC]\d{1,2})\b/g, (m: string, id: string) => names[id.toUpperCase()] ?? m);
+
+  // A sentence that now opens with a substituted word still opens a sentence.
+  return written.replace(/(^|[.!?]\s+)([a-z])/g, (_m, lead: string, ch: string) =>
+    lead + ch.toUpperCase());
+}
+
 const GEN_WEI = 10n ** 18n;
 
 /** GEN with up to four decimals, trailing zeros trimmed: "2 GEN", "0.05 GEN". */
