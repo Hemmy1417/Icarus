@@ -1697,7 +1697,10 @@ class Icarus(gl.contract.Contract):
         against = standing["decision"]
         allowed = "OWNER" if against == "ACCEPTED" else "INSTALLER"
         if who != allowed:
-            _refuse(f"only the {allowed.lower()} appeals a {against.lower()} decision")
+            # The decision as a noun: "a accepted decision" is what a format
+            # string gives you when nobody reads the sentence it produces.
+            contested = "an acceptance" if against == "ACCEPTED" else "a rejection"
+            _refuse(f"only the {allowed.lower()} appeals {contested}")
         grounds = _clean(reason, LONG_MAX)
         if not grounds:
             _refuse("state the grounds of the appeal")

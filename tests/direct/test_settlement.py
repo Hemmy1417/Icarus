@@ -282,3 +282,28 @@ class TestCancellationNeverRewritesHistory:
         assert after["close_reason"] == before["close_reason"]
         assert after["closed_at"] == before["closed_at"]
         assert claimable(c, OWNER) == 5 * GEN
+
+
+def test_every_refusal_reads_as_a_sentence(module, c):
+    """A refusal is the only thing a person sees when the contract says no.
+    One of them once read "only the owner appeals a accepted decision", which
+    is what a format string gives you when nobody reads its output."""
+    import re
+    _, mid, _ = accepted(module, c)
+    seen = []
+    for who, call in ((INSTALLER, lambda: c.open_appeal(mid, "grounds")),
+                      (STRANGER, lambda: c.open_appeal(mid, "grounds")),
+                      (STRANGER, lambda: c.finalize(mid)),
+                      (OWNER, lambda: c.submit_document(mid, "{}", "We object."))):
+        as_(module, who)
+        try:
+            call()
+        except Exception as e:          # noqa: BLE001  (any refusal is the subject)
+            seen.append(str(e).replace("[EXPECTED] ", ""))
+    assert seen, "no refusal was produced"
+    for sentence in seen:
+        assert not re.search(r"\ba [aeiou]", sentence), f"wrong article: {sentence}"
+        assert not re.search(r"\ban [^aeiou]", sentence), f"wrong article: {sentence}"
+        assert sentence == sentence.lstrip(), f"leading space: {sentence!r}"
+        assert "  " not in sentence, f"doubled space: {sentence!r}"
+        assert sentence[0].islower(), f"a refusal is a clause, not a title: {sentence!r}"

@@ -260,10 +260,26 @@ await step("walls.finalize_early", "STRANGER", "finalize", [flagMid],
            { refused: "the appeal window is still open" });
 await step("walls.installer_appeals_own_acceptance", "INSTALLER", "open_appeal",
            [flagMid, "We would like more money."],
-           { refused: "only the owner appeals an accepted decision" });
+           { refused: "only the owner appeals an acceptance" });
 await step("walls.files_against_acceptance", "OWNER", "submit_document",
            [flagMid, JSON.stringify({ title: "Objection" }), "We object."],
            { refused: "to contest it, open an appeal" });
+
+// 1b. A second acceptance, kept for the appeal, so that contesting a decision
+//     never depends on which way another case happened to fail.
+const appealPid = await project("appealcase", "Inverter installation, contested (demonstration)");
+const appealMid = await milestone("appealcase", appealPid, terms({
+  equipment: [GROWATT], criteria: WALL_CRITERION, spec: WALL_SPEC,
+  title: "String inverter installed, contested by the owner" }));
+const appealFront = await image("appealcase.inverter", "INSTALLER", appealMid, "growatt-inverter",
+                                "The string inverter on the plant room wall", { line: "E1" });
+const appealPlate = await image("appealcase.plate", "INSTALLER", appealMid, "growatt-nameplate",
+                                "The rating plate on the same unit", { line: "E1", origin: "NAMEPLATE" });
+const appealFirst = await assessment("appealcase.assess", appealMid, [appealFront, appealPlate]);
+assert(appealFirst.decision === "ACCEPTED",
+       `the appeal case did not accept: ${appealFirst.decision}`);
+await step("appeal.open", "OWNER", "open_appeal",
+           [appealMid, "The unit on the wall is not the one we specified."]);
 
 // 2. The floor: the same wall, and only a document names the model.
 const paperPid = await project("paper", "Inverter named on paper only (demonstration)");
@@ -335,18 +351,21 @@ await step("walls.stranger_assessment", "STRANGER", "request_assessment",
            [flagMid, JSON.stringify([flagFront])],
            { refused: "only the installer requests an assessment" });
 
-// 7. The appeal: the installer contests the mismatch and files the plate again.
-//    The plate still reads the other product, so the readjudication does not pay.
-await step("appeal.open", "INSTALLER", "open_appeal",
-           [wrongMid, "The unit on the wall is the one we were asked to fit."]);
-const appealEnds = (await readJson("get_milestone", [wrongMid])).appeal.evidence_ends;
+// 7. The appeal: its own record, because only an acceptance or a rejection
+//    can be contested and the mismatch is free to fail either way. The owner
+//    contests an acceptance on the same evidence that produced it.
+const contested = await readJson("get_milestone", [appealMid]);
+assert(contested.state === "APPEALED", `the appeal did not open: ${contested.state}`);
+const appealEnds = contested.appeal.evidence_ends;
 await waitUntil(appealEnds, "the appeal's evidence period");
-const appealRec = await step("appeal.decide", "STRANGER", "decide_appeal", [wrongMid]);
-const appealRound = await readJson("get_round", [wrongMid, jsonFrom(appealRec.text).round]);
-assert(appealRound.kind === "APPEAL", "the appeal did not record an appeal round");
-assert(appealRound.decision !== "ACCEPTED",
-       `the appeal paid on a plate reading another product: ${appealRound.decision}`);
-say(`appeal: ${appealRound.decision}  lines ${JSON.stringify(appealRound.lines)}`);
+const appealRec = await step("appeal.decide", "STRANGER", "decide_appeal", [appealMid]);
+const appealRecord = await readJson("get_round", [appealMid, jsonFrom(appealRec.text).round]);
+assert(appealRecord.kind === "APPEAL", "the appeal did not record an appeal round");
+assert(appealRecord.reviewed_round === 1, "the appeal did not name the round it reviewed");
+assert((await readJson("get_milestone", [appealMid])).state !== "APPEALED",
+       "the appeal is still open after its readjudication");
+say(`appeal: reviewed round 1, decided ${appealRecord.decision}, `
+  + `lines ${JSON.stringify(appealRecord.lines)}`);
 
 // 8. Settlement: the flagship pays once it can no longer be contested.
 const standing = (await readJson("get_milestone", [flagMid])).standing;
