@@ -483,3 +483,17 @@ class TestAModelThatKeepsTalking:
         items = two_images(module, c, mid)
         with pytest.raises(err(module)):
             assess(module, c, mid, items, judge="I am afraid I cannot help with that.")
+
+
+class TestTheStatusesAreUnambiguous:
+    def test_the_panel_is_told_which_status_a_wrong_product_takes(self, module, c):
+        """Measured live: four leaders in a row failed to reach a majority on a
+        plate reading a different model, because the prompt let that read as
+        either absent or contradicted, and those derive different decisions."""
+        _, mid = active_milestone(module, c)
+        items = two_images(module, c, mid)
+        assess(module, c, mid, items)
+        prompt = [p["prompt"] for p in prompts(kind="judge", role="leader")][0]
+        assert "a different product from the one the schedule names" in prompt
+        assert "disagrees with the SCHEDULE is not a contradiction" in prompt
+        assert "two pieces of evidence disagree with each other" in prompt

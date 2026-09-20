@@ -253,6 +253,18 @@ assert(flagRound.decision === "ACCEPTED",
 assert(flagRound.lines.E1 === "INSTALLED", "flagship: the inverter line was not established");
 assert(flagRound.quality === "SUFFICIENT", "flagship: evidence not recorded as sufficient");
 
+// The walls that only stand while the flagship's window is open. They run here,
+// not with the others: four assessments take longer than a ten minute window,
+// and a wall checked after its own deadline is not a wall.
+await step("walls.finalize_early", "STRANGER", "finalize", [flagMid],
+           { refused: "the appeal window is still open" });
+await step("walls.installer_appeals_own_acceptance", "INSTALLER", "open_appeal",
+           [flagMid, "We would like more money."],
+           { refused: "only the owner appeals an accepted decision" });
+await step("walls.files_against_acceptance", "OWNER", "submit_document",
+           [flagMid, JSON.stringify({ title: "Objection" }), "We object."],
+           { refused: "to contest it, open an appeal" });
+
 // 2. The floor: the same wall, and only a document names the model.
 const paperPid = await project("paper", "Inverter named on paper only (demonstration)");
 const paperMid = await milestone("paper", paperPid, terms({
@@ -322,14 +334,6 @@ await step("walls.stranger_files", "STRANGER", "submit_document",
 await step("walls.stranger_assessment", "STRANGER", "request_assessment",
            [flagMid, JSON.stringify([flagFront])],
            { refused: "only the installer requests an assessment" });
-await step("walls.finalize_early", "STRANGER", "finalize", [flagMid],
-           { refused: "the appeal window is still open" });
-await step("walls.installer_appeals_own_acceptance", "INSTALLER", "open_appeal",
-           [flagMid, "We would like more money."],
-           { refused: "only the owner appeals an accepted decision" });
-await step("walls.files_against_acceptance", "OWNER", "submit_document",
-           [flagMid, JSON.stringify({ title: "Objection" }), "We object."],
-           { refused: "to contest it, open an appeal" });
 
 // 7. The appeal: the installer contests the mismatch and files the plate again.
 //    The plate still reads the other product, so the readjudication does not pay.
