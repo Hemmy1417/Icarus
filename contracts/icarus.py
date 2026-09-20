@@ -207,10 +207,19 @@ def _llm_object(raw, what: str) -> dict:
     silent default that a later rule would read as agreement."""
     if isinstance(raw, dict):
         return raw
+    text = str(raw)
     try:
-        value = json.loads(str(raw))
+        value = json.loads(text)
     except Exception:
-        value = None
+        # A model that answers with an object and then keeps talking has still
+        # answered. Take the outermost object and ignore the rest, rather than
+        # lose the node's vote over punctuation: measured live on Studio Next,
+        # where one validator returned valid JSON followed by prose.
+        start, end = text.find("{"), text.rfind("}")
+        try:
+            value = json.loads(text[start:end + 1]) if 0 <= start < end else None
+        except Exception:
+            value = None
     if not isinstance(value, dict):
         raise gl.vm.UserError(f"{ERROR_LLM} {what} must be a JSON object")
     return value

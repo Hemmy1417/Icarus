@@ -464,3 +464,22 @@ class TestHowManyTimesTheSameTermsAreJudged:
         as_(module, INSTALLER)
         c.accept_version(mid, 2)
         assert milestone(c, mid)["version_assessments"] == 0
+
+
+class TestAModelThatKeepsTalking:
+    def test_json_followed_by_prose_is_still_an_answer(self, module, c):
+        """Measured live: one validator returned a valid object and then kept
+        explaining. Losing its vote over punctuation helps nobody."""
+        _, mid = active_milestone(module, c)
+        items = two_images(module, c, mid)
+        answer = judge_answer({"E1": "INSTALLED", "E2": "INSTALLED", "E3": "INSTALLED"},
+                              {"C1": "MET"}, basis={k: items for k in ("E1", "E2", "E3", "C1")})
+        chatty = json.dumps(answer) + "\n\nI hope this assessment is helpful."
+        out = assess(module, c, mid, items, judge=chatty)
+        assert out["decision"] == "ACCEPTED"
+
+    def test_an_answer_with_no_object_in_it_is_still_refused(self, module, c):
+        _, mid = active_milestone(module, c)
+        items = two_images(module, c, mid)
+        with pytest.raises(err(module)):
+            assess(module, c, mid, items, judge="I am afraid I cannot help with that.")

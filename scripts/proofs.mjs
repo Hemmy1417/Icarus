@@ -135,49 +135,59 @@ async function waitUntil(iso, label) {
 }
 
 
+
 // ── the demonstration ────────────────────────────────────────────────────────
+//
+// Two real sites, and nothing asked of a photograph that the photograph does
+// not contain. The first run of these proofs specified a ballasted flat-roof
+// mounting system against an image that turned out to be an off-grid power
+// room; the panel said so and the milestone did not pay, which was the right
+// answer to the wrong question. The schedules below describe what is actually
+// in each frame.
 
-const SPEC = "Rooftop photovoltaic system: modules on a ballasted flat-roof mounting "
-  + "system, one string inverter at the plant room wall, wired to the existing board.";
-
-/** The inverter line, the one the panel has to identify. */
-const INVERTER = { role: "INVERTER", manufacturer: "Growatt", model: "MOD 4000TL3-X",
-                   rating: "4000 W", quantity: 1, identify: true };
-const MODULES = { role: "MODULE", manufacturer: "Generic PV", model: "Framed monocrystalline",
-                  rating: "550 W", quantity: 12, identify: false };
-const MOUNTING = { role: "MOUNTING", manufacturer: "Ballasted", model: "Flat roof rail",
-                   quantity: 1, identify: false };
+/** The Growatt site: one string inverter on a plant room wall, with a plate. */
+const GROWATT = { role: "INVERTER", manufacturer: "Growatt", model: "MOD 4000TL3-X",
+                  rating: "4000 W", quantity: 1, identify: true };
+/** The same brand, a different product: the mismatch a reader skims past. */
+const WRONG_MODEL = { ...GROWATT, model: "MOD 10KTL3-X", rating: "10 kW" };
 const BATTERY = { role: "BATTERY", manufacturer: "Growatt", model: "ARK 2.5H-A1",
-                  rating: "2.5 kWh", quantity: 1, identify: true };
+                  rating: "2.5 kWh", quantity: 1, identify: false };
 
-function terms({ equipment, title = "PV system installation complete", payment = 2n * GEN,
-                 days = 14 } = {}) {
+/** The Kenya site: an off-grid power room. */
+const OFFGRID_BATTERY = { role: "BATTERY", manufacturer: "Sealed lead acid",
+                          model: "2 V cells on a steel rack", quantity: 8, identify: false };
+const OFFGRID_ISOLATOR = { role: "PROTECTION", manufacturer: "Kripal",
+                           model: "DC isolator switch", quantity: 1, identify: false };
+const OFFGRID_INVERTER = { role: "INVERTER", manufacturer: "Alpha",
+                           model: "Wall mounted hybrid inverter", quantity: 1, identify: false };
+
+function terms({ equipment, title, criteria, images = 2, payment = 2n * GEN, days = 14,
+                 type = "INVERTER_INSTALLATION", spec }) {
   return JSON.stringify({
-    milestone_type: "PV_MODULE_INSTALLATION",
+    milestone_type: type,
     title,
-    description: "Modules, mounting and the string inverter installed and ready for commissioning.",
-    requirements: "The system is installed to the approved design with the specified equipment, "
-      + "and the inverter is identifiable on site.",
-    specification: SPEC,
+    description: "Installed equipment, photographed on site for settlement.",
+    requirements: "The equipment named in the schedule is installed on this site, and where "
+      + "the schedule requires it, identifiable from its own markings.",
+    specification: spec,
     equipment,
-    criteria: [{ text: "The modules are installed on the mounting system, not stacked or stored." }],
+    criteria,
     evidence_requirements: [
       { text: "Photographs of the installed equipment", kind: "IMAGE",
-        from_role: "INSTALLER", min_count: 2 },
+        from_role: "INSTALLER", min_count: images },
     ],
     payment_wei: payment.toString(),
     deadline: new Date(Date.now() + days * 86400000).toISOString().replace(/\.\d+Z$/, "Z"),
   });
 }
 
-async function project(key, title, { inspector = false, escrow = 3n * GEN } = {}) {
+async function project(key, title, { escrow = 3n * GEN } = {}) {
   const params = JSON.stringify({
     title,
     description: "A demonstration written to show how the record works, not anyone's contract. "
-      + "Photographs are from Wikimedia Commons; see fixtures/ATTRIBUTION.md.",
-    site: "Demonstration site", system_type: "COMMERCIAL_SOLAR", capacity_kw: "6.6",
-    installer: KEYS.INSTALLER.addr, inspector: inspector ? KEYS.INSPECTOR.addr : "",
-    appeal_window_seconds: 600,
+      + "The photographs are from Wikimedia Commons; see fixtures/ATTRIBUTION.md.",
+    site: "Demonstration site", system_type: "COMMERCIAL_SOLAR", capacity_kw: "4",
+    installer: KEYS.INSTALLER.addr, inspector: "", appeal_window_seconds: 600,
   });
   const created = await step(`${key}.create`, "OWNER", "create_project", [params], { value: escrow });
   const pid = jsonFrom(created.text)?.project_id;
@@ -203,16 +213,24 @@ async function image(key, role, mid, file, caption, { line = "", req = "R1", ori
 
 async function assessment(key, mid, items) {
   const rec = await step(key, "INSTALLER", "request_assessment", [mid, JSON.stringify(items)]);
-  const out = jsonFrom(rec.text);
-  const round = await readJson("get_round", [mid, out.round]);
+  const round = await readJson("get_round", [mid, jsonFrom(rec.text).round]);
   if (!run.steps[key].nodes) {
     const { nodes } = await dumpReceipt(rec.hash);
     run.steps[key].nodes = nodes.map((n) => ({ rotation: n.rotation, from: n.from,
                                                vote: n.vote, model: n.model }));
     save();
   }
+  say(`${key}: ${round.decision}  lines ${JSON.stringify(round.lines)}  `
+    + `criteria ${JSON.stringify(round.criteria)}  quality ${round.quality}`);
   return round;
 }
+
+const WALL_SPEC = "One string inverter mounted on the plant room wall, its d.c. and a.c. "
+  + "connections made at the underside of the unit.";
+const ROOM_SPEC = "Off-grid power room: a wall mounted hybrid inverter with its consumer unit "
+  + "and d.c. isolator, and a sealed lead acid battery bank on a steel rack.";
+const WALL_CRITERION = [{ text: "The inverter is mounted on a wall with its cabling connected "
+                                + "at the underside of the unit." }];
 
 // ── the proofs ───────────────────────────────────────────────────────────────
 
@@ -220,79 +238,89 @@ say(`proofs on ${ADDRESS}`);
 const cfg = await readJson("get_config", []);
 assert(cfg.ruleset === "icarus-rules-1", "unexpected ruleset");
 
-// 1. The flagship: the specified inverter is on the wall and its plate says so.
-const flagPid = await project("flagship", "Rooftop PV, 6.6 kW (demonstration)");
-const flagMid = await milestone("flagship", flagPid, terms({ equipment: [MODULES, INVERTER, MOUNTING] }));
-const flagArray = await image("flagship.array", "INSTALLER", flagMid, "array-kenya",
-                              "The installed array on its mounting system", { line: "E1" });
+// 1. The flagship: the plate on the wall reads the model the contract named.
+const flagPid = await project("flagship", "Inverter installation, plant room (demonstration)");
+const flagMid = await milestone("flagship", flagPid, terms({
+  equipment: [GROWATT], criteria: WALL_CRITERION, spec: WALL_SPEC,
+  title: "String inverter installed and identifiable" }));
 const flagFront = await image("flagship.inverter", "INSTALLER", flagMid, "growatt-inverter",
-                              "The string inverter on the plant room wall", { line: "E2" });
+                              "The string inverter on the plant room wall", { line: "E1" });
 const flagPlate = await image("flagship.plate", "INSTALLER", flagMid, "growatt-nameplate",
-                              "The inverter's rating plate", { line: "E2", origin: "NAMEPLATE" });
-const flagRound = await assessment("flagship.assess", flagMid, [flagArray, flagFront, flagPlate]);
+                              "The rating plate on the same unit", { line: "E1", origin: "NAMEPLATE" });
+const flagRound = await assessment("flagship.assess", flagMid, [flagFront, flagPlate]);
 assert(flagRound.decision === "ACCEPTED",
        `flagship: ${flagRound.decision}, lines ${JSON.stringify(flagRound.lines)}`);
-assert(flagRound.lines.E2 === "INSTALLED", "flagship: the inverter line was not established");
+assert(flagRound.lines.E1 === "INSTALLED", "flagship: the inverter line was not established");
 assert(flagRound.quality === "SUFFICIENT", "flagship: evidence not recorded as sufficient");
-say(`flagship lines ${JSON.stringify(flagRound.lines)} criteria ${JSON.stringify(flagRound.criteria)}`);
 
-// 2. The floor: the same installation, but nothing shows the model on the unit.
-//    A document states it, and a document cannot witness a wall.
-const paperPid = await project("paper", "Rooftop PV, inverter named only on paper (demonstration)");
-const paperMid = await milestone("paper", paperPid, terms({ equipment: [MODULES, INVERTER, MOUNTING] }));
-const paperArray = await image("paper.array", "INSTALLER", paperMid, "array-kenya",
-                               "The installed array", { line: "E1" });
+// 2. The floor: the same wall, and only a document names the model.
+const paperPid = await project("paper", "Inverter named on paper only (demonstration)");
+const paperMid = await milestone("paper", paperPid, terms({
+  equipment: [GROWATT], criteria: WALL_CRITERION, spec: WALL_SPEC, images: 1,
+  title: "String inverter installed, identified by datasheet" }));
 const paperFront = await image("paper.inverter", "INSTALLER", paperMid, "growatt-inverter",
-                               "The string inverter on the wall", { line: "E2" });
+                               "The string inverter on the wall", { line: "E1" });
 await step("paper.datasheet", "INSTALLER", "submit_document",
            [paperMid, JSON.stringify({ title: "Inverter datasheet", reference: "DS-MOD4000",
-                                       equipment_id: "E2" }),
+                                       equipment_id: "E1" }),
             "Growatt PV Grid Inverter. Model name MOD 4000TL3-X. Max output power 4000 W. "
-            + "Nominal output voltage 3W/N/PE 230/400 a.c.V. The unit supplied and installed on "
-            + "this project is the model named above."]);
-const paperRound = await assessment("paper.assess", paperMid, [paperArray, paperFront]);
+            + "Nominal output voltage 3W/N/PE 230/400 a.c.V. The unit supplied and installed "
+            + "on this project is the model named above."]);
+const paperRound = await assessment("paper.assess", paperMid, [paperFront]);
 assert(paperRound.decision !== "ACCEPTED",
-       `the documentary floor let a paper identification pay: ${paperRound.decision}`);
-assert(paperRound.lines.E2 !== "INSTALLED",
-       `the inverter line stood on a document: ${paperRound.lines.E2}`);
-say(`paper-only lines ${JSON.stringify(paperRound.lines)} -> ${paperRound.decision}`);
+       `a paper identification paid: ${paperRound.decision}`);
+assert(paperRound.lines.E1 !== "INSTALLED",
+       `the inverter line stood on a document: ${paperRound.lines.E1}`);
 
-// 3. The mismatch: the contract specifies one product, the plate reads another.
-const wrongInverter = { ...INVERTER, manufacturer: "Kostal", model: "Piko 10.1", rating: "10 kW" };
-const wrongPid = await project("mismatch", "Rooftop PV, a different inverter (demonstration)");
-const wrongMid = await milestone("mismatch", wrongPid,
-                                 terms({ equipment: [MODULES, wrongInverter, MOUNTING] }));
-const wrongArray = await image("mismatch.array", "INSTALLER", wrongMid, "array-kenya",
-                               "The installed array", { line: "E1" });
+// 3. The mismatch: same manufacturer, different product. The plate settles it.
+const wrongPid = await project("mismatch", "Inverter installation, wrong model (demonstration)");
+const wrongMid = await milestone("mismatch", wrongPid, terms({
+  equipment: [WRONG_MODEL], criteria: WALL_CRITERION, spec: WALL_SPEC,
+  title: "Ten kilowatt inverter installed" }));
+const wrongFront = await image("mismatch.inverter", "INSTALLER", wrongMid, "growatt-inverter",
+                               "The inverter on the wall", { line: "E1" });
 const wrongPlate = await image("mismatch.plate", "INSTALLER", wrongMid, "growatt-nameplate",
-                               "The inverter's rating plate", { line: "E2", origin: "NAMEPLATE" });
-const wrongRound = await assessment("mismatch.assess", wrongMid, [wrongArray, wrongPlate]);
+                               "The rating plate on the same unit", { line: "E1", origin: "NAMEPLATE" });
+const wrongRound = await assessment("mismatch.assess", wrongMid, [wrongFront, wrongPlate]);
 assert(wrongRound.decision !== "ACCEPTED",
        `a plate reading another product paid: ${wrongRound.decision}`);
-say(`mismatch lines ${JSON.stringify(wrongRound.lines)} -> ${wrongRound.decision}`);
 
-// 4. The missing item: the schedule requires a battery and nothing shows one.
-const gapPid = await project("battery", "Rooftop PV with storage (demonstration)");
-const gapMid = await milestone("battery", gapPid, terms({ equipment: [MODULES, INVERTER, BATTERY] }));
-const gapArray = await image("battery.array", "INSTALLER", gapMid, "array-kenya",
-                             "The installed array", { line: "E1" });
+// 4. The missing item: the schedule adds a battery and nothing shows one.
+const gapPid = await project("battery", "Inverter and storage (demonstration)");
+const gapMid = await milestone("battery", gapPid, terms({
+  equipment: [GROWATT, BATTERY], criteria: WALL_CRITERION, spec: WALL_SPEC,
+  title: "Inverter and battery installed" }));
+const gapFront = await image("battery.inverter", "INSTALLER", gapMid, "growatt-inverter",
+                             "The inverter on the wall", { line: "E1" });
 const gapPlate = await image("battery.plate", "INSTALLER", gapMid, "growatt-nameplate",
-                             "The inverter's rating plate", { line: "E2", origin: "NAMEPLATE" });
+                             "The rating plate on the same unit", { line: "E1", origin: "NAMEPLATE" });
 await step("battery.says", "INSTALLER", "submit_declaration",
            [gapMid, "The battery was delivered and commissioned with the system."]);
-const gapRound = await assessment("battery.assess", gapMid, [gapArray, gapPlate]);
+const gapRound = await assessment("battery.assess", gapMid, [gapFront, gapPlate]);
 assert(gapRound.decision !== "ACCEPTED", `a missing battery paid: ${gapRound.decision}`);
-assert(gapRound.lines.E3 !== "INSTALLED", `the battery line stood on nothing: ${gapRound.lines.E3}`);
+assert(gapRound.lines.E2 !== "INSTALLED", `the battery line stood on nothing: ${gapRound.lines.E2}`);
 assert(!JSON.stringify(gapRound).includes("delivered and commissioned"),
        "a declaration reached the record of a round");
-say(`battery lines ${JSON.stringify(gapRound.lines)} -> ${gapRound.decision}`);
 
-// 5. The walls: what the contract refuses, in its own words.
+// 5. A second site, judged on its own evidence: an off-grid power room.
+const roomPid = await project("offgrid", "Off-grid power room (demonstration)");
+const roomMid = await milestone("offgrid", roomPid, terms({
+  type: "ELECTRICAL_INTEGRATION", equipment: [OFFGRID_INVERTER, OFFGRID_ISOLATOR, OFFGRID_BATTERY],
+  criteria: [{ text: "The battery bank is installed on a rack and connected to the inverter." }],
+  spec: ROOM_SPEC, images: 1, title: "Power room equipment installed" }));
+const roomPhoto = await image("offgrid.room", "INSTALLER", roomMid, "array-kenya",
+                              "The power room: inverter, isolator, consumer unit and battery bank",
+                              { line: "" });
+const roomRound = await assessment("offgrid.assess", roomMid, [roomPhoto]);
+assert(["ACCEPTED", "REJECTED", "UNDETERMINED"].includes(roomRound.decision),
+       "the power room round produced no decision");
+
+// 6. The walls: what the contract refuses, in its own words.
 await step("walls.stranger_files", "STRANGER", "submit_document",
            [flagMid, JSON.stringify({ title: "Note" }), "Let me in."],
            { refused: "only the owner, the installer and the named inspector" });
 await step("walls.stranger_assessment", "STRANGER", "request_assessment",
-           [flagMid, JSON.stringify([flagArray])],
+           [flagMid, JSON.stringify([flagFront])],
            { refused: "only the installer requests an assessment" });
 await step("walls.finalize_early", "STRANGER", "finalize", [flagMid],
            { refused: "the appeal window is still open" });
@@ -303,22 +331,20 @@ await step("walls.files_against_acceptance", "OWNER", "submit_document",
            [flagMid, JSON.stringify({ title: "Objection" }), "We object."],
            { refused: "to contest it, open an appeal" });
 
-// 6. The appeal: the installer contests the mismatch and adds the front photograph.
-//    The plate still reads another product, so the readjudication does not pay.
+// 7. The appeal: the installer contests the mismatch and files the plate again.
+//    The plate still reads the other product, so the readjudication does not pay.
 await step("appeal.open", "INSTALLER", "open_appeal",
            [wrongMid, "The unit on the wall is the one we were asked to fit."]);
-await image("appeal.front", "INSTALLER", wrongMid, "growatt-inverter",
-            "The same inverter, front face", { line: "E2", req: "" });
-const appealWindow = (await readJson("get_milestone", [wrongMid])).appeal.evidence_ends;
-await waitUntil(appealWindow, "the appeal's evidence period");
+const appealEnds = (await readJson("get_milestone", [wrongMid])).appeal.evidence_ends;
+await waitUntil(appealEnds, "the appeal's evidence period");
 const appealRec = await step("appeal.decide", "STRANGER", "decide_appeal", [wrongMid]);
 const appealRound = await readJson("get_round", [wrongMid, jsonFrom(appealRec.text).round]);
 assert(appealRound.kind === "APPEAL", "the appeal did not record an appeal round");
 assert(appealRound.decision !== "ACCEPTED",
        `the appeal paid on a plate reading another product: ${appealRound.decision}`);
-say(`appeal lines ${JSON.stringify(appealRound.lines)} -> ${appealRound.decision}`);
+say(`appeal: ${appealRound.decision}  lines ${JSON.stringify(appealRound.lines)}`);
 
-// 7. Settlement: the flagship pays once it can no longer be contested.
+// 8. Settlement: the flagship pays once it can no longer be contested.
 const standing = (await readJson("get_milestone", [flagMid])).standing;
 await waitUntil(standing.window_ends, "the flagship's appeal window");
 await step("flagship.finalize", "STRANGER", "finalize", [flagMid]);
@@ -332,6 +358,5 @@ say(`the installer's wallet received ${after - before} wei`);
 assert((await readJson("get_balance", [KEYS.INSTALLER.addr])).claimable === "0",
        "the ledger still owes after a claim");
 
-const stats = await readJson("get_stats", []);
-say(`stats ${JSON.stringify(stats)}`);
+say(`stats ${JSON.stringify(await readJson("get_stats", []))}`);
 say("every proof passed");

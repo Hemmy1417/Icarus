@@ -206,3 +206,12 @@ class TestReading:
         assert "MODULE" in cfg["equipment_roles"]
         assert "INSTALLED" in cfg["line_statuses"]
         assert cfg["quotas"]["INSTALLER"]["IMAGE"] >= 1
+
+
+def test_the_contract_file_carries_no_carriage_returns(module, c):
+    """The deployed bytes are the repository's bytes. A CR that creeps in on
+    Windows changes the digest and breaks that claim, so it fails here rather
+    than at the deploy step."""
+    import pathlib
+    source = pathlib.Path(module.__file__).read_bytes()
+    assert b"\r" not in source, "contracts/icarus.py has CRLF line endings"
