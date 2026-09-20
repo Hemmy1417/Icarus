@@ -40,6 +40,9 @@ export default function Cover() {
           <Link href="/projects" className="display text-[17px] text-slate hover:text-graphite">
             The record
           </Link>
+          <Link href="/projects/new" className="display text-[17px] text-slate hover:text-graphite">
+            Open a site of your own
+          </Link>
         </div>
       </section>
 
