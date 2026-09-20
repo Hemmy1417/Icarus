@@ -144,8 +144,10 @@ stated here rather than left as a gap somebody else has to find.
 
 ## What is published
 
-- `docs/proof-run.txt`, the full log of the run against the deployment of
-  record, including the rounds that reached no majority.
+- `docs/proof-run.txt`, the full log of the adjudication run against the
+  deployment of record, including the rounds that reached no majority.
+- `docs/paths-run.txt`, the terms and escrow run, with the five refusal walls
+  it proves and the contract's own sentence for each.
 - `web/lib/proof-log.json`, pairing each reading with the transaction that
   produced it, generated from the run's own receipts by
   `scripts/proof-log.mjs`. The milestone in each pairing is read back out of

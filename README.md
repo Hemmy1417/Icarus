@@ -158,7 +158,8 @@ Refusals proved live: a stranger cannot file evidence or ask for an assessment, 
 cannot contest their own acceptance, a milestone cannot be finalized inside its window, and a
 decision cannot be contested after it.
 
-A second run, `scripts/paths.mjs`, proves the writes the adjudication never touches: funding
+A second run, `scripts/paths.mjs`, logged in `docs/paths-run.txt`, proves the writes the
+adjudication never touches: funding
 escrow after the fact, an inspector taking the appointment, revising a schedule and
 countersigning it, withdrawing what no milestone reserved, closing a milestone nobody accepted
 once its deadline has passed, and cancelling a project before the installer signs. Eighteen of

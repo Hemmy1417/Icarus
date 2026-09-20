@@ -1,0 +1,68 @@
+ICARUS terms and escrow paths, against the deployment of record
+contract  0x38b195DF0E491F2B53347fb856D50090cE1C7823
+chain     61997, GenLayer Studio Next
+explorer  https://explorer-studio-dev.genlayer.com/address/0x38b195DF0E491F2B53347fb856D50090cE1C7823
+source    contracts/icarus.py, sha256 0d421a1b277171b27e69fe95034ef5525335c2497873f45ea0b3f1cd3621d0bc
+
+docs/proof-run.txt proves the adjudication: evidence in, a panel's reading, a
+decision, an appeal, a settlement. That path never touches eight of the
+contract's nineteen writes. This run proves seven of them, and the eighth,
+lapse_appeal, needs three days to pass after an appeal's evidence period, so
+only its refusal wall is shown.
+
+Two deadlines, because the two things proved here want opposite ones. The
+milestone whose schedule is revised gets ninety minutes, since a write on
+this network was measured taking fifty nine; the milestone that is closed
+gets three, proposed immediately before it is waited out.
+
+[22:25:14] paths on 0x38b195DF0E491F2B53347fb856D50090cE1C7823
+[22:25:17] open: OWNER create_project
+[22:25:58] open: FINALIZED
+[22:25:58] project pr-00010
+[22:26:00] inspector.accepts: INSPECTOR accept_inspector_role
+[22:26:40] inspector.accepts: FINALIZED
+[22:26:43] installer.signs: INSTALLER accept_project
+[22:27:21] installer.signs: FINALIZED
+[22:27:24] escrow.add: OWNER fund_project
+[22:28:03] escrow.add: FINALIZED
+[22:28:04] escrow funded from 2000000000000000000 to 4000000000000000000 wei
+[22:28:04] the terms milestone runs until 2026-09-20T23:58:04Z
+[22:28:06] milestone.propose: OWNER add_milestone
+[22:28:46] milestone.propose: FINALIZED
+[22:28:48] terms.sign: INSTALLER accept_version
+[22:29:27] terms.sign: FINALIZED
+[22:29:30] terms.revise: OWNER propose_version
+[22:30:10] terms.revise: FINALIZED
+[22:30:11] revised terms await the installer's signature; the old ones still stand
+[22:30:12] terms.countersign: INSTALLER accept_version
+[22:30:52] terms.countersign: FINALIZED
+[22:30:54] the revision binds only once both parties have signed it
+[22:30:57] escrow.withdraw: OWNER withdraw_escrow
+[22:31:37] escrow.withdraw: FINALIZED
+[22:31:38] withdrew 2000000000000000000 wei; the milestone's reservation was untouched
+[22:31:40] wall.stranger_revises: STRANGER propose_version
+[22:32:19] wall.stranger_revises: refused, "only the owner proposes new terms"
+[22:32:21] wall.stranger_withdraws: STRANGER withdraw_escrow
+[22:32:55] wall.stranger_withdraws: refused, "only the owner withdraws escrow"
+[22:32:57] wall.lapse_without_appeal: STRANGER lapse_appeal
+[22:33:36] wall.lapse_without_appeal: refused, "no appeal is open on this milestone"
+[22:33:38] wall.close_before_deadline: STRANGER close_milestone
+[22:34:16] wall.close_before_deadline: refused, "the deadline has not passed"
+[22:34:18] closeable.propose: OWNER add_milestone
+[22:34:52] closeable.propose: FINALIZED
+[22:34:53] waiting 143 s for its deadline, to close a milestone nobody accepted
+[22:37:23] milestone.close: STRANGER close_milestone
+[22:38:03] milestone.close: FINALIZED
+[22:38:05] closed by a stranger, and the reservation returned to the owner's free escrow
+[22:38:07] wall.cancel_signed: OWNER cancel_project
+[22:38:41] wall.cancel_signed: refused, "a project the installer signed cannot be cancelled"
+[22:38:43] spare.open: OWNER create_project
+[22:39:23] spare.open: FINALIZED
+[22:39:26] project.cancel: OWNER cancel_project
+[22:40:01] project.cancel: FINALIZED
+[22:40:02] cancelled before the installer signed; the signed project stands
+[22:40:02] 
+[22:40:02] proved live: fund_project, accept_inspector_role, propose_version, accept_version,
+[22:40:02] withdraw_escrow, close_milestone, cancel_project, and five refusal walls.
+[22:40:02] not reachable in a run: lapse_appeal, which needs three days to pass.
+[22:40:02] every path passed
