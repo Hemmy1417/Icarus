@@ -70,7 +70,7 @@ instructions in a prompt that a model may or may not follow.
 
 ```text
  AWAITING_TERMS ── installer signs ──► AWAITING_EVIDENCE
-                                             │ a party requests an assessment
+                                             │ the installer requests an assessment
                                              ▼
                     ┌──────────────── assessment round ────────────────┐
                     ▼                        ▼                          ▼
@@ -84,15 +84,15 @@ instructions in a prompt that a model may or may not follow.
                           undecided for three days: lapses to UNDETERMINED
                     │
       finalize (anyone, after the window) ──► FINALIZED ── claim
-      close (the owner, after the deadline) ──► CLOSED
+      close (anyone, after the deadline) ──► CLOSED
 ```
 
 | State | Who moves it | If nobody acts |
 |---|---|---|
-| `AWAITING_TERMS` | the installer signs the terms in force | the owner closes it |
-| `AWAITING_EVIDENCE` | a party requests an assessment, up to five per version | the owner closes it after the deadline |
+| `AWAITING_TERMS` | the installer signs the terms in force | anyone closes it after the deadline |
+| `AWAITING_EVIDENCE` | the installer requests an assessment, up to five per version | anyone closes it after the deadline |
 | `ACCEPTED` | the owner contests it, or anyone finalizes after the window | finalize is open to anyone once the window passes |
-| `REJECTED`, `UNDETERMINED` | the installer files more evidence and reassesses | the owner closes it after the deadline |
+| `REJECTED`, `UNDETERMINED` | the installer files more evidence and reassesses | anyone closes it after the deadline |
 | `APPEALED` | anyone decides once the evidence period ends | anyone lapses it three days later, to `UNDETERMINED` |
 | `FINALIZED`, `CLOSED` | terminal | the ledger holds the credit until it is claimed |
 
@@ -108,20 +108,20 @@ instructions in a prompt that a model may or may not follow.
 | `fund_project` | the owner | Adds GEN to the escrow. Payable. |
 | `accept_project` | the installer | Signs the project and every milestone proposed so far. |
 | `accept_inspector_role` | the inspector | Accepts the appointment, which they must do before filing. |
-| `cancel_project` | the owner | Closes a project on which nothing has settled. |
+| `cancel_project` | the owner | Cancels it, but only while the installer has not signed. |
 | `withdraw_escrow` | the owner | Takes back escrow no milestone has reserved. |
 | `add_milestone` | the owner | Proposes a milestone and reserves its payment. |
-| `propose_version` | either party | Proposes new terms; they bind only when the other signs. |
-| `accept_version` | the other party | Signs the proposed terms. |
+| `propose_version` | the owner | Proposes new terms; they bind only when the installer signs. |
+| `accept_version` | the installer | Signs a named version of the terms. |
 | `submit_image` | a party | Files a photograph. The contract stores and hashes the bytes. |
 | `submit_document` | a party | Files a document's text. |
 | `submit_declaration` | a party | Records a statement that no panel will read. |
-| `request_assessment` | a party | Puts the evidence to a panel. |
+| `request_assessment` | the installer | Puts the evidence to a panel. |
 | `open_appeal` | the owner | Contests a decision inside its window, once. |
 | `decide_appeal` | anyone | Has a fresh panel judge the milestone again. |
 | `lapse_appeal` | anyone | Closes an appeal no panel decided in three days. |
 | `finalize` | anyone | Settles an acceptance that can no longer be contested. |
-| `close_milestone` | the owner | Closes a milestone and releases what it reserved. |
+| `close_milestone` | anyone | Closes one nobody accepted, once its deadline has passed. |
 | `claim` | anyone owed | Withdraws the balance the contract credited them. |
 
 ### Read methods
@@ -158,6 +158,22 @@ Refusals proved live: a stranger cannot file evidence or ask for an assessment, 
 cannot contest their own acceptance, a milestone cannot be finalized inside its window, and a
 decision cannot be contested after it.
 
+A second run, `scripts/paths.mjs`, proves the writes the adjudication never touches: funding
+escrow after the fact, an inspector taking the appointment, revising a schedule and
+countersigning it, withdrawing what no milestone reserved, closing a milestone nobody accepted
+once its deadline has passed, and cancelling a project before the installer signs. Eighteen of
+the contract's nineteen writes are proved on chain this way. The nineteenth, `lapse_appeal`,
+needs three days to pass after an appeal's evidence period; its refusal wall is proved live
+instead, and `docs/e2e-verification.md` sets out the arithmetic rather than leaving an
+impression of coverage.
+
+The interface is proved separately, because a proof run signs with the SDK and so says nothing
+about the pages. Every form is driven in a browser by a stand-in wallet that refuses to sign,
+and the contract call it composes is read back and checked against the contract's own
+signatures. That found seven faults a typechecker and a linter had passed over, including one
+act that was never offered at all, and they are listed in `docs/e2e-verification.md` rather
+than quietly fixed.
+
 ## What running this on a real panel looks like
 
 `docs/PROBE-REPORT.md` records what the network actually did across the proof runs, including
@@ -172,7 +188,7 @@ not reporting.
 |---|---|
 | Contract | Python intelligent contract on GenLayer Studio Next, chain 61997 |
 | Reading and judging | `gl.nondet.exec_prompt` with images, under `gl.vm.run_nondet` |
-| Tests | 162 direct tests against a stubbed runtime, plus a 64 mutant sweep |
+| Tests | 162 direct tests against a stubbed runtime, a 64 mutant sweep, and 156 for the interface |
 | Scripts | Node with `genlayer-js` 2.0.0-rc.1 |
 | Interface | Next.js App Router, TypeScript strict, Tailwind, Transaction Kit rc.2 |
 
