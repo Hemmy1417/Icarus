@@ -13,7 +13,7 @@ import {
 } from "@/components/bits";
 import {
   criterionStatus, decision, itemKind, itemName, lineStatus, moment, prose, quality, roleLower,
-  roundName, shortDigest,
+  roundName, shortDigest, wasCut,
 } from "@/lib/present";
 import { getRound } from "@/lib/read";
 import type { ImageReading, Round } from "@/lib/types";
@@ -151,9 +151,16 @@ export default function RoundPage({
                     </span>
                   </div>
                   {r.notes.line_notes[id] ? (
-                    <p className="mt-4 max-w-[720px] text-[15px] leading-[1.55] text-steel">
+                    <blockquote className="mt-4 max-w-[720px] border-l-2 border-mist pl-5 text-[15px] leading-[1.55] text-steel">
                       {prose(r.notes.line_notes[id])}
-                    </p>
+                      {wasCut(r.notes.line_notes[id]) ? "…" : ""}
+                      <cite className="type-caption mt-2 block not-italic">
+                        The panel&apos;s own words
+                        {wasCut(r.notes.line_notes[id])
+                          ? ", cut where the contract caps a note at 200 characters."
+                          : "."}
+                      </cite>
+                    </blockquote>
                   ) : null}
                   <p className="type-caption mt-3">
                     {basis.length

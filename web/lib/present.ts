@@ -220,6 +220,18 @@ export function prose(text: string | null | undefined): string {
     .trim();
 }
 
+/**
+ * The contract caps a per-line note at 200 characters, so a panel's sentence
+ * can arrive cut off mid-word. A page that printed the fragment as though it
+ * were the whole note would be misreporting the record, so a note at the cap
+ * is marked as cut rather than tidied up or silently completed.
+ */
+export const LINE_NOTE_MAX = 200;
+
+export function wasCut(text: string | null | undefined): boolean {
+  return String(text ?? "").length >= LINE_NOTE_MAX;
+}
+
 const GEN_WEI = 10n ** 18n;
 
 /** GEN with up to four decimals, trailing zeros trimmed: "2 GEN", "0.05 GEN". */

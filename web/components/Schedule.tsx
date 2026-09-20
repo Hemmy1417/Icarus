@@ -14,7 +14,7 @@
  * outcome is underlined, and an accepted milestone does not turn orange.
  */
 import { DataCard, Figure, Tag } from "./bits";
-import { equipmentRole, lineStatus, lineStatusSaid } from "@/lib/present";
+import { equipmentRole, lineStatus, lineStatusSaid, wasCut } from "@/lib/present";
 import type { EquipmentLine, LineStatus } from "@/lib/types";
 
 export function Schedule({
@@ -95,8 +95,12 @@ export function Schedule({
                 notes?.[line.id] ? (
                   <blockquote className="mt-4 max-w-[720px] border-l-2 border-mist pl-5 text-[15px] leading-[1.55] text-steel">
                     {notes[line.id]}
+                    {wasCut(notes[line.id]) ? "…" : ""}
                     <cite className="type-caption mt-2 block not-italic">
-                      The panel&apos;s own words.
+                      The panel&apos;s own words
+                      {wasCut(notes[line.id])
+                        ? ", cut where the contract caps a note at 200 characters."
+                        : "."}
                     </cite>
                   </blockquote>
                 ) : (
