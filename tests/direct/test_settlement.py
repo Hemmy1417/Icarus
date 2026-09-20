@@ -259,3 +259,26 @@ class TestClosing:
             c.submit_image(mid, "{}", b"\x89PNG\r\n\x1a\n" + b"0" * 100)
         with pytest.raises(err(module), match="the milestone is settled"):
             c.request_assessment(mid, json.dumps(items))
+
+
+class TestCancellationNeverRewritesHistory:
+    def test_cancelling_leaves_a_milestone_that_already_closed_alone(self, module, c):
+        """A milestone whose unsigned terms expired can be closed by anyone
+        while the project is still unsigned. Cancelling the project afterwards
+        must not rewrite that settled record."""
+        from conftest import create_project
+        pid = create_project(module, c, escrow=5 * GEN)
+        as_(module, OWNER)
+        mid = json.loads(c.add_milestone(pid, terms()))["milestone_id"]
+        set_now("2026-10-21T00:00:00Z")
+        as_(module, STRANGER)
+        c.close_milestone(mid)
+        before = milestone(c, mid)
+        assert before["state"] == "CLOSED"
+        assert before["close_reason"] == "the deadline passed with nothing accepted"
+        as_(module, OWNER)
+        c.cancel_project(pid)
+        after = milestone(c, mid)
+        assert after["close_reason"] == before["close_reason"]
+        assert after["closed_at"] == before["closed_at"]
+        assert claimable(c, OWNER) == 5 * GEN
