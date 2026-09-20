@@ -1,6 +1,7 @@
 # End to end verification
 
-Three layers, each checking something the others cannot.
+Four layers, each checking something the others cannot, and an account of
+which of the contract's writes are proved live.
 
 ## 1. The direct suite
 
@@ -90,6 +91,56 @@ contest their own acceptance. A milestone cannot be finalized inside its
 window, nor contested after it. Evidence cannot be filed against a decision
 that already stands. Each of these is a real transaction whose refusal text is
 checked, not a local assertion.
+
+## 4. The interface's write path
+
+The three layers above prove the contract. None of them touches a page: a
+proof run signs with the SDK, so a form that composes the wrong call passes
+every one of them. That is not hypothetical, and it is why this layer exists.
+
+A stand-in wallet is announced to the page over EIP-6963. It reports an
+account and the right chain and refuses to sign anything, which is enough to
+reach the point where a form has composed its contract call. The composed
+`{method, args}` is then read off the React fiber, where each page builds it
+as a prop before the kit encodes it. No key is involved at any point.
+
+Driving every real form this way found seven faults that a typechecker, a
+linter and 126 tests had all passed over, because a contract call is built as
+an untyped array and nothing downstream knows what belongs in it:
+
+| fault | effect |
+|---|---|
+| `accept_version` sent one argument, the contract takes two | signing terms failed |
+| `submit_declaration` sent three, the contract takes two | filing a statement failed |
+| `claim` declared as an act and never offered anywhere | an installer could not draw their payment |
+| `propose_version` offered to the installer | a button that always fails |
+| `request_assessment` offered to the owner | a button that always fails |
+| filing and reassessment shut on a rejected or undetermined milestone | the recovery path was unreachable |
+| `close_milestone` restricted to the owner, and offered before the deadline | wrong in both directions at once |
+
+The bench is a one-off; `web/tests/calls.test.ts` is what holds. It reads the
+contract's own signatures from the deployment with `gen_getContractSchema`,
+commits them, and checks every composed call against them: the arity of each,
+that every write is reachable from somewhere, and that value is sent to
+exactly the two payable methods.
+
+## Which writes are proved live, and which are not
+
+The arithmetic, rather than an impression of coverage. The contract has
+nineteen writes. `scripts/proofs.mjs` follows the adjudication and reaches
+eleven of them; `scripts/paths.mjs` proves seven more, along with five
+refusal walls.
+
+| proved by | writes |
+|---|---|
+| `proofs.mjs`, the adjudication | `create_project`, `accept_project`, `add_milestone`, `submit_image`, `submit_document`, `submit_declaration`, `request_assessment`, `open_appeal`, `decide_appeal`, `finalize`, `claim` |
+| `paths.mjs`, terms and escrow | `fund_project`, `accept_inspector_role`, `propose_version`, `accept_version`, `withdraw_escrow`, `close_milestone`, `cancel_project` |
+| not reachable in a run | `lapse_appeal` |
+
+`lapse_appeal` needs three days to pass after an appeal's evidence period, so
+it cannot be shown in a run of any reasonable length. Its refusal wall is
+proved live instead, and the direct suite covers the rest of it. That is
+stated here rather than left as a gap somebody else has to find.
 
 ## What is published
 

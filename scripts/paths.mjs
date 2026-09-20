@@ -205,8 +205,10 @@ if (!run.steps["terms.sign"]) {
 
 // 5. The installer signs those terms. This is accept_version on version 1.
 await step("terms.sign", "INSTALLER", "accept_version", [mid, 1]);
-const signed = await view("get_milestone", [mid]);
-assert(signed.state === "AWAITING_EVIDENCE", `signing left it ${signed.state}`);
+if (!run.steps["milestone.close"]) {
+  const signed = await view("get_milestone", [mid]);
+  assert(signed.state === "AWAITING_EVIDENCE", `signing left it ${signed.state}`);
+}
 
 // 6. The owner revises the schedule. It binds only when the installer signs.
 await step("terms.revise", "OWNER", "propose_version", [mid, terms({
@@ -258,13 +260,13 @@ if (left > 0) {
   say(`waiting ${Math.ceil(left / 1000)} s for the deadline, to close a milestone nobody accepted`);
   await sleep(left + 5_000);
 }
-await step("milestone.close", "STRANGER", "close_milestone", [mid]);
+const closing = await step("milestone.close", "STRANGER", "close_milestone", [mid]);
 const closed = await view("get_milestone", [mid]);
 assert(closed.state === "CLOSED", `closing left it ${closed.state}`);
 const released = await view("get_project", [pid]);
-assert(BigInt(released.reserved_wei) === reservedBefore - 1n * GEN,
+if (closing.fresh) assert(BigInt(released.reserved_wei) === reservedBefore - 1n * GEN,
        `closing released ${reservedBefore - BigInt(released.reserved_wei)} rather than the payment`);
-assert(BigInt(released.unreserved_wei) === 1n * GEN,
+if (closing.fresh) assert(BigInt(released.unreserved_wei) === 1n * GEN,
        `free escrow is ${released.unreserved_wei} after the reservation returned`);
 say("closed by a stranger, and the reservation returned to the owner's free escrow");
 
