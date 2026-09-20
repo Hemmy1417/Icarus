@@ -56,17 +56,51 @@ Three radii, and the contrast between them is the point:
 Sections alternate white and ash. The header is a floating ash pill centred,
 the wordmark left, a graphite button right.
 
-## What this means for ICARUS specifically
+## The shape of a page
 
-- **The equipment schedule is the imagery.** Charts are this reference's
-  visual language; here the equivalent is the schedule table, each line
-  reading role, manufacturer, model and rating with its status set against
-  it. It belongs on a white 20px data card, hairline separated, machine
-  values in Inter.
-- **The decision record is a printed report.** Ivory wash, PolySans 40px
-  heading, the matched lines listed with what each one rested on.
+The reference fixes the palette, the type and the radii. It does not fix the
+architecture, and the first attempt borrowed one rather than finding this
+product's own. What is built now:
+
+- **The cover states one thing.** A held statement at display size, then a
+  horizontal rail of live cases carrying their verdicts, and nothing else.
+  Everything that explains rather than shows lives on the explainer.
+- **A case is a sheet, not a stack.** The verdict is the first and largest
+  object on the page. Under it the equipment schedule stands as a pinned
+  index, one row per line, and selecting a row swaps the pane beside it, so a
+  finding and the photographs it rests on are read together rather than a
+  thousand pixels apart. This is the reference's idea that charts are the
+  imagery, applied to a product whose chart is a schedule.
+- **The record is an index.** Rows, not cards: site and title on the left,
+  verdict on the right, the verdict underlined in ember on hover.
+- **The explainer is two columns.** A rule in display type, its explanation
+  beside it. Four rules and four limits, because a page that prints only the
+  rules is marketing.
+
+## No machine value reaches a page
+
+Identifiers, addresses and digests never appear in reading flow. This needed
+more than deleting them, because a panel writes in the record's own
+vocabulary: it cites items as `ev-000001` and schedule lines as `E1`, since
+that is what it was shown, and those sentences are quoted on the case sheet.
+
+`writeOut` in `lib/present.ts` substitutes the words the reader already has
+in front of them, and recapitalises a sentence where a substitution reopened
+one. It refuses two things: altering the panel's wording, which would be
+editing the record rather than presenting it, and lowercasing a model number
+to fit a sentence, since the model is the thing the schedule is about.
+
+`/verify` is the single exception, and even there the values sit behind a
+disclosure: the page states in words what can be checked, and hands over the
+addresses and digests to the reader who opens it.
+
+## What else this means for ICARUS
+
 - **Ember marks the finding, not the verdict.** An accepted milestone does
-  not turn the page orange. Ember underlines the link to the decision and
-  draws the one line on a chart that matters.
+  not turn the page orange. Ember underlines the line that actually decided
+  the outcome, and the one link that matters.
 - **Undetermined is not a warning colour.** It is a sentence in Steel that
-  says what was not established and what would establish it.
+  says what was not established.
+- **The wallet address is not page furniture.** The header button says
+  connected; the account it will sign as is inside the dropdown, where
+  somebody has asked.
