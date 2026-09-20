@@ -5,7 +5,8 @@ import pytest
 
 from conftest import (  # noqa: F401
     GEN, INSPECTOR, INSTALLER, OWNER, STRANGER, active_milestone, as_, assess, declaration,
-    document, err, exif_jpeg, image, jfif, judge_answer, milestone, png, set_now, terms,
+    document, err, exif_jpeg, image, jfif, judge_answer, milestone, png, rounds, set_now,
+    terms,
 )
 
 
@@ -126,16 +127,26 @@ class TestWhatTheFilerClaims:
 
 class TestDeclarations:
     def test_a_declaration_is_stored_hashed_and_never_read(self, module, c):
-        _, mid = active_milestone(module, c)
-        said = declaration(module, c, mid, text="Everything on site is per the drawings.")
-        it = json.loads(c.get_item(said))
-        assert it["kind"] == "DECLARATION" and len(it["sha256"]) == 64
+        """From any party: the installer's is never named into a round, and
+        the counterparties' are never swept into one either."""
+        _, mid = active_milestone(module, c, inspector=INSPECTOR)
+        mine = declaration(module, c, mid, text="Everything on site is per the drawings.")
+        theirs = declaration(module, c, mid, who=OWNER,
+                             text="We say the wrong inverter was fitted.")
+        watching = declaration(module, c, mid, who=INSPECTOR,
+                               text="I attended site on the stated date.")
+        for eid in (mine, theirs, watching):
+            it = json.loads(c.get_item(eid))
+            assert it["kind"] == "DECLARATION" and len(it["sha256"]) == 64
         a = image(module, c, mid, caption="The array")
         b = image(module, c, mid, caption="The inverter", origin="NAMEPLATE")
         from conftest import prompts
         assess(module, c, mid, [a, b])
         for p in prompts():
             assert "per the drawings" not in p["prompt"]
+            assert "wrong inverter was fitted" not in p["prompt"]
+            assert "attended site" not in p["prompt"]
+        assert [row["item_id"] for row in rounds(c, mid, 1)["evidence"]] == [a, b]
 
     def test_a_declaration_can_never_be_presented_to_a_round(self, module, c):
         _, mid = active_milestone(module, c)

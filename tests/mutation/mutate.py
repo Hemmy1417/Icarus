@@ -201,11 +201,9 @@ MUTATIONS = [
      '        if _now() <= _parse_iso(appeal["evidence_ends"]) + timedelta(seconds=APPEAL_LAPSE_SECONDS):',
      "        if False:"),
     ("a refused creation keeps the value",
-     "            if wei:\n                self._credit(sender, wei)\n"
-     "            return json.dumps({\"refused\": True,\n"
-     "                               \"reason\": f\"{str(e).replace(ERROR_EXPECTED + ' ', '')}; \"\n"
-     "                                         \"any value sent is claimable back\"})",
-     "            return json.dumps({\"refused\": True, \"reason\": \"mutant\"})"),
+     "            # way out of here has to be a return, not a raise.\n"
+     "            if wei:\n                self._credit(sender, wei)",
+     "            # way out of here has to be a return, not a raise.\n            pass"),
     ("a claim is paid before the balance is cleared",
      '        row["claimable"] = "0"\n        row["claimed"] = str(int(row["claimed"]) + owed)\n'
      "        self.ledger[who] = json.dumps(row, sort_keys=True)",
