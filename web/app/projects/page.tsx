@@ -12,6 +12,7 @@ import Link from "next/link";
 
 import { Loading, ReadFailure } from "@/components/bits";
 import { decision, gen, milestoneState, plural } from "@/lib/present";
+import { appealStanding } from "@/lib/acts";
 import { getProject, listProjects } from "@/lib/read";
 import type { MilestoneSummary, Project } from "@/lib/types";
 import { useChain } from "@/lib/useChain";
@@ -86,7 +87,9 @@ export default function Record() {
                         <p className="type-caption mt-2">
                           {gen(m.payment_wei)}
                           {m.state === "FINALIZED" ? ", settled" : ""}
-                          {m.standing?.appealed ? ", contested" : ""}
+                          {appealStanding(m) === "OPEN" ? ", appeal open"
+                            : appealStanding(m) === "DECIDED" ? ", decided on appeal"
+                              : appealStanding(m) === "LAPSED" ? ", appeal lapsed" : ""}
                         </p>
                       </div>
                     </Link>

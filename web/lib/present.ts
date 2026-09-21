@@ -391,3 +391,16 @@ export function shortDigest(hex: string): string {
   const h = String(hex ?? "");
   return h.length > 16 ? `${h.slice(0, 8)}…${h.slice(-8)}` : h;
 }
+
+/** One short caption for where a milestone stands on appeal, or "" for none.
+ *  It says what is known and no more: a decided appeal is final, but whether
+ *  it upheld or overturned the first decision is on the round's own page. */
+export function appealCaption(standing: "NONE" | "OPEN" | "DECIDED" | "LAPSED"): string {
+  switch (standing) {
+    case "OPEN": return "Appeal open, not yet decided";
+    case "DECIDED": return "Decided on appeal, final";
+    case "LAPSED": return "Appeal lapsed undecided";
+    default: return "";
+  }
+}
+

@@ -78,13 +78,34 @@ const M = [
    "                : used >= cap",
    "                : used > cap"],
   ["acts", "settling does not wait for the window",
-   "    (standing.appealed || nowMs > ms(standing.window_ends));",
-   "    (standing.appealed || true);"],
+   "    !!standing?.appealable && !!standing.window_ends && nowMs <= ms(standing.window_ends);",
+   "    false;"],
   ["acts", "settling pays on a rejection",
-   `      : standing?.decision !== "ACCEPTED"
-        ? no("finalize", "Nothing pays until a panel accepts the milestone.")`,
-   `      : false
-        ? no("finalize", "Nothing pays until a panel accepts the milestone.")`],
+   `        : m.state !== "ACCEPTED"
+          ? no("finalize", "Nothing pays until a panel accepts the milestone.")`,
+   `        : false
+          ? no("finalize", "Nothing pays until a panel accepts the milestone.")`],
+
+  // ── the appeal-to-settlement lifecycle: a reviewer found both of these ───
+  ["acts", "an open appeal is offered for settlement (the shipped defect)",
+   `      : m.state === "APPEALED"
+        ? no("finalize", "An appeal is open. Nothing settles until a fresh panel decides it.")
+        : m.state !== "ACCEPTED"`,
+   `      : m.state !== "ACCEPTED" && m.state !== "APPEALED"`],
+  ["acts", "an acceptance upheld on appeal waits on a window it does not have (the shipped defect)",
+   "    !!standing?.appealable && !!standing.window_ends && nowMs <= ms(standing.window_ends);",
+   "    !standing?.appealed && !(nowMs > ms(standing?.window_ends ?? null));"],
+  ["acts", "an open appeal reads as decided",
+   `  if (m.state === "APPEALED") return "OPEN";
+`,
+   ""],
+  ["acts", "a decided appeal is read from the appealed flag",
+   `  if (m.standing?.kind === "APPEAL") return "DECIDED";`,
+   `  if (m.standing?.appealed) return "DECIDED";`],
+  ["acts", "a lapsed appeal reads as nothing",
+   `  if (m.standing?.kind === "APPEAL_LAPSED") return "LAPSED";
+`,
+   ""],
 
   // ── the presentation layer: no machine value reaches a page ───────────
   ["present", "item citations left as identifiers",
@@ -122,8 +143,14 @@ const tests = {
   present: "tests/present.test.ts tests/writeout.test.ts",
 };
 
+const [MAJOR, MINOR] = process.versions.node.split(".").map(Number);
+const NEEDS_FLAG = MAJOR < 22 || (MAJOR === 22 && MINOR < 12);
+const ENV = NEEDS_FLAG
+  ? { ...process.env, NODE_OPTIONS: `${process.env.NODE_OPTIONS ?? ""} --experimental-require-module`.trim() }
+  : process.env;
+
 function run(testFiles) {
-  const r = spawnSync(NODE, [VITEST, "run", ...testFiles.split(" ")], { cwd: WEB, encoding: "utf8" });
+  const r = spawnSync(NODE, [VITEST, "run", ...testFiles.split(" ")], { cwd: WEB, encoding: "utf8", env: ENV });
   const tail = `${r.stdout}${r.stderr}`.match(/Tests\s+[^\n]+/)?.[0] ?? "no summary";
   return { ok: r.status === 0, tail: tail.replace(/\s+/g, " ").trim() };
 }

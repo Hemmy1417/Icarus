@@ -1,0 +1,52 @@
+[19:27:59] appeal-to-settlement verification on 0x38b195DF0E491F2B53347fb856D50090cE1C7823
+[19:28:03] ms-00002 on the record: ACCEPTED, standing kind APPEAL, appealable false, appealed false, window null, reserved 2000000000000000000
+[19:28:03] ok    leftover: the interface reads the upheld appeal as DECIDED  (DECIDED)
+[19:28:03] ok    leftover: the interface now offers to settle it  (Settle the milestone; the payment becomes a claim the installer draws.)
+[19:28:05] leftover.finalize: STRANGER finalize sent
+[19:28:45] ok    leftover: settled on-chain, nothing left reserved  (FINALIZED, reserved 0)
+[19:28:45] ok    leftover: the interface no longer offers to settle it  (This milestone has settled.)
+[19:28:47] case.create: OWNER create_project sent
+[19:29:31] case.milestone: OWNER add_milestone sent
+[19:30:10] case.sign: INSTALLER accept_project sent
+[19:30:56] case.inverter: INSTALLER submit_image sent
+[19:32:08] case.plate: INSTALLER submit_image sent
+[19:32:54] case.assess: INSTALLER request_assessment sent
+  … case.assess COMMITTING
+[19:34:28] ms-00013: first panel decided ACCEPTED
+[19:34:30] appeal.open: OWNER open_appeal sent
+
+[19:35:07] 1. AN OPEN APPEAL CANNOT BE FINALIZED
+[19:35:10] chain: state APPEALED, standing decision ACCEPTED, appealed flag true
+[19:35:10] ok    chain: the appeal is open, and the appealed flag is TRUE (the flag the old rule misread as 'upheld')
+[19:35:10] ok    interface: reads the appeal as OPEN, not decided  (OPEN)
+[19:35:10] ok    interface: does NOT offer to settle, and says why  (An appeal is open. Nothing settles until a fresh panel decides it.)
+[19:35:12] open.finalize_refused: STRANGER finalize sent
+[19:35:48] ok    the contract refused: open.finalize_refused  ([EXPECTED] only a standing acceptance is finalized)
+[19:35:49] ok    chain: nothing moved; the payment is still reserved  (APPEALED, reserved 2000000000000000000)
+[19:35:51] waiting for the appeal's evidence period (527 s)
+[19:36:51] waiting for the appeal's evidence period (467 s)
+[19:37:51] waiting for the appeal's evidence period (407 s)
+[19:38:51] waiting for the appeal's evidence period (347 s)
+[19:39:51] waiting for the appeal's evidence period (287 s)
+[19:40:51] waiting for the appeal's evidence period (227 s)
+[19:41:51] waiting for the appeal's evidence period (167 s)
+[19:42:51] waiting for the appeal's evidence period (107 s)
+[19:43:51] waiting for the appeal's evidence period (47 s)
+[19:44:41] appeal.decide: STRANGER decide_appeal sent
+  … appeal.decide COMMITTING
+  … appeal.decide ACCEPTED
+
+[19:46:43] 2. THE APPEAL IS DECIDED: ACCEPTED (round 2, reviewing round 1)
+[19:46:46] chain: state ACCEPTED, standing kind APPEAL, appealable false, appealed flag false, window null
+[19:46:46] ok    interface: reads the appeal as DECIDED  (DECIDED)
+[19:46:46] ok    chain: an upheld acceptance stands with the appealed flag FALSE and no window (the state the old rule could never settle)
+[19:46:46] ok    interface: offers to settle at once  (Settle the milestone; the payment becomes a claim the installer draws.)
+[19:46:49] ok    interface: offers the owner no second appeal  (There is no decision on this milestone to contest.)
+[19:46:51] upheld.second_appeal_refused: OWNER open_appeal sent
+[19:47:27] ok    the contract refused: upheld.second_appeal_refused  ([EXPECTED] there is no decision open to appeal on this milestone)
+[19:47:31] upheld.finalize: STRANGER finalize sent
+[19:48:11] ok    chain: settled; nothing left reserved  (FINALIZED)
+[19:48:11] ok    chain: the installer's claim grew by exactly the milestone's payment  (2000000000000000000 -> 4000000000000000000)
+[19:48:11] ok    interface: no longer offers to settle  (This milestone has settled.)
+
+[19:48:11] EVERY CHECK PASSED

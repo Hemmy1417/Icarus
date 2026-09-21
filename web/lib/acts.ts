@@ -277,19 +277,37 @@ export function milestoneActs({
     );
   }
 
-  /* settlement: permissionless, because a payment should not wait on goodwill */
-  const settles =
-    standing?.decision === "ACCEPTED" &&
-    (m.state === "ACCEPTED" || m.state === "APPEALED") &&
-    (standing.appealed || nowMs > ms(standing.window_ends));
+  /*
+   * Settlement: permissionless, because a payment should not wait on goodwill.
+   *
+   * This mirrors the contract's finalize() line for line, and an earlier
+   * version did not. It read `standing.appealed` as "an appeal upheld this".
+   * The contract sets that flag when an appeal OPENS and never anywhere else:
+   * a decided appeal writes a fresh standing of kind APPEAL with the flag
+   * false and no window at all. So the old rule offered to settle an
+   * acceptance while its appeal was still open (the contract refuses: the
+   * state is APPEALED, not ACCEPTED), and then, once an appeal had upheld the
+   * acceptance, compared the clock against a window that does not exist and
+   * never offered to settle it. The payment the appeal had just confirmed
+   * could not be reached from the interface.
+   *
+   *   state is ACCEPTED, and the standing is not appealable  -> settle now
+   *   state is ACCEPTED, appealable, window has passed       -> settle now
+   *   state is ACCEPTED, appealable, window still open       -> wait
+   *   state is APPEALED                                      -> an appeal decides first
+   */
+  const windowOpen =
+    !!standing?.appealable && !!standing.window_ends && nowMs <= ms(standing.window_ends);
   acts.push(
     m.state === "FINALIZED"
       ? no("finalize", "This milestone has settled.")
-      : standing?.decision !== "ACCEPTED"
-        ? no("finalize", "Nothing pays until a panel accepts the milestone.")
-        : settles
-          ? ok("finalize", "Settle the milestone; the payment becomes a claim the installer draws.")
-          : no("finalize", "The window for contesting this acceptance has not closed."),
+      : m.state === "APPEALED"
+        ? no("finalize", "An appeal is open. Nothing settles until a fresh panel decides it.")
+        : m.state !== "ACCEPTED"
+          ? no("finalize", "Nothing pays until a panel accepts the milestone.")
+          : windowOpen
+            ? no("finalize", "The window for contesting this acceptance has not closed.")
+            : ok("finalize", "Settle the milestone; the payment becomes a claim the installer draws."),
   );
 
   /*
@@ -323,6 +341,28 @@ export function milestoneActs({
 }
 
 /**
+ * Where a milestone stands with respect to an appeal, read the way the
+ * contract writes it. `standing.appealed` alone cannot answer this: it is
+ * true while an appeal is open and after one lapses, and false after one is
+ * decided, which is the opposite of what the name suggests.
+ *
+ *   OPEN     state APPEALED: filed, not yet decided
+ *   DECIDED  the standing decision came from an appeal round, and is final
+ *   LAPSED   no panel decided it in time; the milestone is undetermined
+ *   NONE     nothing on this milestone was ever contested to a conclusion
+ */
+export type AppealStanding = "NONE" | "OPEN" | "DECIDED" | "LAPSED";
+
+export function appealStanding(
+  m: Pick<MilestoneSummary, "state" | "standing">,
+): AppealStanding {
+  if (m.state === "APPEALED") return "OPEN";
+  if (m.standing?.kind === "APPEAL") return "DECIDED";
+  if (m.standing?.kind === "APPEAL_LAPSED") return "LAPSED";
+  return "NONE";
+}
+
+/**
  * The milestone the cover features as a worked example: one that was decided,
  * contested and settled, so a reader sees the whole path rather than a
  * fragment of it. Falls back to the most decided milestone available.
@@ -331,7 +371,7 @@ export function workedExample(p: Project | null): MilestoneSummary | null {
   if (!p) return null;
   const rank = (m: MilestoneSummary) =>
     (m.state === "FINALIZED" ? 4 : 0) +
-    (m.standing?.appealed ? 2 : 0) +
+    (appealStanding(m) === "DECIDED" ? 2 : 0) +
     (m.rounds_count > 0 ? 1 : 0);
   const best = [...p.milestone_summaries].sort((a, b) => rank(b) - rank(a))[0];
   return best && rank(best) > 0 ? best : null;

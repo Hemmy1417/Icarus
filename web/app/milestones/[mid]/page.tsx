@@ -21,10 +21,11 @@ import { Acts } from "@/components/Acts";
 import { Loading, ReadFailure, Tag } from "@/components/bits";
 import { EvidenceFigure } from "@/components/Evidence";
 import { FilePanel } from "@/components/FilePanel";
-import { currentEvidence, milestoneActs } from "@/lib/acts";
+import { appealStanding, currentEvidence, milestoneActs } from "@/lib/acts";
 import { getConfig } from "@/lib/read";
 import { useWallet } from "@/lib/wallet";
 import {
+  appealCaption,
   criterionStatus, day, decision, gen, lineName, lineStatus, lineStatusSaid,
   milestoneState,
   moment, referenceNames, relative, writeOut,
@@ -109,7 +110,9 @@ export default function CaseSheet({ params }: { params: Promise<{ mid: string }>
               Open to challenge {relative(m.standing.window_ends, nowMs)}
             </span>
           ) : null}
-          {m.standing?.appealed ? <span className="type-caption">Contested once, upheld</span> : null}
+          {appealCaption(appealStanding(m)) ? (
+            <span className="type-caption">{appealCaption(appealStanding(m))}</span>
+          ) : null}
           <Link href={`/projects/${m.project_id}`} className="type-caption hover:text-graphite">
             The project
           </Link>

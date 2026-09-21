@@ -8,7 +8,8 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { MARGIN_MS, milestoneActs, projectActs, roleIn, workedExample } from "@/lib/acts";
+import { MARGIN_MS, appealStanding, milestoneActs, projectActs, roleIn, workedExample } from "@/lib/acts";
+import { appealCaption } from "@/lib/present";
 import type { Config, Milestone, Project, Standing } from "@/lib/types";
 
 const OWNER = "0x1111111111111111111111111111111111111111";
@@ -57,6 +58,22 @@ const standing = (over: Partial<Standing> = {}): Standing => ({
   round: 1, decision: "ACCEPTED", at: iso(NOW - 60_000), kind: "ASSESSMENT",
   appealable: true, appealed: false, window_ends: iso(NOW + 600_000), item_mark: 2, ...over,
 });
+
+/*
+ * The standings the CONTRACT writes, and no others. An earlier suite invented
+ * a fourth, `{ appealed: true, kind: "APPEAL" }`, which no code path produces,
+ * and a wrong settlement rule passed against it for as long as nobody checked
+ * the fixture against the contract. Each of these names the lines it copies.
+ */
+/** open_appeal(): the appealed decision stays as the standing, flagged. */
+const underAppeal = (against: "ACCEPTED" | "REJECTED" = "ACCEPTED") =>
+  standing({ decision: against, appealed: true });
+/** _record_round(kind "APPEAL"): a fresh standing, final, with no window. */
+const decidedOnAppeal = (decision: Standing["decision"] = "ACCEPTED") =>
+  standing({ round: 2, decision, kind: "APPEAL", appealable: false, appealed: false, window_ends: null });
+/** lapse_appeal(): undetermined, never appealable again. */
+const lapsed = () =>
+  standing({ decision: "UNDETERMINED", kind: "APPEAL_LAPSED", appealable: false, appealed: true, window_ends: null });
 
 const act = (acts: ReturnType<typeof milestoneActs>, id: string) => acts.find((a) => a.id === id);
 
@@ -271,7 +288,7 @@ describe("an open appeal", () => {
   const appealed = (endsMs: number) => milestone({
     state: "APPEALED",
     appeal: { reviewed_round: 1, reason: "", opened_at: iso(NOW - 1000), evidence_ends: iso(endsMs), by: OWNER },
-    standing: standing({ appealed: true }),
+    standing: underAppeal(),
   });
 
   it("cannot be decided while it is still taking evidence", () => {
@@ -300,9 +317,44 @@ describe("settlement", () => {
     expect(act(actsFor(STRANGER, past), "finalize")?.available).toBe(true);
   });
 
-  it("does not wait when the decision was already contested and upheld", () => {
-    const m = milestone({ state: "ACCEPTED", standing: standing({ appealed: true, kind: "APPEAL" }) });
-    expect(act(actsFor(STRANGER, m), "finalize")?.available).toBe(true);
+  it("is refused while an appeal against the acceptance is open", () => {
+    const m = milestone({
+      state: "APPEALED", standing: underAppeal("ACCEPTED"),
+      appeal: { reviewed_round: 1, reason: "", opened_at: iso(NOW - 1000), evidence_ends: iso(NOW + 600_000), by: OWNER },
+    });
+    const a = act(actsFor(STRANGER, m), "finalize");
+    expect(a?.available).toBe(false);
+    expect(a?.reason).toMatch(/appeal is open/i);
+  });
+
+  it("is refused while an appeal is open even after the original window has passed", () => {
+    const m = milestone({
+      state: "APPEALED", standing: standing({ appealed: true, window_ends: iso(NOW - 86_400_000) }),
+      appeal: { reviewed_round: 1, reason: "", opened_at: iso(NOW - 90_000_000), evidence_ends: iso(NOW - 1000), by: OWNER },
+    });
+    expect(act(actsFor(STRANGER, m), "finalize")?.available).toBe(false);
+  });
+
+  it("is available at once when an appeal has upheld the acceptance", () => {
+    const m = milestone({ state: "ACCEPTED", rounds_count: 2, standing: decidedOnAppeal("ACCEPTED") });
+    const a = act(actsFor(STRANGER, m), "finalize");
+    expect(a?.available).toBe(true);
+    // and the decision is final: nobody is offered a second appeal
+    expect(act(actsFor(OWNER, m), "open_appeal")?.available).toBe(false);
+  });
+
+  it("is available when an appeal OVERTURNED a rejection into an acceptance", () => {
+    const m = milestone({ state: "ACCEPTED", rounds_count: 2, standing: decidedOnAppeal("ACCEPTED") });
+    expect(act(actsFor(INSTALLER, m), "finalize")?.available).toBe(true);
+  });
+
+  it("is never offered when an appeal ended in a rejection, or undecided", () => {
+    for (const d of ["REJECTED", "UNDETERMINED"] as const) {
+      const m = milestone({ state: d, rounds_count: 2, standing: decidedOnAppeal(d) });
+      expect(act(actsFor(STRANGER, m), "finalize")?.available).toBe(false);
+    }
+    const gone = milestone({ state: "UNDETERMINED", standing: lapsed() });
+    expect(act(actsFor(STRANGER, gone), "finalize")?.available).toBe(false);
   });
 
   it("never offers to settle a milestone no panel accepted", () => {
@@ -411,6 +463,32 @@ describe("the project", () => {
   });
 });
 
+describe("where a milestone stands on appeal", () => {
+  it("reads the state and the kind, never the appealed flag alone", () => {
+    expect(appealStanding(milestone({ state: "APPEALED", standing: underAppeal() }))).toBe("OPEN");
+    expect(appealStanding(milestone({ state: "ACCEPTED", standing: decidedOnAppeal() }))).toBe("DECIDED");
+    expect(appealStanding(milestone({ state: "FINALIZED", standing: decidedOnAppeal() }))).toBe("DECIDED");
+    expect(appealStanding(milestone({ state: "UNDETERMINED", standing: lapsed() }))).toBe("LAPSED");
+    expect(appealStanding(milestone({ state: "ACCEPTED", standing: standing() }))).toBe("NONE");
+    expect(appealStanding(milestone({}))).toBe("NONE");
+  });
+
+  it("does not call an open appeal decided, which is what the flag would say", () => {
+    const open = milestone({ state: "APPEALED", standing: underAppeal() });
+    expect(open.standing?.appealed).toBe(true);
+    expect(appealStanding(open)).not.toBe("DECIDED");
+    expect(appealCaption(appealStanding(open))).toMatch(/not yet decided/i);
+  });
+
+  it("does not call a lapsed appeal decided either", () => {
+    expect(appealCaption(appealStanding(milestone({ state: "UNDETERMINED", standing: lapsed() })))).toMatch(/lapsed/i);
+  });
+
+  it("says nothing for a milestone nobody contested", () => {
+    expect(appealCaption(appealStanding(milestone({ state: "ACCEPTED", standing: standing() })))).toBe("");
+  });
+});
+
 describe("the worked example the cover features", () => {
   const summary = (over: Record<string, unknown>) => ({
     milestone_id: "ms-00001", index: 0, title: "", milestone_type: "COMMISSIONING",
@@ -423,7 +501,7 @@ describe("the worked example the cover features", () => {
     const p = project({
       milestone_summaries: [
         summary({ milestone_id: "ms-00002", rounds_count: 1 }),
-        summary({ milestone_id: "ms-00003", state: "FINALIZED", rounds_count: 2, standing: standing({ appealed: true }) }),
+        summary({ milestone_id: "ms-00003", state: "FINALIZED", rounds_count: 2, standing: decidedOnAppeal() }),
       ],
     });
     expect(workedExample(p)?.milestone_id).toBe("ms-00003");

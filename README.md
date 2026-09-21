@@ -222,6 +222,14 @@ the documents all name one deployment). The live runs are not in CI, because
 they sign real transactions and wait out real appeal windows; they run by
 hand and their logs are committed.
 
+**From an appeal to settlement.** A reviewer found the interface could treat an
+open appeal as upheld, and could not settle an acceptance an appeal had
+confirmed. Both are corrected, and proved live with the interface's own rule
+in the loop: an open appeal is not offered for settlement and the contract
+refuses it, and an upheld appeal is offered at once and pays the installer
+exactly. See [docs/e2e-verification.md](docs/e2e-verification.md#5-from-an-appeal-to-settlement-with-the-interface-in-the-loop)
+and the state table in [docs/state-machine.md](docs/state-machine.md#from-an-appeal-to-settlement).
+
 ```bash
 node scripts/deploy.mjs record
 node scripts/proofs.mjs <address>

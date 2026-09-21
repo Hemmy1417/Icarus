@@ -124,6 +124,74 @@ commits them, and checks every composed call against them: the arity of each,
 that every write is reachable from somewhere, and that value is sent to
 exactly the two payable methods.
 
+## 5. From an appeal to settlement, with the interface in the loop
+
+A reviewer reported that the interface could treat an open appeal as though
+it had been upheld, and that its settlement logic did not match the
+contract's state after an appeal. Both were true, and layer 4 had not caught
+either: that bench walks the states a first visit reaches, and a decided
+appeal is not one of them.
+
+**The defect.** The interface read `standing.appealed` as "an appeal upheld
+this". The contract sets that flag when an appeal OPENS and clears it when
+one is decided. So while an owner's appeal against an acceptance was open,
+the interface offered to settle it; and once a fresh panel had upheld the
+acceptance, the standing carried no window at all, the interface compared the
+clock against a date that did not exist, and it never offered to settle. The
+payment an appeal had just confirmed could not be reached from a page. The
+milestone page also captioned an OPEN appeal "Contested once, upheld".
+
+The unit test that should have caught it built a standing the contract never
+writes (`appealed: true` together with `kind: "APPEAL"`), so the wrong rule
+passed against an invented state. The fixtures are now the three shapes the
+contract produces, each naming the function it copies. The table of those
+shapes is in [state-machine.md](state-machine.md#from-an-appeal-to-settlement).
+
+**The proof.** `scripts/appeal-settlement.mjs` imports the interface's real
+rule (`web/lib/acts.ts`, loaded, not copied), reads the milestone off the
+chain at each moment, asks the rule what it would offer, and then sends the
+write to show the contract agrees. Run on the deployment of record,
+21 September 2026, twelve transactions, seventeen checks, none failed:
+
+```text
+[19:27:59] appeal-to-settlement verification on 0x38b195DF0E491F2B53347fb856D50090cE1C7823
+[19:28:03] ms-00002 on the record: ACCEPTED, standing kind APPEAL, appealable false, appealed false, window null, reserved 2000000000000000000
+[19:28:03] ok    leftover: the interface reads the upheld appeal as DECIDED  (DECIDED)
+[19:28:03] ok    leftover: the interface now offers to settle it  (Settle the milestone; the payment becomes a claim the installer draws.)
+[19:28:45] ok    leftover: settled on-chain, nothing left reserved  (FINALIZED, reserved 0)
+[19:28:45] ok    leftover: the interface no longer offers to settle it  (This milestone has settled.)
+[19:34:28] ms-00013: first panel decided ACCEPTED
+[19:35:07] 1. AN OPEN APPEAL CANNOT BE FINALIZED
+[19:35:10] chain: state APPEALED, standing decision ACCEPTED, appealed flag true
+[19:35:10] ok    chain: the appeal is open, and the appealed flag is TRUE (the flag the old rule misread as 'upheld')
+[19:35:10] ok    interface: reads the appeal as OPEN, not decided  (OPEN)
+[19:35:10] ok    interface: does NOT offer to settle, and says why  (An appeal is open. Nothing settles until a fresh panel decides it.)
+[19:35:48] ok    the contract refused: open.finalize_refused  ([EXPECTED] only a standing acceptance is finalized)
+[19:35:49] ok    chain: nothing moved; the payment is still reserved  (APPEALED, reserved 2000000000000000000)
+[19:46:43] 2. THE APPEAL IS DECIDED: ACCEPTED (round 2, reviewing round 1)
+[19:46:46] chain: state ACCEPTED, standing kind APPEAL, appealable false, appealed flag false, window null
+[19:46:46] ok    interface: reads the appeal as DECIDED  (DECIDED)
+[19:46:46] ok    chain: an upheld acceptance stands with the appealed flag FALSE and no window (the state the old rule could never settle)
+[19:46:46] ok    interface: offers to settle at once  (Settle the milestone; the payment becomes a claim the installer draws.)
+[19:46:49] ok    interface: offers the owner no second appeal  (There is no decision on this milestone to contest.)
+[19:47:27] ok    the contract refused: upheld.second_appeal_refused  ([EXPECTED] there is no decision open to appeal on this milestone)
+[19:48:11] ok    chain: settled; nothing left reserved  (FINALIZED)
+[19:48:11] ok    chain: the installer's claim grew by exactly the milestone's payment  (2000000000000000000 -> 4000000000000000000)
+[19:48:11] ok    interface: no longer offers to settle  (This milestone has settled.)
+[19:48:11] EVERY CHECK PASSED
+```
+
+Two things in that log are worth a second look. The milestone it settles
+first, `ms-00002`, was accepted, appealed and upheld during the original proof
+run on 20 September and then sat unsettled with its payment reserved for a
+day: the defect, on the record, before anyone had named it. And the fresh
+panel on `ms-00013` was free to disagree with the first; the script handles
+that branch too and would have reported that the upheld path ran only on the
+leftover. It upheld.
+
+Every transaction is in `.data/` for the run and on the explorer; the log
+above is committed as `docs/appeal-settlement-run.txt`.
+
 ## Which writes are proved live, and which are not
 
 The arithmetic, rather than an impression of coverage. The contract has
