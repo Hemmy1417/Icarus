@@ -52,8 +52,8 @@ node scripts/proofs.mjs <address>
 node scripts/proof-log.mjs <address>
 ```
 
-Every step is a signed transaction on Studio Next against the deployment of
-record. The run is resumable: each write is remembered by name, so a segment
+Every step is a signed transaction on Studio Next.
+The deployment of record is `0x38b195DF0E491F2B53347fb856D50090cE1C7823`. The run is resumable: each write is remembered by name, so a segment
 that stops resumes at the step that had not landed rather than repeating the
 ones that had.
 

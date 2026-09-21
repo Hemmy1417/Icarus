@@ -141,7 +141,8 @@ instructions in a prompt that a model may or may not follow.
 
 ## Verified end to end
 
-Every line below is a transaction on the deployment of record, not a local simulation.
+Every line below is a transaction, not a local simulation.
+The deployment of record is `0x38b195DF0E491F2B53347fb856D50090cE1C7823`.
 `docs/proof-run.txt` is the full log and `web/lib/proof-log.json` pairs each reading with the
 transaction that produced it.
 
@@ -212,6 +213,14 @@ python -m venv .venv && .venv/Scripts/pip install -r requirements.txt
 .venv/Scripts/python -m pytest tests/direct -q
 .venv/Scripts/python tests/mutation/mutate.py
 ```
+
+Every one of these runs in CI on each push, in three jobs: the contract
+(`genvm-lint check` and the direct suite), the contract's mutation sweep, and
+the web app (lint, types, tests, its own mutation sweep, a production build,
+and a check that the app, both proof logs, the committed contract schema and
+the documents all name one deployment). The live runs are not in CI, because
+they sign real transactions and wait out real appeal windows; they run by
+hand and their logs are committed.
 
 ```bash
 node scripts/deploy.mjs record

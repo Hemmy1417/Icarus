@@ -136,6 +136,30 @@ describe("time, always in the chain's own UTC", () => {
     expect(moment("2026-09-20T18:23:00Z")).toBe("20 Sep 2026, 18:23 UTC");
   });
 
+  it("reads UTC even when the machine running it does not", () => {
+    /*
+     * Asserting a formatted date only catches a local-time reading when the
+     * runner's own offset happens to cross a boundary at that instant, so it
+     * passes on most machines and in CI. This instead makes the local
+     * accessors lie: if the code reaches for one, the output changes.
+     */
+    const proto = Date.prototype;
+    const real = {
+      getDate: proto.getDate, getMonth: proto.getMonth, getFullYear: proto.getFullYear,
+      getHours: proto.getHours, getMinutes: proto.getMinutes,
+    };
+    Object.assign(proto, {
+      getDate: () => 1, getMonth: () => 0, getFullYear: () => 1999,
+      getHours: () => 3, getMinutes: () => 4,
+    });
+    try {
+      expect(day("2026-09-20T18:23:00Z")).toBe("20 Sep 2026");
+      expect(moment("2026-09-20T18:23:00Z")).toBe("20 Sep 2026, 18:23 UTC");
+    } finally {
+      Object.assign(proto, real);
+    }
+  });
+
   it("says nothing rather than Invalid Date", () => {
     expect(day("")).toBe("");
     expect(day(null)).toBe("");
