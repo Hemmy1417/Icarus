@@ -13,6 +13,7 @@ import { describe, expect, it } from "vitest";
 
 import { MARGIN_MS, filedSince, methodOf, milestoneActs, openSubstitution, workEndsMs } from "@/lib/acts";
 import { proposalProblem } from "@/components/SubstitutePanel";
+import { onNamedSite, sitesList, sitesProblem, sitesTyped } from "@/lib/sources";
 import { withinCaps } from "@/components/PresentPanel";
 import {
   eventKind, meets, productName, publisher, roundKind, siteOf, substitutionSaid, substitutionStatus,
@@ -70,6 +71,7 @@ function milestone(over: Partial<Milestone> = {}): Milestone {
       version: 1, title: "A milestone", milestone_type: "INVERTER_INSTALLATION", description: "",
       specification: "", requirements: "", payment_wei: "2000000000000000000",
       deadline: iso(DEADLINE), equipment: [LINE], criteria: [], evidence_requirements: [],
+      trusted_sources: [],
     }],
     evidence: { "1": [item(1), item(2)] }, rounds_count: 0, version_assessments: 0,
     standing: null, appeal: null, substitutions: [], schedule: [LINE], cure_until: null,
@@ -87,7 +89,7 @@ function proposal(over: Partial<Substitution> = {}): Substitution {
     replaces: { manufacturer: "Growatt", model: "MOD 3000TL3-X", rating: "3 kW" },
     substitute: { manufacturer: "Growatt", model: "MOD 4000TL3-X", rating: "4 kW" },
     page: "https://www.example-seller.com/mod-4000tl3-x", reason: "Out of stock.",
-    or_equivalent: true, status: "PROPOSED", proposed_at: iso(NOW - 60_000),
+    or_equivalent: true, source_signed: false, status: "PROPOSED", proposed_at: iso(NOW - 60_000),
     respond_by: iso(NOW + 540_000), decide_from: iso(NOW + 90_000),
     objection: "", answered_at: null, decided_at: null,
     verdict: null, findings: null, void_reason: "", ...over,
@@ -457,6 +459,98 @@ describe("a proposal checked at the form", () => {
     [{ reason: "" }, /Say why/],
   ])("stops %j", (over, why) => {
     expect(proposalProblem({ ...draft, ...over })).toMatch(why);
+  });
+});
+
+describe("the sites the terms name as sources", () => {
+  const draft = { line: LINE, manufacturer: "Growatt", model: "MOD 4000TL3-X", rating: "4 kW",
+                  page: "https://www.example-seller.com/mod-4000tl3-x", reason: "Out of stock." };
+  const SITES = ["example-seller.com", "maker.io"];
+
+  it("reads what a person typed as names, once each", () => {
+    expect(sitesTyped(" Maker.com\nsun.store, maker.com ,\n\n")).toEqual(["maker.com", "sun.store"]);
+    expect(sitesTyped("  ")).toEqual([]);
+  });
+
+  it.each([
+    [["maker.com", "shop.maker.co.uk"], ""],
+    [[], ""],
+    [["https://maker.com"], /name alone.*https:\/\/maker\.com/],
+    [["maker.com/products"], /name alone/],
+    [["maker.com:443"], /name alone/],
+    [["maker"], /name alone/],
+    [["10.0.0.7"], /name alone/],
+    [["plant.local"], /name alone/],
+    [["depot.internal"], /name alone/],
+    [[`${`${"a".repeat(62)}.`.repeat(4)}com`], /name alone/],
+    [Array.from({ length: 9 }, (_, i) => `a${i}.com`), /at most 8 sites/],
+  ])("checks %j before it is signed", (sites, why) => {
+    const said = sitesProblem(sites as string[]);
+    if (why === "") expect(said).toBe("");
+    else expect(said).toMatch(why as RegExp);
+  });
+
+  it("takes eight sites and no more", () => {
+    expect(sitesProblem(Array.from({ length: 8 }, (_, i) => `a${i}.com`))).toBe("");
+    expect(sitesProblem(["a.com", "b.com", "c.com"], 2)).toMatch(/at most 2 sites/);
+  });
+
+  it.each([
+    ["https://example-seller.com/x", true],
+    ["https://www.example-seller.com/x", true],
+    ["https://WWW.Example-Seller.com/x?y=1", true],
+    ["https://shop.eu.example-seller.com/x", false],
+    ["https://community.example-seller.com/t/1", false],
+    ["https://www.www.example-seller.com/x", false],
+    ["https://wwwexample-seller.com/x", false],
+    ["https://example-seller.com", true],
+    ["https://example-seller.com?x=1", true],
+    ["https://example-seller.com#top", true],
+    ["https://maker.io/x", true],
+    ["https://evil-example-seller.com/x", false],
+    ["https://example-seller.com.evil.io/x", false],
+    ["https://evil.io/example-seller.com", false],
+    ["https://evil.io/?u=https://example-seller.com", false],
+    ["https://example-seller.co/x", false],
+  ])("places %s", (link, on) => {
+    expect(onNamedSite(link, SITES)).toBe(on);
+  });
+
+  it("takes a subdomain only when the terms name it", () => {
+    expect(onNamedSite("https://docs.maker.io/x", ["maker.io", "docs.maker.io"])).toBe(true);
+  });
+
+  it("is on no site when none is named", () => {
+    expect(onNamedSite("https://example-seller.com/x", [])).toBe(false);
+  });
+
+  it("writes the sites out as a phrase", () => {
+    expect(sitesList([])).toBe("");
+    expect(sitesList(["a.com"])).toBe("a.com");
+    expect(sitesList(["a.com", "b.com"])).toBe("a.com and b.com");
+    expect(sitesList(["a.com", "b.com", "c.com"])).toBe("a.com, b.com and c.com");
+  });
+
+  it("stops a page elsewhere at the form, on a line validators may decide", () => {
+    expect(proposalProblem(draft, 4, 300, SITES)).toBe("");
+    expect(proposalProblem({ ...draft, page: "https://other-seller.com/x" }, 4, 300, SITES))
+      .toBe("On this line the product page must be on a site the terms name: example-seller.com and maker.io.");
+  });
+
+  it("leaves a line only the owner can change free to cite any page", () => {
+    const plain = { ...LINE, or_equivalent: false };
+    expect(proposalProblem({ ...draft, line: plain, page: "https://other-seller.com/x" }, 4, 300, SITES))
+      .toBe("");
+  });
+
+  it("leaves every page open when the terms name no site", () => {
+    expect(proposalProblem({ ...draft, page: "https://other-seller.com/x" }, 4, 300, [])).toBe("");
+    expect(proposalProblem({ ...draft, page: "https://other-seller.com/x" })).toBe("");
+  });
+
+  it("still checks the link before it asks where the link is", () => {
+    expect(proposalProblem({ ...draft, page: "http://example-seller.com/x" }, 4, 300, SITES))
+      .toMatch(/plain https link/);
   });
 });
 

@@ -1,6 +1,7 @@
 # Substitution and cure
 
-Two rules added in `icarus-rules-2`. Both exist because of what happens on a
+Two rules added in `icarus-rules-2`, and narrowed in `icarus-rules-3` as set
+out under "What changed in rules 3". Both exist because of what happens on a
 real job after the terms are signed: the product on the schedule turns out
 not to be the one that arrives, and a first assessment falls short for a
 reason that can be put right.
@@ -64,7 +65,7 @@ Each validator fetches the page itself. Then:
 | Verdict | When | Effect |
 |---|---|---|
 | Unread | No page could be read as text | Nothing is recorded and the proposal stays open |
-| Unproven | The page does not name or document the model, has no answerable publisher, or lacks the figures | Refused; the line stands |
+| Unproven | The page does not name or document the model, lacks the figures, or sits on no site the terms name and has no answerable publisher | Refused; the line stands |
 | Not equivalent | Another kind of equipment, or the page's figures fall short | Refused; the line stands |
 | Equivalent | Every one of the answers is a clear yes | Approved; the substitute is in force |
 
@@ -180,14 +181,36 @@ round does.
 
 ## What these rules do not do
 
-- **They do not verify a publisher.** Whether a page is the maker's, a
-  seller's catalogue or nobody's is a model's judgment from the address and
-  the content. Code checks only that the link is https, on a named public
-  host, that a page came back and that it names the model. A convincing page
-  on a look-alike domain is stopped by the validators or not at all.
+- **They do not verify a publisher unless the terms name the sites.** Where
+  the terms list the sites both parties accept, a page elsewhere is refused
+  in code and the question is closed. Where they list none, whether a page
+  is the maker's, a seller's catalogue or nobody's is a model's judgment
+  from the address and the content, and a convincing page on a look-alike
+  domain is stopped by the validators or not at all.
 - **They do not follow where a link leads.** The address shown to the model is
   the one the installer gave. A redirect from a reputable host to somebody
-  else's content is not detected in code.
+  else's content is not detected in code. That holds for a named site too:
+  the parties who name one are trusting where its links lead, and trusting
+  that the site itself decides what appears on it. Naming a site where
+  anybody can post a page names everybody.
+- **They do not tell a file nobody can read from a prompt that failed for
+  another reason.** A prompt on the owner's or the inspector's image that
+  the runtime refuses twice on one node is set aside by that node whatever
+  the cause, a timeout included. A finding still needs a majority that
+  reaches it on what each node read, so a legible photograph is lost only if
+  most of the panel fails on it at once.
+- **They do not stop every image that can cost a round its panel.** The
+  stall that is closed is the file no decoder opens. An image that opens,
+  from the owner or the inspector, and that draws from enough nodes an
+  answer they cannot give in the asked shape, still leaves those nodes
+  unable to vote, and without a sighted majority nothing is recorded. The
+  installer cannot leave such an image out. The ways out are the ones there
+  were: ask again, and in the end the deadline or the appeal's lapse.
+- **A cure does not reopen a line because of what a node set aside.** A line
+  found installed while most of a panel had set the owner's image aside is
+  kept by a cure like any other. The record of what was set aside is one
+  node's report, so code does not act on it. The owner's appeal judges every
+  line again and reads every item.
 - **They do not pin the page.** The record keeps a digest and a length of
   what the leader read, for a later reader to compare. The page itself can
   change afterwards.
@@ -196,6 +219,44 @@ round does.
 - **They do not make a panel agree.** Stricter consensus means more rounds
   that record nothing. On this network that is measured, not assumed; see
   `docs/e2e-verification.md`.
+
+## What changed in rules 3
+
+Two limits stated above and in `docs/security.md` were narrowed.
+
+**The sites the parties name.** Terms may carry `trusted_sources`: up to
+eight public site names, signed with everything else. On a line signed "or
+equivalent", a proposal whose page is not on one of them is refused before
+anything is stored. A name covers that host and its `www` and nothing else
+under it: a maker's forum or file store is a place where anybody may publish,
+so parties who mean a subdomain name it. For a page that is, the
+validators are told the publisher is settled, the verdict does not read
+their answer to it, and the record shows the publisher as the parties'
+choice. Everything else is judged as before: a named site does not make a
+page document the model, be the same kind of equipment or meet the rating.
+A line signed for one product is not bound by the list, because only the
+owner's yes changes such a line and the owner can weigh any page. Terms
+that name no site behave exactly as they did.
+
+**An image nobody can read.** Before, any image a node could not read left
+that node unable to vote, so one undecodable file from the owner stalled
+every round on the milestone. Now only what the installer presents must
+reach a node. An image the owner or the inspector filed is read in a prompt
+of its own, and a node sets it aside when the node says outright that it
+could not read it, or when the runtime refuses to run its prompt twice:
+nothing that node finds may rest on it, and the round is decided on the
+rest. A node whose answer about such an image comes back in the wrong shape,
+or as no object at all, has failed itself, and does not vote.
+
+Run on the network against a file with the outline of a JPEG and nothing a
+decoder can use inside it, filed by the owner: the round was decided, and
+its record shows that file set aside and the installer's photographs read.
+See `docs/substitution-cure-run.txt`. A file that is not built like an image is also
+refused when it is filed, whoever files it.
+
+What a round stores was tightened with it. The leader's account beside the
+findings is rebuilt by the contract rather than stored as it came, and a
+result the network hands back is checked again before it is recorded.
 
 ## How it was reviewed
 

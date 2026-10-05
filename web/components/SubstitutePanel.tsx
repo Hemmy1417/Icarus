@@ -16,6 +16,7 @@ import { TxPanel, type TxOutcome } from "./TxPanel";
 import { CONTRACT_ADDRESS } from "@/lib/config";
 import { useTransactionKit } from "@/lib/kit";
 import { lineName } from "@/lib/present";
+import { onNamedSite, sitesList } from "@/lib/sources";
 import type { EquipmentLine } from "@/lib/types";
 import { useWallet } from "@/lib/wallet";
 
@@ -40,7 +41,12 @@ const MAKER = /^[A-Za-z0-9&-]{1,20}(?: [A-Za-z0-9&-]{1,20}){0,3}$/;
 const PART = "(?:[0-9][0-9.,/]*[A-Za-z%]{0,4}|[A-Za-z]{1,3}[0-9]{0,3})";
 const RATING = new RegExp(`^${PART}(?: ${PART}){0,5}$`);
 
-export function proposalProblem(d: ProposalDraft, modelKeyMin = 4, urlMax = 300): string {
+export function proposalProblem(
+  d: ProposalDraft,
+  modelKeyMin = 4,
+  urlMax = 300,
+  sites: string[] = [],
+): string {
   if (!d.line) return "Choose the line the substitute is for.";
   const maker = d.manufacturer.trim().replace(/\s+/g, " ");
   const model = d.model.trim().replace(/\s+/g, " ");
@@ -66,6 +72,9 @@ export function proposalProblem(d: ProposalDraft, modelKeyMin = 4, urlMax = 300)
   if (!/^https:\/\/[A-Za-z0-9\-._~:/?#[\]@!$&()*+,;=%]+$/.test(page) || page.length > urlMax) {
     return "The product page must be a plain https link.";
   }
+  if (d.line.or_equivalent && sites.length && !onNamedSite(page, sites)) {
+    return `On this line the product page must be on a site the terms name: ${sitesList(sites)}.`;
+  }
   if (!d.reason.trim()) return "Say why the product on the line cannot be fitted.";
   return "";
 }
@@ -75,10 +84,13 @@ export function SubstitutePanel({
   lines,
   modelKeyMin,
   urlMax,
+  sites = [],
 }: {
   milestoneId: string;
   /** The schedule in force. */
   lines: EquipmentLine[];
+  /** The sites the terms in force name as sources for a product. */
+  sites?: string[];
   modelKeyMin?: number;
   urlMax?: number;
 }) {
@@ -95,7 +107,10 @@ export function SubstitutePanel({
 
   const canSign = !!wallet.address && wallet.chainOk && !!kit;
   const line = lines.find((l) => l.id === lineId) ?? null;
-  const problem = proposalProblem({ line, manufacturer, model, rating, page, reason }, modelKeyMin, urlMax);
+  const problem = proposalProblem(
+    { line, manufacturer, model, rating, page, reason }, modelKeyMin, urlMax, sites,
+  );
+  const bound = !!line?.or_equivalent && sites.length > 0;
 
   const begin = () => {
     setShown(true);
@@ -218,9 +233,9 @@ export function SubstitutePanel({
             disabled={!!signing}
           />
           <p className="type-caption mt-2">
-            The maker&apos;s own page, an established seller&apos;s catalogue or a certification
-            register. It must name the model in ordinary text. A page nobody answerable for the
-            product published approves nothing.
+            {bound
+              ? `The terms name the sites you both accept as sources, so on this line the page must be on ${sitesList(sites)}. It must name the model in ordinary text.`
+              : "The maker's own page, an established seller's catalogue or a certification register. It must name the model in ordinary text. A page nobody answerable for the product published approves nothing."}
           </p>
         </div>
 

@@ -26,7 +26,26 @@ criterion. It is never asked whether the milestone should pay.
 Each prompt is attempted twice. Measured on this network, a node's answer is
 sometimes rejected by the runtime before the contract sees it, and a route
 sometimes delivers no image at all; a second attempt recovers most of those,
-and a node that still cannot read is treated as blind.
+and a node that still cannot read what the installer presented is treated as
+blind: it votes against every outcome rather than guessing at one.
+
+An image the owner or the inspector filed is handled differently. A node that
+says outright it cannot read one, or whose prompt the runtime refuses twice,
+sets it aside, grounds nothing on it and judges on the rest. An answer that
+is malformed, or is no object at all, is not that: the node failed, and it
+does not vote. A node counts as having read an image only when it answers
+`readable` with the boolean true and describes something.
+Otherwise one file that no decoder can open, filed by a party with a reason
+to stop the round, would blind every node and no decision could ever be
+reached. Setting it aside costs that party nothing it was owed: a finding
+still stands only if a majority reaches it on what each node itself read, so
+a leader that drops a legible image is contradicted by the validators that
+read it. The round records which images its leader set aside.
+
+For the same reason the two kinds never share a prompt. What the installer
+presents is read two images at a time, the runtime's limit, and each image
+from another party is read alone, so a file the runtime refuses to pass to a
+model fails only its own prompt and is set aside with it.
 
 ## Where a validator disagrees
 

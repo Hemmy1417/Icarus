@@ -107,6 +107,8 @@ export interface Substitution {
   page: string;
   reason: string;
   or_equivalent: boolean;
+  /** True when the page sits on a site the terms name as a source. */
+  source_signed: boolean;
   status: SubstitutionStatus;
   proposed_at: string;
   respond_by: string;
@@ -146,6 +148,8 @@ export interface TermsVersion {
   equipment: EquipmentLine[];
   criteria: Criterion[];
   evidence_requirements: EvidenceRequirement[];
+  /** Sites both parties accept as sources for a substitute product. */
+  trusted_sources: string[];
 }
 
 /** The decision that currently stands on a milestone, and whether it can be contested. */
@@ -296,6 +300,8 @@ export interface RoundEvidence {
   sha256: string;
   equipment_id: string;
   new: boolean;
+  /** False for an image the leader could not read and so set aside. */
+  read: boolean;
 }
 
 export interface Round {
@@ -314,6 +320,8 @@ export interface Round {
   notes: RoundNotes;
   evidence: RoundEvidence[];
   new_item_ids: string[];
+  /** Images the leader reported it could not read, and so set aside. */
+  unread: string[];
   /** The schedule as it stood when this round judged it. */
   schedule: EquipmentLine[];
   /** What a cure round kept from the decision it answers. */
@@ -372,6 +380,7 @@ export interface Config {
   max_versions_per_milestone: number;
   max_assessments_per_version: number;
   max_substitutions_per_version: number;
+  max_trusted_sources: number;
   model_key_min: number;
   url_max: number;
   max_projects_per_page: number;

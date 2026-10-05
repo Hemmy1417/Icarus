@@ -22,6 +22,7 @@ import { useTransactionKit } from "@/lib/kit";
 import { roleIn } from "@/lib/acts";
 import { equipmentRole, gen, milestoneType, parseGen } from "@/lib/present";
 import { getProject } from "@/lib/read";
+import { sitesProblem, sitesTyped } from "@/lib/sources";
 import type { Project } from "@/lib/types";
 import { useChain } from "@/lib/useChain";
 import { useWallet } from "@/lib/wallet";
@@ -69,6 +70,7 @@ export default function Propose({ params }: { params: Promise<{ pid: string }> }
   const [spec, setSpec] = useState("");
   const [lines, setLines] = useState<Line[]>([blank()]);
   const [criteria, setCriteria] = useState<string[]>([""]);
+  const [sources, setSources] = useState("");
   const [photos, setPhotos] = useState("2");
   const [payment, setPayment] = useState("");
   const [days, setDays] = useState("14");
@@ -130,6 +132,9 @@ export default function Propose({ params }: { params: Promise<{ pid: string }> }
     if (kept.some((l) => !l.manufacturer.trim() || !l.model.trim())) {
       return setProblem("Every line needs a manufacturer and a model, or the panel has nothing to match.");
     }
+    const sites = sitesTyped(sources);
+    const wrong = sitesProblem(sites);
+    if (wrong) return setProblem(wrong);
     const wei = parseGen(payment);
     if (wei === null || wei <= 0n) return setProblem("Say what this milestone pays.");
     const unreserved = BigInt(p.unreserved_wei);
@@ -169,6 +174,7 @@ export default function Propose({ params }: { params: Promise<{ pid: string }> }
             min_count: Math.max(1, Number(photos) || 1),
           },
         ],
+        trusted_sources: sites,
         payment_wei: wei.toString(),
         deadline,
       }),
@@ -380,6 +386,38 @@ export default function Propose({ params }: { params: Promise<{ pid: string }> }
           >
             Add another condition
           </button>
+        </div>
+      </section>
+
+      <section className="grid gap-10 border-t border-mist py-16 md:grid-cols-[minmax(0,360px)_minmax(0,1fr)] md:gap-16">
+        <div>
+          <h2 className="text-[24px] leading-[1.2] tracking-[-0.02em] text-graphite [font-family:var(--font-display)]">
+            Where a substitute is documented
+          </h2>
+          <p className="type-caption mt-4 max-w-[38ch]">
+            Optional. It matters only on a line signed with or equivalent.
+          </p>
+        </div>
+        <div className="max-w-[560px]">
+          <label className="type-caption mb-2 block" htmlFor="m-sources">
+            Sites you both accept as product sources
+          </label>
+          <textarea
+            id="m-sources"
+            value={sources}
+            onChange={(e) => setSources(e.target.value)}
+            rows={3}
+            className={`${field} leading-[1.6]`}
+            placeholder="maker.com"
+          />
+          <p className="type-caption mt-2">
+            One site to a line, as its name alone, eight at most. Name them and a substitute&apos;s
+            product page must be on one of them or the contract refuses it, so who published the
+            page is settled here by the two of you. A name covers that site and its www and
+            nothing else under it, so name a subdomain if you mean one, and name only sites
+            where the site itself decides what is published. Leave this empty and validators judge whether
+            somebody answerable for the product published the page.
+          </p>
         </div>
       </section>
 

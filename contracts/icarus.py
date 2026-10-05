@@ -46,6 +46,13 @@ unmet, and whether the evidence is in conflict, as a whole or on any line.
 Only the shade of a doubt is free to differ. So a finding on the record is one the panel agreed, and a
 later round may rely on it.
 
+An image the installer presents must reach a node for that node to vote. An
+image the owner or the inspector filed that a node says it cannot read, or
+that the runtime will not put to a model, is set aside by that node and shows
+nothing either way, so a file nobody can decode cannot keep a round from
+being decided. Whatever such an image would have shown, a
+finding still stands only if every agreeing node reaches it on what it read.
+
 A declaration is a party's statement for the record: stored, hashed and shown,
 never read by a round, because a party's word is not an observation. Argument
 belongs in an appeal's reason, which the panel reads as argument.
@@ -69,6 +76,10 @@ lower than the signed line asks. Code turns those answers into a verdict;
 anything short of a clear yes changes nothing. Where the line does not say
 it, only the owner's yes changes it. A substitute in force replaces the line
 for every later round, and the evidence already filed stays where it is.
+The terms may also name the sites the parties accept as sources for a
+product. Where they do, on a line validators may decide, code refuses a page
+that sits anywhere else, and who published it is no longer anybody's
+judgment.
 
 A CURE. A full assessment that falls short leaves the installer a period to
 put right what was missing. A cure round keeps every line the standing
@@ -89,7 +100,7 @@ from datetime import datetime, timedelta, timezone
 import genlayer as gl
 from genlayer.types import Address, u256
 
-RULESET_VERSION = "icarus-rules-2"
+RULESET_VERSION = "icarus-rules-3"
 
 
 class _PayableRefusal(Exception):
@@ -107,6 +118,8 @@ MAX_CRITERIA = 6
 MAX_EVIDENCE_REQUIREMENTS = 8
 MAX_ASSESSMENTS_PER_VERSION = 5        # full assessments and cure rounds together
 MAX_SUBSTITUTIONS_PER_VERSION = 3
+MAX_TRUSTED_SOURCES = 8
+HOSTNAME_MAX = 253
 
 MIN_PAYMENT_WEI = 10**16                  # 0.01 GEN per milestone
 MIN_APPEAL_WINDOW_SECONDS = 600           # 10 minutes
@@ -258,6 +271,26 @@ def _num(item_id: str) -> int:
         return int(str(item_id).split("-")[1])
     except Exception:
         return 0
+
+
+def _image_problem(data: bytes) -> str:
+    """Why these bytes are not an image the runner's decoder reads, or "".
+
+    The contract cannot decode a picture, but it can refuse a file that is
+    not built like one: a PNG is its signature, a header chunk and a closing
+    chunk; a JPEG opens with a JFIF header, declares its frame and its scan,
+    and closes. A file that passes can still be damaged inside, and such a
+    file is set aside by the nodes that cannot read it."""
+    if data[:8] == b"\x89PNG\r\n\x1a\n":
+        if data[8:16] != b"\x00\x00\x00\rIHDR" or data[-12:] != b"\x00\x00\x00\x00IEND\xaeB`\x82":
+            return "that PNG is incomplete: it lacks its header or its closing chunk"
+        return ""
+    if data[:4] == b"\xff\xd8\xff\xe0" and data[6:11] == b"JFIF\x00":
+        if (b"\xff\xc0" not in data and b"\xff\xc2" not in data) or b"\xff\xda" not in data \
+                or data[-2:] != b"\xff\xd9":
+            return "that JPEG is incomplete: it lacks its frame, its scan or its closing marker"
+        return ""
+    return "the runtime reads PNG and JFIF JPEG only; re-save the image and file it again"
 
 
 def _bucket(kind: str) -> str:
@@ -487,7 +520,7 @@ def _public_link(value) -> str:
     if len(url) > URL_MAX or not _LINK.fullmatch(url):
         _refuse(f"the product page must be a plain https link of at most {URL_MAX} "
                 "characters, with no spaces, quotes or angle brackets in it")
-    host = url[8:].split("/", 1)[0].split("?", 1)[0].split("#", 1)[0].lower()
+    host = _host_of(url)
     if not _HOSTNAME.fullmatch(host) or host.endswith(_NOT_PUBLIC):
         _refuse("the product page must sit on a public site, named by its domain, "
                 "with no login, port or numeric address in the link")
@@ -594,22 +627,36 @@ def _findings(raw) -> dict:
     }
 
 
-def _substitute_verdict(found: dict) -> str:
+def _substitute_verdict(found: dict, source_signed: bool = False) -> str:
     """The verdict on a substitute, from one node's findings. Only one path
     approves: the page was read, it names the model, it documents that
-    model and not a relative of it, somebody answerable for the product
-    published it, it is the same kind of equipment, and it meets what the
-    line asks. A finding left out is a finding against."""
+    model and not a relative of it, it sits on a site the parties named or
+    somebody answerable for the product published it, it is the same kind
+    of equipment, and it meets what the line asks. A finding left out is a
+    finding against."""
     if found["page_chars"] < PAGE_MIN_CHARS:
         return "UNREAD"
     if not found["names_model"] or not found["documents_model"] \
-            or found["publisher"] == "UNKNOWN":
+            or (found["publisher"] == "UNKNOWN" and not source_signed):
         return "UNPROVEN"
     if not found["same_role"] or found["meets"] == "NO":
         return "NOT_EQUIVALENT"
     if found["meets"] == "YES":
         return "EQUIVALENT"
     return "UNPROVEN"
+
+
+def _host_of(url: str) -> str:
+    return url[8:].split("/", 1)[0].split("?", 1)[0].split("#", 1)[0].lower()
+
+
+def _on_a_named_site(url: str, sites: list) -> bool:
+    """Whether a link sits on one of the named sites: that host exactly, or
+    its www. Nothing else under a name is taken for it, because a maker's
+    forum or file store is a place where anybody may publish. Parties who
+    mean a subdomain name it."""
+    host = _host_of(url)
+    return any(host in (site, "www." + site) for site in sites)
 
 
 def _same_product(a: dict, b: dict) -> bool:
@@ -752,6 +799,22 @@ def _validate_terms(t, has_inspector: bool) -> dict:
             _refuse("a schedule line asks for the equipment to be identified, so the terms "
                     "must require at least one image from the installer")
 
+    # The sites the parties accept as sources for a substitute product. Signed
+    # with the rest: where a list is given, a page elsewhere is refused in
+    # code, and nobody is asked to judge who published it.
+    sources_in = t.get("trusted_sources") or []
+    if not isinstance(sources_in, list) or len(sources_in) > MAX_TRUSTED_SOURCES:
+        _refuse(f"the terms name at most {MAX_TRUSTED_SOURCES} trusted sites")
+    sources = []
+    for i, entry in enumerate(sources_in):
+        host = entry.strip().lower() if isinstance(entry, str) else ""
+        if len(host) > HOSTNAME_MAX or not _HOSTNAME.fullmatch(host) \
+                or host.endswith(_NOT_PUBLIC):
+            _refuse(f"trusted site {i + 1} must be a public site's name alone, such as "
+                    "maker.com, with no https, path or port")
+        if host not in sources:
+            sources.append(host)
+
     try:
         payment = int(str(t.get("payment_wei")))
     except Exception:
@@ -772,7 +835,7 @@ def _validate_terms(t, has_inspector: bool) -> dict:
             "description": str(t.get("description") or "")[:LONG_MAX],
             "requirements": requirements, "specification": specification,
             "equipment": equipment, "criteria": criteria,
-            "evidence_requirements": reqs,
+            "evidence_requirements": reqs, "trusted_sources": sources,
             "payment_wei": str(payment), "deadline": _iso(deadline)}
 
 
@@ -976,6 +1039,7 @@ class Icarus(gl.contract.Contract):
             "max_evidence_requirements": MAX_EVIDENCE_REQUIREMENTS,
             "max_assessments_per_version": MAX_ASSESSMENTS_PER_VERSION,
             "max_substitutions_per_version": MAX_SUBSTITUTIONS_PER_VERSION,
+            "max_trusted_sources": MAX_TRUSTED_SOURCES,
             "model_key_min": MODEL_KEY_MIN,
             "model_key_max": MODEL_KEY_MAX,
             "objection_seconds_max": OBJECTION_SECONDS_MAX,
@@ -1526,6 +1590,15 @@ class Icarus(gl.contract.Contract):
         if _same_product(substitute, line):
             _refuse("that is the product the line already names")
         page = _public_link(raw.get("page"))
+        sites = self._terms(m, version)["trusted_sources"]
+        # A line signed for one product changes only on the owner's yes, who
+        # can weigh any page. On a line validators may decide, where the
+        # parties named the sites they accept, the page must be on one of
+        # them, whoever ends up answering: the proposal cannot know.
+        signed_source = bool(line["or_equivalent"]) and bool(sites)
+        if signed_source and not _on_a_named_site(page, sites):
+            _refuse("the product page must sit on one of the sites these terms name as "
+                    "sources: " + ", ".join(sites))
         reason = _clean(raw.get("reason"), LONG_MAX)
         if not reason:
             _refuse("say why the product the line names cannot be installed")
@@ -1539,6 +1612,9 @@ class Icarus(gl.contract.Contract):
             "replaces": {k: line[k] for k in ("manufacturer", "model", "rating")},
             "substitute": substitute, "page": page, "reason": reason,
             "or_equivalent": bool(line["or_equivalent"]),
+            # True when the page sits on a site the terms name. Then who
+            # published it was settled by the parties, not by a model.
+            "source_signed": signed_source,
             "status": "PROPOSED", "proposed_at": _iso(now),
             "respond_by": _iso(now + timedelta(seconds=int(p["appeal_window_seconds"]))),
             # The owner's time to object before the validators may be asked.
@@ -1656,7 +1732,10 @@ class Icarus(gl.contract.Contract):
             "The installer's reason, which is argument and not evidence:\n"
             f"<<<BEGIN REASON\n{_defuse(s['reason'])}\nEND REASON>>>\n"
             f"The owner's objection, which is argument and not evidence: {objection}\n"
-            "THE PAGE, as you fetched it from that address:\n"
+            + ("That address is on a site the parties named in the terms as a source, so who "
+               "publishes it is settled and your answer to publisher will not be used.\n"
+               if s["source_signed"] else "")
+            + "THE PAGE, as you fetched it from that address:\n"
             f"<<<BEGIN PAGE\n{_defuse(excerpt)}\nEND PAGE>>>\n"
             "Answer five things from the page, not from either party's account.\n"
             "documents_model: true only if the page documents exactly the proposed model. "
@@ -1759,7 +1838,7 @@ class Icarus(gl.contract.Contract):
 
         def leader_fn() -> dict:
             mine = self._weigh_substitute(m, s)
-            print("[SUBSTITUTE] leader " + _substitute_verdict(mine) + " "
+            print("[SUBSTITUTE] leader " + _substitute_verdict(mine, s["source_signed"]) + " "
                   + json.dumps({k: mine[k] for k in
                                 ("page_chars", "names_model", "publisher", "same_role", "meets")})
                   + " why: " + mine["reasoning"][:700])
@@ -1772,9 +1851,9 @@ class Icarus(gl.contract.Contract):
             if not isinstance(leader_result.calldata, dict):
                 print("[DISAGREE] the leader's findings are malformed")
                 return False
-            theirs = _substitute_verdict(_findings(leader_result.calldata))
+            theirs = _substitute_verdict(_findings(leader_result.calldata), s["source_signed"])
             try:
-                mine = _substitute_verdict(self._weigh_substitute(m, s))
+                mine = _substitute_verdict(self._weigh_substitute(m, s), s["source_signed"])
             except Exception as e:
                 print("[DISAGREE] this validator could not weigh the substitute: " + str(e)[:200])
                 return False
@@ -1795,7 +1874,10 @@ class Icarus(gl.contract.Contract):
         # two ways of falling short the findings are the leader's; both
         # refuse, so nothing turns on which.
         found = _findings(gl.vm.run_nondet(leader_fn, validator_fn))
-        verdict = _substitute_verdict(found)
+        verdict = _substitute_verdict(found, s["source_signed"])
+        if s["source_signed"]:
+            # Not a node's opinion: the page is on a site the terms name.
+            found["publisher"] = "SIGNED"
         if verdict == "UNREAD":
             _refuse("no page could be read as text at the link, so nothing is decided and "
                     "the proposal stays open. If the link is wrong or the page does not "
@@ -1925,13 +2007,9 @@ class Icarus(gl.contract.Contract):
             _refuse("that image is empty")
         if len(data) > MAX_IMAGE_BYTES:
             _refuse(f"an image is at most {MAX_IMAGE_BYTES:,} bytes; this one is {len(data):,}")
-        head = bytes(data[:4])
-        if head[:4] == b"\x89PNG":
-            pass
-        elif head[:2] == b"\xff\xd8" and head[2:4] == b"\xff\xe0":
-            pass
-        else:
-            _refuse("the runtime reads PNG and JFIF JPEG only; re-save the image and file it again")
+        problem = _image_problem(bytes(data))
+        if problem:
+            _refuse(problem)
         meta = self._item_meta(meta_json, "IMAGE", m)
         eid = self._file_item(m, p, who, "IMAGE", meta, _sha256(bytes(data)), len(data))
         self.item_bytes[eid] = bytes(data)
@@ -2067,8 +2145,9 @@ class Icarus(gl.contract.Contract):
             "Answer STRICT JSON: {\"images\": [{\"n\": 1, \"readable\": true, "
             "\"shows\": \"...\", \"labels\": [\"...\"], \"concerns\": [\"...\"]}]}")
 
-    def _ask_about(self, prompt: str, images: list) -> dict:
-        """One reading of one pair of images, with a second attempt.
+    def _ask_about(self, prompt: str, images: list) -> tuple:
+        """One reading of one prompt's images, with a second attempt, and
+        whether the runtime itself failed the prompt both times.
 
         Measured on Studio Next across several runs: a node's answer is
         sometimes rejected by the runtime before this contract sees it, for
@@ -2076,25 +2155,47 @@ class Icarus(gl.contract.Contract):
         sometimes delivers no image at all. Both leave a node unable to
         judge, and a node that cannot judge cannot vote, so every lost
         reading is a lost vote and rounds fail for want of sighted nodes.
-        One retry costs a prompt and recovers most of them."""
-        try:
-            return _llm_object(gl.nondet.exec_prompt(prompt, response_format="json",
-                                                     images=images), "the image reading")
-        except Exception:
-            return _llm_object(gl.nondet.exec_prompt(prompt, response_format="json",
-                                                     images=images), "the image reading")
+        One retry costs a prompt and recovers most of them.
+
+        The two ways of failing are kept apart. A prompt the runtime would
+        not run, twice, is a prompt that failed on what it carried. An
+        answer that came back and could not be read as an object is the
+        node's own failure, and is never mistaken for the first."""
+        failed = 0
+        for _ in range(2):
+            try:
+                raw = gl.nondet.exec_prompt(prompt, response_format="json", images=images)
+            except Exception:
+                failed += 1
+                continue
+            try:
+                return _llm_object(raw, "the image reading"), False
+            except Exception:
+                continue
+        return {}, failed == 2
 
     def _look_all(self, ctx: dict) -> tuple:
-        """Look at the images two at a time, the runtime's limit per prompt."""
-        findings, received = [], True
-        for start in range(0, len(ctx["images"]), IMAGES_PER_PROMPT):
-            pair = ctx["images"][start:start + IMAGES_PER_PROMPT]
-            out = self._ask_about(self._look_prompt(pair), [data for _, data in pair])
-            rows = out.get("images") or []
+        """Look at what the installer presents two at a time, the runtime's
+        limit per prompt, and at each image another party filed alone.
+
+        A file the runtime will not pass to a model fails the whole prompt
+        it travels in. Alone, such a file from the owner or the inspector
+        fails only itself, and it is set aside like any image a node cannot
+        read; sharing a prompt, it would take the installer's photograph
+        down with it and blind the node. A prompt that fails on what the
+        installer presents leaves the node blind, as any unread image of
+        theirs does."""
+        mine = [pair for pair in ctx["images"] if pair[0]["role"] == "INSTALLER"]
+        batches = [mine[i:i + IMAGES_PER_PROMPT] for i in range(0, len(mine), IMAGES_PER_PROMPT)]
+        batches += [[pair] for pair in ctx["images"] if pair[0]["role"] != "INSTALLER"]
+        read, received = {}, True
+        for pair in batches:
+            out, refused = self._ask_about(self._look_prompt(pair), [data for _, data in pair])
+            rows = out.get("images") if isinstance(out.get("images"), list) else []
             for n, (it, _) in enumerate(pair, start=1):
                 row = {}
                 for candidate in rows:
-                    if isinstance(candidate, dict) and int(candidate.get("n") or 0) == n:
+                    if isinstance(candidate, dict) and candidate.get("n") in (n, str(n)):
                         row = candidate
                         break
                 # Fail closed. A node counts as a reader only when it says so
@@ -2105,22 +2206,34 @@ class Icarus(gl.contract.Contract):
                 # nothing had arrived, which let a blind node vote. Defaulting to
                 # true made the blindness rule depend on a model remembering a
                 # field it was never told the meaning of.
-                readable = bool(row.get("readable", False)) and bool(row.get("shows"))
-                if not readable:
+                readable = row.get("readable") is True \
+                    and bool(_clean(row.get("shows"), LONG_MAX))
+                # What the installer presents is what the round is about: a
+                # node that cannot see it cannot vote. An image another party
+                # filed is set aside instead, so a file nobody can decode
+                # never stops a decision; but only when the node says in so
+                # many words that it could not read it, or the runtime failed
+                # its prompt twice. An answer that is merely garbled is the
+                # node's own failure, and that node does not vote.
+                set_aside = it["role"] != "INSTALLER" \
+                    and (refused or row.get("readable") is False)
+                if not readable and not set_aside:
                     received = False
-                labels = [_clean(x, LINE_MAX) for x in (row.get("labels") or [])
-                          if isinstance(x, str)][:8]
-                findings.append({
+                labels = [_clean(x, LINE_MAX) for x in row.get("labels")
+                          if isinstance(x, str)][:8] if isinstance(row.get("labels"), list) else []
+                read[it["item_id"]] = ({
                     "item_id": it["item_id"], "role": it["role"], "origin": it["origin"],
                     "claimed_line": it.get("equipment_id", ""),
                     "caption": it.get("caption", ""),
                     "readable": readable,
                     "shows": _clean(row.get("shows"), LONG_MAX),
                     "labels": [x for x in labels if x],
-                    "concerns": [_clean(x, LINE_MAX) for x in (row.get("concerns") or [])
-                                 if isinstance(x, str)][:4],
+                    "concerns": [_clean(x, LINE_MAX) for x in row.get("concerns")
+                                 if isinstance(x, str)][:4]
+                                if isinstance(row.get("concerns"), list) else [],
                 })
-        return findings, (received if ctx["images"] else True)
+        # In the order the round holds them, whatever order they were read in.
+        return [read[it["item_id"]] for it, _ in ctx["images"]], received
 
     def _judge_prompt(self, ctx: dict, findings: list) -> str:
         """Match what was read against what was specified."""
@@ -2253,8 +2366,11 @@ class Icarus(gl.contract.Contract):
                                if isinstance(x, str)][:8]
 
         # The model says what it saw; code decides what may count as support.
+        # An image this node could not read supports nothing it finds.
+        unread = [f["item_id"] for f in findings if not f["readable"]]
+        read_kind = {e: k for e, k in ctx["kind_of"].items() if e not in unread}
         grounded, grounded_criteria = _ground(lines, criteria, basis, crit_basis,
-                                              ctx["kind_of"], ctx["role_of"])
+                                              read_kind, ctx["role_of"])
         return {"lines_raw": lines, "lines": grounded, "basis": basis, "notes": notes,
                 "criteria_raw": criteria, "criteria": grounded_criteria,
                 "criteria_basis": crit_basis,
@@ -2268,6 +2384,7 @@ class Icarus(gl.contract.Contract):
         findings, received = self._look_all(ctx)
         verdict = self._decide(ctx, findings)
         return {"images_received": received,
+                "unread": [f["item_id"] for f in findings if not f["readable"]],
                 "lines": verdict["lines"], "criteria": verdict["criteria"],
                 "conflicts": verdict["conflicts"],
                 "notes": {"reasoning": verdict["reasoning"],
@@ -2282,7 +2399,8 @@ class Icarus(gl.contract.Contract):
     def _run_round(self, m: dict, version: int, eids: list, new_ids: list, kind: str,
                    reason: str, reviewed_round, scope=None) -> dict:
         """One adjudication round under consensus. A validator agrees only when
-        both nodes saw the images and it reproduces the leader's decision and
+        both nodes saw what the installer presented and it reproduces the
+        leader's decision and
         every finding in it that counts for or against a party; prose is
         free to differ."""
         ctx = self._round_context(m, version, eids, new_ids, kind, reason, reviewed_round,
@@ -2332,14 +2450,85 @@ class Icarus(gl.contract.Contract):
             return True
 
         result = gl.vm.run_nondet(leader_fn, validator_fn)
-        lines = {lid: result["lines"][lid] for lid in line_ids}
-        criteria = {cid: result["criteria"][cid] for cid in crit_ids}
-        decision = _derive(lines, criteria, bool(result["conflicts"]))
+        if not isinstance(result, dict) or not isinstance(result.get("lines"), dict) \
+                or not isinstance(result.get("criteria"), dict):
+            raise gl.vm.UserError(f"{ERROR_LLM} the validators returned no usable result")
+        lines = {lid: result["lines"].get(lid) for lid in line_ids}
+        criteria = {cid: result["criteria"].get(cid) for cid in crit_ids}
+        if any(v not in LINE_STATUSES for v in lines.values()) \
+                or any(v not in CRITERION_STATUSES for v in criteria.values()) \
+                or result.get("images_received") is not True:
+            raise gl.vm.UserError(f"{ERROR_LLM} the validators returned no usable result")
+        # Read as a validator reads it, so one result is never read two ways.
+        conflicts = bool(result.get("conflicts"))
+        decision = _derive(lines, criteria, conflicts)
+        # Only an image another party filed can have been set aside: a node
+        # that could not read the installer's did not vote at all.
+        unread = [it["item_id"] for it, _ in ctx["images"]
+                  if it["role"] != "INSTALLER" and isinstance(result.get("unread"), list)
+                  and it["item_id"] in result["unread"]]
         return {"lines": lines, "criteria": criteria,
-                "conflicts": bool(result["conflicts"]), "decision": decision,
+                "conflicts": conflicts, "decision": decision,
                 "decisive": _decisive(lines, criteria, decision),
-                "quality": _quality(lines, criteria, bool(result["conflicts"])),
-                "notes": result["notes"], "equipment": ctx["equipment"]}
+                "quality": _quality(lines, criteria, conflicts),
+                "notes": self._round_notes(result.get("notes"), ctx, unread),
+                "unread": unread,
+                "equipment": ctx["equipment"]}
+
+    def _round_notes(self, raw, ctx: dict, unread: list) -> dict:
+        """The leader's account of a round, rebuilt field by field.
+
+        Validators bind the findings, not the prose beside them, so nothing
+        in that prose is stored as it came: every status is one of the known
+        ones, every reference names an item this round held, every sentence
+        is a clamped line. What an image was and who filed it come from this
+        contract's own record, never from the node."""
+        n = raw if isinstance(raw, dict) else {}
+        held = ctx["kind_of"]
+
+        def section(key) -> dict:
+            return n.get(key) if isinstance(n.get(key), dict) else {}
+
+        def line(value, limit: int) -> str:
+            return _clean(value, limit) if isinstance(value, str) else ""
+
+        def refs(value) -> list:
+            return [x for x in value
+                    if isinstance(x, str) and x in held and x not in unread][:8] \
+                if isinstance(value, list) else []
+
+        def words(value, limit: int) -> list:
+            return [y for y in (_clean(x, LINE_MAX) for x in value if isinstance(x, str)) if y][:limit] \
+                if isinstance(value, list) else []
+
+        said = {}
+        for row in n.get("images") if isinstance(n.get("images"), list) else []:
+            if isinstance(row, dict) and isinstance(row.get("item_id"), str):
+                said.setdefault(row["item_id"], row)
+        images = []
+        for it, _ in ctx["images"]:
+            row = said.get(it["item_id"], {})
+            images.append({
+                "item_id": it["item_id"], "role": it["role"], "origin": it["origin"],
+                "claimed_line": it.get("equipment_id", ""), "caption": it.get("caption", ""),
+                "readable": row.get("readable") is True and it["item_id"] not in unread,
+                "shows": line(row.get("shows"), LONG_MAX),
+                "labels": words(row.get("labels"), 8), "concerns": words(row.get("concerns"), 4),
+            })
+        lines_raw, criteria_raw = section("lines_raw"), section("criteria_raw")
+        basis, crit_basis, notes = section("basis"), section("criteria_basis"), section("line_notes")
+        return {
+            "reasoning": line(n.get("reasoning"), 900),
+            "conflict_note": line(n.get("conflict_note"), 240),
+            "lines_raw": {lid: lines_raw.get(lid) if lines_raw.get(lid) in LINE_STATUSES
+                          else "NOT_SHOWN" for lid in ctx["line_ids"]},
+            "criteria_raw": {cid: criteria_raw.get(cid) if criteria_raw.get(cid) in CRITERION_STATUSES
+                             else "UNCLEAR" for cid in ctx["crit_ids"]},
+            "basis": {lid: refs(basis.get(lid)) for lid in ctx["line_ids"]},
+            "criteria_basis": {cid: refs(crit_basis.get(cid)) for cid in ctx["crit_ids"]},
+            "line_notes": {lid: line(notes.get(lid), LINE_MAX) for lid in ctx["line_ids"]},
+            "images": images,
+        }
 
     def _record_round(self, m: dict, p: dict, kind: str, version: int, eids: list,
                       new_ids: list, outcome: dict, appeal, base=None) -> dict:
@@ -2356,6 +2545,10 @@ class Icarus(gl.contract.Contract):
             it = self._item(eid)
             snapshot.append({"item_id": eid, "kind": it["kind"], "role": it["role"],
                              "sha256": it["sha256"], "new": eid in new_ids,
+                             # False for an image the leader could not read and
+                             # so set aside. It is one node's report, kept for a
+                             # reader; no finding rests on it.
+                             "read": eid not in outcome["unread"],
                              "equipment_id": it.get("equipment_id", "")})
         record = {
             "round": n, "milestone_id": m["milestone_id"], "project_id": p["project_id"],
@@ -2366,6 +2559,8 @@ class Icarus(gl.contract.Contract):
             "lines": outcome["lines"], "criteria": outcome["criteria"],
             "decisive": outcome["decisive"],
             "evidence": snapshot, "new_item_ids": new_ids,
+            # Images the leader reported it could not read, and so set aside.
+            "unread": outcome["unread"],
             "reviewed_round": (appeal or {}).get("reviewed_round"),
             "appeal_reason": (appeal or {}).get("reason", ""),
             "notes": outcome["notes"],

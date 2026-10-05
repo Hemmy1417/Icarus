@@ -417,15 +417,21 @@ def network_accepts(value):
     _ACCEPTED.append(value)
 
 
+JFIF_TAIL = b"\xff\xc0\xff\xda\xff\xd9"       # a frame, a scan, the closing marker
+PNG_HEAD = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR"
+PNG_TAIL = b"\x00\x00\x00\x00IEND\xaeB`\x82"
+
+
 def jfif(tag=b"", size=4000):
-    """A JPEG with the JFIF header GenVM's gateway accepts."""
-    body = b"\xff\xd8\xff\xe0\x00\x10JFIF\x00" + tag
-    return body + b"\x00" * max(0, size - len(body))
+    """A JPEG built the way the contract requires one to be: a JFIF header,
+    a frame, a scan and a closing marker, padded to the size asked for."""
+    head = b"\xff\xd8\xff\xe0\x00\x10JFIF\x00" + tag
+    return head + b"\x00" * max(0, size - len(head) - len(JFIF_TAIL)) + JFIF_TAIL
 
 
 def png(tag=b"", size=2000):
-    body = b"\x89PNG\r\n\x1a\n" + tag
-    return body + b"\x00" * max(0, size - len(body))
+    head = PNG_HEAD + tag
+    return head + b"\x00" * max(0, size - len(head) - len(PNG_TAIL)) + PNG_TAIL
 
 
 def exif_jpeg(size=4000):

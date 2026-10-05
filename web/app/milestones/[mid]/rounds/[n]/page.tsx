@@ -14,7 +14,8 @@ import { use } from "react";
 
 import { Loading, ReadFailure } from "@/components/bits";
 import {
-  decision, lineName, lineStatus, moment, prose, quality, referenceNames, roleLower, roundName, writeOut,
+  decision, lineName, lineStatus, moment, prose, quality, referenceNames, roleLower, roundName,
+  unreadSaid, writeOut,
 } from "@/lib/present";
 import { getMilestone, getRound } from "@/lib/read";
 import type { ImageReading, Milestone, Round } from "@/lib/types";
@@ -62,10 +63,7 @@ function Reading({ r, n }: { r: ImageReading; n: number }) {
           ) : null}
         </>
       ) : (
-        <p className="mt-5 max-w-[62ch] text-[17px] leading-[1.6] text-steel">
-          This node never received the photograph, so it could see nothing either way. A node
-          that cannot see the evidence votes against every outcome rather than guessing at one.
-        </p>
+        <p className="mt-5 max-w-[62ch] text-[17px] leading-[1.6] text-steel">{unreadSaid(r.role)}</p>
       )}
     </li>
   );

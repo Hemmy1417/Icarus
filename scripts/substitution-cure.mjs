@@ -1,7 +1,9 @@
 /**
  * Live run of the two rules added in icarus-rules-2: a substitute for one
- * line of the schedule, and the cure round. Every claim is an assertion; an
- * observation that is not asserted is logged as an observation.
+ * line of the schedule, and the cure round; and of what icarus-rules-3
+ * narrowed: the sites the parties name as sources, and a file no node can
+ * read. Every claim is an assertion; an observation that is not asserted is
+ * logged as an observation.
  *
  *   node scripts/substitution-cure.mjs 0x…        run every case in order (resumable)
  *
@@ -171,7 +173,7 @@ const ISOLATOR = { role: "PROTECTION", manufacturer: "Kripal", model: "DC isolat
 const WALL_CRITERION = [{ text: "The inverter is mounted on a wall with its cabling connected "
                                 + "at the underside of the unit." }];
 
-function terms({ equipment, title, spec, payment = 2n * GEN, images = 2 }) {
+function terms({ equipment, title, spec, payment = 2n * GEN, images = 2, sources = [] }) {
   return JSON.stringify({
     milestone_type: "INVERTER_INSTALLATION",
     title,
@@ -185,6 +187,7 @@ function terms({ equipment, title, spec, payment = 2n * GEN, images = 2 }) {
       { text: "Photographs of the installed equipment", kind: "IMAGE",
         from_role: "INSTALLER", min_count: images },
     ],
+    trusted_sources: sources,
     payment_wei: payment.toString(),
     deadline: new Date(Date.now() + 14 * 86400000).toISOString().replace(/\.\d+Z$/, "Z"),
   });
@@ -235,7 +238,7 @@ async function contestAndDecide(key, mid, objection) {
 
 say(`substitution and cure on ${ADDRESS}`);
 const cfg = await readJson("get_config", []);
-check(cfg.ruleset === "icarus-rules-2", "the deployment runs icarus-rules-2");
+check(cfg.ruleset === "icarus-rules-3", "the deployment runs icarus-rules-3");
 
 // ── 1. The whole story ───────────────────────────────────────────────────────
 
@@ -415,6 +418,86 @@ const back = jsonFrom((await step("agreed.again.withdraw", "INSTALLER", "withdra
 m = await readJson("get_milestone", [agreed.mid]);
 check(back.status === "WITHDRAWN" && m.schedule[0].model === "MOD 4000TL3-X",
       "the installer takes an open proposal back and the line stays as it was");
+
+// ── 6. The sites the parties named ───────────────────────────────────────────
+//
+// The terms name one site. A page anywhere else is refused in code, before a
+// validator is asked; a page on it is judged on everything but its publisher.
+
+const named = await signedMilestone("named", "Inverter installation, named sources (demonstration)", terms({
+  equipment: [SIGNED], title: "String inverter installed and identifiable", sources: ["sun.store"],
+  spec: "One three-phase string inverter of at least 3 kW output on the plant room wall, its "
+      + "d.c. and a.c. connections made at the underside of the unit." }));
+m = await readJson("get_milestone", [named.mid]);
+check(JSON.stringify(m.versions[0].trusted_sources) === JSON.stringify(["sun.store"]),
+      "the signed terms carry the sites the parties named");
+await step("named.elsewhere", "INSTALLER", "propose_substitution",
+           [named.mid, "E1", JSON.stringify({ ...FITTED, page: OTHER_MAKER, reason: "Out of stock." })],
+           { refused: "must sit on one of the sites these terms name as sources: sun.store" });
+if (SELF_PUBLISHED) {
+  await step("named.self_published", "INSTALLER", "propose_substitution",
+             [named.mid, "E1", JSON.stringify({ manufacturer: "Northgate Power", model: "NG-10K3 Titan",
+                                                rating: "10 kW", page: SELF_PUBLISHED,
+                                                reason: "Available from stock." })],
+             { refused: "must sit on one of the sites these terms name as sources: sun.store" });
+}
+await step("named.lookalike", "INSTALLER", "propose_substitution",
+           [named.mid, "E1", JSON.stringify({ ...FITTED, page: "https://sun.store.example-mirror.com/growatt",
+                                              reason: "Out of stock." })],
+           { refused: "must sit on one of the sites these terms name as sources: sun.store" });
+m = await readJson("get_milestone", [named.mid]);
+check(m.substitutions.length === 0, "a page off the named sites leaves no proposal on the record");
+await propose("named.propose", named.mid, "E1", FITTED, CATALOGUE,
+              "The 3 kW unit of this range was not available from the supplier.");
+const onSite = await contestAndDecide("named", named.mid, "We signed for the 3 kW unit.");
+check(onSite.s.source_signed === true && onSite.s.findings.publisher === "SIGNED",
+      "for a page on a named site the record shows the parties' choice, not a node's opinion of the publisher");
+check(onSite.s.status === "APPROVED" && onSite.s.verdict === "EQUIVALENT"
+      && onSite.m.schedule[0].model === "MOD 4000TL3-X",
+      "a page on a named site that documents the model at a higher rating is approved");
+
+// ── 7. A file no node can read ───────────────────────────────────────────────
+//
+// The owner files something built like a JPEG with nothing a decoder can use
+// inside it. Before rules 3 that left every node unable to vote on any round
+// of this milestone. Now it is set aside and the round is decided.
+
+function unreadableJpeg() {
+  const head = [0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01, 0x01,
+                0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00];
+  const body = Array.from({ length: 3000 }, (_, i) => (i * 37 + 11) % 251);
+  return new Uint8Array([...head, 0xff, 0xc0, ...body, 0xff, 0xda, ...body, 0xff, 0xd9]);
+}
+
+const blocked = await signedMilestone("blocked", "Inverter installation, a file nobody can open (demonstration)", terms({
+  equipment: [{ ...SIGNED, ...FITTED, or_equivalent: false }], title: "String inverter installed and identifiable",
+  spec: "One three-phase string inverter on the plant room wall, its d.c. and a.c. connections "
+      + "made at the underside of the unit." }));
+const bFront = await image("blocked.front", blocked.mid, "growatt-inverter", "The string inverter on the plant room wall");
+const bPlate = await image("blocked.plate", blocked.mid, "growatt-nameplate", "The rating plate on the same unit", "NAMEPLATE");
+await step("blocked.not_an_image", "OWNER", "submit_image",
+           [blocked.mid, JSON.stringify({ requirement_id: "", equipment_id: "E1", caption: "Our own photograph",
+                                 claimed_capture: "October 2026", claimed_location: "Demonstration site",
+                                          origin: "PHOTO" }),
+            new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 1, 2, 3, 4, 5, 6])],
+           { refused: "that JPEG is incomplete" });
+const junk = jsonFrom((await step("blocked.junk", "OWNER", "submit_image",
+  [blocked.mid, JSON.stringify({ requirement_id: "", equipment_id: "E1", caption: "Our own photograph",
+                                 claimed_capture: "October 2026", claimed_location: "Demonstration site",
+                                 origin: "PHOTO" }), unreadableJpeg()])).text)?.item_id;
+check(Boolean(junk), "a file with the outline of a JPEG and nothing readable inside it can still be filed");
+const decided = jsonFrom((await step("blocked.assess", "INSTALLER", "request_assessment",
+                                     [blocked.mid, JSON.stringify([bFront, bPlate])])).text);
+say(`blocked.assess: ${decided.decision} lines ${JSON.stringify(decided.lines)} criteria ${JSON.stringify(decided.criteria)}`);
+const bRound = await readJson("get_round", [blocked.mid, decided.round]);
+say(`observation: the leader set aside ${JSON.stringify(bRound.unread)}; `
+  + `evidence ${JSON.stringify(bRound.evidence.map((e) => [e.item_id, e.role, e.read]))}`);
+check(bRound.evidence.some((e) => e.item_id === junk),
+      "a round is decided with the owner's unreadable file among its evidence, where it used to stall");
+check(bRound.unread.includes(junk) && !bRound.unread.includes(bFront) && !bRound.unread.includes(bPlate),
+      "the record shows the file was set aside and the installer's photographs were read");
+check(!Object.values(bRound.notes.basis).flat().includes(junk),
+      "no finding rests on the file nobody could read");
 
 const stats = await readJson("get_stats", []);
 say(`stats: ${JSON.stringify(stats)}`);

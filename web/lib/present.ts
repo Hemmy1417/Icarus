@@ -458,7 +458,7 @@ export function substitutionSaid(s: string, settledTooLate = false): string {
 /** Why the validators did not approve, in the words of the rule that decided it. */
 const VERDICT_SAID: Record<string, string> = {
   EQUIVALENT:
-    "The page names the product, somebody answerable for it published the page, it is the same kind of equipment, and its own figures meet what the line asks.",
+    "The page names the product, it comes from a source the terms accept or from somebody answerable for the product, it is the same kind of equipment, and its own figures meet what the line asks.",
   NOT_EQUIVALENT:
     "The page documents the product, and by the page's own figures it is a different kind of equipment or falls short of what the line asks.",
   UNPROVEN:
@@ -471,8 +471,21 @@ const PUBLISHER: Record<string, string> = {
   DISTRIBUTOR: "A seller's catalogue",
   REGISTRY: "A certification body or public register",
   UNKNOWN: "No publisher answerable for the product",
+  SIGNED: "On a site the terms name as a source",
 };
 export const publisher = (s: string) => label(PUBLISHER, s);
+
+/**
+ * What it meant that a node could not read an image. What the installer
+ * presents is what the round is about, so a node that cannot see it does not
+ * vote. An image another party filed is set aside instead, so a file nobody
+ * can open never holds a decision up.
+ */
+export function unreadSaid(role: string): string {
+  return role === "INSTALLER"
+    ? "This node never received the photograph, so it could see nothing either way. A node that cannot see what the installer presents votes against every outcome rather than guessing at one."
+    : "This node could not read the photograph, so it set it aside and judged on the rest. An image nobody can read shows nothing either way, and no finding rests on it.";
+}
 
 const MEETS: Record<string, string> = {
   YES: "Meets what the line asks",

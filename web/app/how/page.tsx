@@ -32,7 +32,7 @@ const RULES: Array<{ rule: string; says: string }> = [
 const CHANGES: Array<{ rule: string; says: string }> = [
   {
     rule: "A different product needs a yes, or a page that proves it.",
-    says: "When the unit on the schedule cannot be had, the installer may propose another for that line. The owner can agree. Where the line was signed with the words or equivalent, validators each fetch the product page the installer names and say whether it documents that model, of the same kind, at a rating no lower than the line asks. Code turns their answers into the verdict, and anything short of a clear yes leaves the line as signed. On a line signed for one product, only the owner's yes changes it.",
+    says: "When the unit on the schedule cannot be had, the installer may propose another for that line. The owner can agree. Where the line was signed with the words or equivalent, validators each fetch the product page the installer names and say whether it documents that model, of the same kind, at a rating no lower than the line asks. Code turns their answers into the verdict, and anything short of a clear yes leaves the line as signed. On a line signed for one product, only the owner's yes changes it. The terms can also name the sites both parties accept as sources for a product, and then a page anywhere else is refused before a validator is asked.",
   },
   {
     rule: "What a panel found in place stays found.",
@@ -45,7 +45,8 @@ const LIMITS: string[] = [
   "A legible nameplate is close to the edge of what such a panel will agree on. When it splits, nothing is recorded and the milestone is untouched.",
   "An appeal nobody decides within three days lapses, and the milestone is undetermined. An acceptance that was contested and never confirmed does not pay.",
   "This judges evidence, not workmanship. A photograph of the right inverter on the right wall is not an electrical inspection.",
-  "Who published a product page is each validator's judgment. Code checks that the page loads, sits on a public site and names the model. It cannot tell the maker's site from a convincing copy of it.",
+  "Where the terms name no site as a source, who published a product page is each validator's judgment. Code checks that the page loads, sits on a public site and names the model. It cannot tell the maker's site from a convincing copy of it.",
+  "An image the owner or the inspector files that a node cannot read is set aside by that node, so it cannot hold a decision up. An image only some nodes can read can still split a panel, and a split records nothing.",
   "Agreeing every finding costs rounds. A line one node reads as installed and another as not identified now records nothing, and has to be asked again.",
 ];
 

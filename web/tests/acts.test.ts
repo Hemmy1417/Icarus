@@ -47,6 +47,7 @@ function milestone(over: Partial<Milestone> = {}): Milestone {
       version: 1, title: "A milestone", milestone_type: "INVERTER_INSTALLATION", description: "",
       specification: "", requirements: "", payment_wei: "2000000000000000000",
       deadline: iso(NOW + 14 * 86_400_000), equipment: [], criteria: [], evidence_requirements: [],
+      trusted_sources: [],
     }],
     evidence: {}, rounds_count: 0, version_assessments: 0, standing: null, appeal: null,
     substitutions: [], schedule: [], cure_until: null, cure_base: null,

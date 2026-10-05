@@ -244,12 +244,57 @@ const M = [
   ["acts", "closing ignores a cure period still running",
    "                : nowMs <= workEndsMs(m, terms.deadline)",
    "                : false"],
+
+  // ── the sites the terms name, and an image nobody could read ──────────
+  ["sources", "a lookalike of a named site passes for it",
+   "host === site || host === `www.${site}`", "host.endsWith(site)"],
+  ["sources", "anything under a named site passes for it",
+   "host === site || host === `www.${site}`", "host === site || host.endsWith(`.${site}`)"],
+  ["sources", "the www of a named site is turned away",
+   "host === site || host === `www.${site}`", "host === site"],
+  ["sources", "a named site anywhere in a link passes",
+   "host === site || host === `www.${site}`", "url.includes(site)"],
+  ["sources", "a site's name is as long as anyone likes",
+   "site.length > 253 || !HOSTNAME.test(site)", "!HOSTNAME.test(site)"],
+  ["sources", "a site's name is matched by its capitals",
+   `?? "").toLowerCase();`, `?? "");`],
+  ["sources", "any number of sites is signed",
+   "  if (sites.length > most) return", "  if (false) return"],
+  ["sources", "a site is anything a person typed",
+   "!HOSTNAME.test(site) || NOT_PUBLIC.some((end) => site.endsWith(end))) {",
+   "NOT_PUBLIC.some((end) => site.endsWith(end))) {"],
+  ["sources", "a private name is signed as a site",
+   "!HOSTNAME.test(site) || NOT_PUBLIC.some((end) => site.endsWith(end))) {",
+   "!HOSTNAME.test(site)) {"],
+  ["sources", "one site is kept twice",
+   "    if (site && !out.includes(site)) out.push(site);", "    if (site) out.push(site);"],
+  ["sources", "a site is kept as it was capitalised",
+   "    const site = part.trim().toLowerCase();", "    const site = part.trim();"],
+  ["panel", "a page off the named sites goes to a transaction",
+   "  if (d.line.or_equivalent && sites.length && !onNamedSite(page, sites)) {",
+   "  if (false) {"],
+  ["panel", "the named sites bind a line only the owner can change",
+   "  if (d.line.or_equivalent && sites.length && !onNamedSite(page, sites)) {",
+   "  if (sites.length && !onNamedSite(page, sites)) {"],
+  ["panel", "with no site named every page is turned away",
+   "  if (d.line.or_equivalent && sites.length && !onNamedSite(page, sites)) {",
+   "  if (d.line.or_equivalent && !onNamedSite(page, sites)) {"],
+  ["present", "an image another party filed is said to have blinded the node",
+   `  return role === "INSTALLER"\n    ? "This node never received`,
+   `  return role !== "MISSING"\n    ? "This node never received`],
+  ["present", "a page on a named site has no words",
+   `  SIGNED: "On a site the terms name as a source",\n`, ""],
 ];
 
-const files = { acts: "lib/acts.ts", present: "lib/present.ts" };
+const files = {
+  acts: "lib/acts.ts", present: "lib/present.ts", sources: "lib/sources.ts",
+  panel: "components/SubstitutePanel.tsx",
+};
 const tests = {
   acts: "tests/acts.test.ts tests/change.test.ts",
   present: "tests/present.test.ts tests/writeout.test.ts",
+  sources: "tests/change.test.ts",
+  panel: "tests/change.test.ts",
 };
 
 const [MAJOR, MINOR] = process.versions.node.split(".").map(Number);

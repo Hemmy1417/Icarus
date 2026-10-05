@@ -9,7 +9,8 @@ import { describe, expect, it } from "vitest";
 import {
   bytes, criterionStatus, day, decision, duration, equipmentRole, gen, itemKind, itemName,
   lineStatus, lineStatusSaid, milestoneState, milestoneType, moment, parseGen, plural, projectState,
-  prose, quality, relative, roleLower, roundName, shortAddress, shortDigest, systemType, wasCut,
+  prose, publisher, quality, relative, roleLower, roundName, shortAddress, shortDigest, systemType,
+  unreadSaid, wasCut,
 } from "@/lib/present";
 
 /*
@@ -83,6 +84,23 @@ describe("every value the contract can return has a word", () => {
     expect(itemKind("IMAGE", "VIDEO_FRAME")).toBe("Video frame");
     expect(itemKind("DOCUMENT")).toBe("Document");
     expect(itemKind("DECLARATION")).toBe("Declaration");
+  });
+
+  it.each(["MANUFACTURER", "DISTRIBUTOR", "REGISTRY", "UNKNOWN", "SIGNED"])(
+    "a page published by %s", (v) => {
+      expect(isWritten(publisher(v))).toBe(true);
+    });
+
+  it("says a page on a named site was the parties' choice, not a finding", () => {
+    expect(publisher("SIGNED")).toBe("On a site the terms name as a source");
+  });
+
+  it("tells an image the installer presented from one somebody else filed", () => {
+    expect(unreadSaid("INSTALLER")).toMatch(/never received the photograph.*votes against every outcome/);
+    for (const role of ["OWNER", "INSPECTOR"]) {
+      expect(unreadSaid(role)).toMatch(/set it aside and judged on the rest/);
+      expect(unreadSaid(role)).not.toMatch(/votes against/);
+    }
   });
 
   it("falls back to a written word for a value it has never seen", () => {

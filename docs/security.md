@@ -56,7 +56,11 @@ Applied to this build, with where each one is met.
   decision, that every line and criterion was rated, and every finding of
   installed, absent, met or unmet. They do not compare the reasoning the panel
   writes, nor the per-image readings. A leader whose findings a majority
-  reproduces could still record misleading wording beside them.
+  reproduces could still record misleading wording beside them. What it
+  cannot do is choose the shape of that record: the contract rebuilds the
+  account field by field, so every status in it is a known one, every
+  reference names an item the round held, and who filed an image comes from
+  storage and not from the node.
 
   This cannot move money, and the reason is worth stating precisely: nothing
   downstream reads that prose. An appeal re-reads only the evidence item ids
@@ -65,11 +69,23 @@ Applied to this build, with where each one is met.
   contract computed when the bytes were filed. So the record a later panel
   reconsiders was never authored by a leader. The prose is shown on the case
   sheet as the panel's own words, and that is all it is.
-- **Who published a product page.** When validators decide whether a
-  substitute is an equivalent, code checks that the page loads, is public
-  and names the model. Whether its publisher is the maker, a seller or
-  nobody is each validator's judgment. See
-  `docs/substitution-and-cure.md` for what that leaves open.
+- **Who published a product page, when the terms name no site.** The terms
+  may list the sites both parties accept as sources for a product. Where
+  they do, code refuses a substitute's page that sits anywhere else on a line
+  validators may decide, and nobody judges its publisher. That is only as
+  good as the sites named: one where anybody can post a page vouches for
+  nothing. Where they name
+  none, code checks only that the page loads, is public and names the model,
+  and whether its publisher is the maker, a seller or nobody is each
+  validator's judgment. See `docs/substitution-and-cure.md`.
+- **An image only some nodes can decode.** A file that is not built like a
+  PNG or a JFIF JPEG is refused when it is filed, and an image from the owner
+  or the inspector that a node cannot read is set aside by that node. Neither
+  makes two different decoders agree. A damaged image that half a panel
+  reads and half does not can still split it, and a split records nothing.
+  Nor is an image that opens, but draws answers the nodes cannot give in the
+  asked shape, set aside: those nodes do not vote, and a party who can make
+  such an image can still cost a round its majority.
 - **Workmanship and safety.** A photograph showing the right inverter on the
   right wall is not an electrical inspection.
 - **The network itself.** This runs on a test network whose validators, fee

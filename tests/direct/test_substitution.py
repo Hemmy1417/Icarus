@@ -1179,3 +1179,160 @@ class TestTheHelpers:
         with pytest.raises(err(module), match="no usable findings"):
             module._findings("EQUIVALENT")
 
+
+
+def named(module, c, sites=("solvanta-power.com",), **kw):
+    """An or-equivalent line under terms that name the sites the parties accept."""
+    return active_milestone(module, c, equipment=schedule(E2={"or_equivalent": True}),
+                            trusted_sources=list(sites), **kw)
+
+
+class TestTheSitesThePartiesNamed:
+    def test_the_terms_keep_the_named_sites_in_one_spelling(self, module, c):
+        _, mid = named(module, c, sites=(" Solvanta-Power.COM ", "sun.store", "solvanta-power.com"))
+        assert milestone(c, mid)["versions"][0]["trusted_sources"] == \
+            ["solvanta-power.com", "sun.store"]
+
+    def test_terms_that_name_none_say_so(self, module, c):
+        _, mid = or_equal(module, c)
+        assert milestone(c, mid)["versions"][0]["trusted_sources"] == []
+
+    @pytest.mark.parametrize("sites,why", [
+        ("solvanta-power.com", "at most 8 trusted sites"),
+        (["a%d.com" % i for i in range(9)], "at most 8 trusted sites"),
+        (["https://solvanta-power.com"], "trusted site 1 must be a public site's name alone"),
+        (["solvanta-power.com/products"], "trusted site 1 must be"),
+        (["solvanta-power.com:443"], "trusted site 1 must be"),
+        (["sun.store", "localhost"], "trusted site 2 must be"),
+        (["10.0.0.7"], "trusted site 1 must be"),
+        (["plant.local"], "trusted site 1 must be"),
+        (["solvanta"], "trusted site 1 must be"),
+        ([7], "trusted site 1 must be"),
+        ([("a" * 62 + ".") * 4 + "com"], "trusted site 1 must be"),
+        ([""], "trusted site 1 must be"),
+    ])
+    def test_a_named_site_is_a_public_sites_name_and_nothing_more(self, module, c, sites, why):
+        pid, _ = active_milestone(module, c)
+        as_(module, OWNER)
+        with pytest.raises(err(module), match=why):
+            c.add_milestone(pid, terms(payment_wei=str(GEN), trusted_sources=sites))
+
+    def test_a_name_as_long_as_a_name_may_be_is_taken(self, module, c):
+        pid, _ = active_milestone(module, c)
+        longest = ("a" * 61 + ".") * 4 + "com"          # 251 characters
+        as_(module, OWNER)
+        out = json.loads(c.add_milestone(pid, terms(payment_wei=str(GEN), trusted_sources=[longest])))
+        assert milestone(c, out["milestone_id"])["versions"][0]["trusted_sources"] == [longest]
+
+    def test_eight_sites_are_taken(self, module, c):
+        pid, _ = active_milestone(module, c)
+        as_(module, OWNER)
+        out = json.loads(c.add_milestone(pid, terms(
+            payment_wei=str(GEN), trusted_sources=["a%d.com" % i for i in range(8)])))
+        assert len(milestone(c, out["milestone_id"])["versions"][0]["trusted_sources"]) == 8
+
+    @pytest.mark.parametrize("link", [
+        "https://solvanta-power.com/sv-50h", "https://www.solvanta-power.com/sv-50h",
+        "https://solvanta-power.com?x=1", "https://WWW.Solvanta-Power.com/sv-50h"])
+    def test_a_page_on_a_named_site_or_its_www_is_taken(self, module, c, link):
+        _, mid = named(module, c)
+        propose(module, c, mid, page=link)
+        assert sub(c, mid)["source_signed"] is True
+
+    def test_a_subdomain_is_taken_only_when_the_parties_named_it(self, module, c):
+        """A maker's forum or file store is a place anybody may publish, so
+        nothing under a name passes for the name."""
+        link = "https://community.solvanta-power.com/t/sv-50h"
+        _, mid = named(module, c)
+        as_(module, INSTALLER)
+        with pytest.raises(err(module), match="as sources: solvanta-power.com"):
+            c.propose_substitution(mid, "E2", proposal(page=link))
+        _, mid = named(module, c, sites=("solvanta-power.com", "community.solvanta-power.com"))
+        propose(module, c, mid, page=link)
+        assert sub(c, mid)["source_signed"] is True
+
+    @pytest.mark.parametrize("link", [
+        "https://sun.store/en/product/sv-50h", "https://evil-solvanta-power.com/sv-50h",
+        "https://shop.eu.solvanta-power.com/p/sv-50h", "https://wwwsolvanta-power.com/sv-50h",
+        "https://www.www.solvanta-power.com/sv-50h",
+        "https://solvanta-power.com.evil.io/sv-50h", "https://solvanta-power.co/sv-50h",
+        "https://raw.githubusercontent.com/someone/solvanta-power.com/sv-50h.txt",
+        "https://example.org/?u=solvanta-power.com"])
+    def test_a_page_anywhere_else_is_refused_in_code(self, module, c, link):
+        _, mid = named(module, c)
+        as_(module, INSTALLER)
+        with pytest.raises(err(module), match="must sit on one of the sites these terms name "
+                                              "as sources: solvanta-power.com"):
+            c.propose_substitution(mid, "E2", proposal(page=link))
+        assert milestone(c, mid)["substitutions"] == []
+
+    def test_a_line_signed_for_one_product_takes_a_page_from_anywhere(self, module, c):
+        """Only the owner's yes changes such a line, and the owner can weigh
+        any page they are shown. The named sites bind what validators may
+        decide."""
+        _, mid = active_milestone(module, c, trusted_sources=["solvanta-power.com"])
+        propose(module, c, mid, page="https://sun.store/en/product/sv-50h")
+        assert sub(c, mid)["source_signed"] is False
+
+    def test_with_no_sites_named_a_page_from_anywhere_is_taken_and_judged(self, module, c):
+        _, mid = or_equal(module, c)
+        propose(module, c, mid)
+        assert sub(c, mid)["source_signed"] is False
+
+    @pytest.mark.parametrize("leader,validator", [
+        ("UNKNOWN", "DISTRIBUTOR"), ("MANUFACTURER", "UNKNOWN"), ("UNKNOWN", "UNKNOWN")])
+    def test_on_a_named_site_who_published_the_page_is_nobodys_judgment(
+            self, module, c, leader, validator):
+        _, mid = named(module, c)
+        propose(module, c, mid)
+        as_(module, OWNER)
+        c.answer_substitution(mid, False, "Not the certified unit.")
+        out = decide(module, c, mid, leader=reading(publisher=leader),
+                     validator=reading(publisher=validator))
+        assert out == {"milestone_id": mid, "substitution_id": "S1", "status": "APPROVED",
+                       "verdict": "EQUIVALENT"}
+        assert sub(c, mid)["findings"]["publisher"] == "SIGNED"
+        prompt = prompts(kind="judge", role="leader")[0]["prompt"]
+        assert "on a site the parties named in the terms as a source" in prompt
+
+    def test_elsewhere_an_unknown_publisher_still_proves_nothing(self, module, c):
+        _, mid = contested(module, c)
+        out = decide(module, c, mid, leader=reading(publisher="UNKNOWN"))
+        assert out["verdict"] == "UNPROVEN"
+        assert sub(c, mid)["findings"]["publisher"] == "UNKNOWN"
+        assert "named in the terms as a source" not in \
+            prompts(kind="judge", role="leader")[0]["prompt"]
+
+    def test_a_named_site_settles_the_publisher_and_nothing_else(self, module, c):
+        for answer, verdict in ((reading(meets="NO"), "NOT_EQUIVALENT"),
+                                (reading(same_role=False), "NOT_EQUIVALENT"),
+                                (reading(documents_model=False), "UNPROVEN"),
+                                (reading(meets="UNCLEAR"), "UNPROVEN")):
+            _, mid = named(module, c)
+            propose(module, c, mid)
+            as_(module, OWNER)
+            c.answer_substitution(mid, False, "Not the certified unit.")
+            assert decide(module, c, mid, leader=answer)["verdict"] == verdict
+
+    def test_a_node_cannot_claim_a_page_was_on_a_named_site(self, module, c):
+        """The word the contract writes for a signed source is not one a
+        node may send: it is not among the publishers a node can report."""
+        _, mid = contested(module, c)
+        web_page(PAGE, BODY)
+        llm(judge=reading(publisher="UNKNOWN"))
+        forge_leader(found(publisher="SIGNED"))
+        as_(module, STRANGER)
+        out = json.loads(c.decide_substitution(mid))
+        assert out["verdict"] == "UNPROVEN" and sub(c, mid)["findings"]["publisher"] == "UNKNOWN"
+
+    def test_new_terms_bring_their_own_sites(self, module, c):
+        _, mid = named(module, c)
+        as_(module, OWNER)
+        c.propose_version(mid, terms(equipment=schedule(E2={"or_equivalent": True}),
+                                     trusted_sources=["sun.store"]))
+        as_(module, INSTALLER)
+        c.accept_version(mid, 2)
+        with pytest.raises(err(module), match="as sources: sun.store"):
+            c.propose_substitution(mid, "E2", proposal())
+        propose(module, c, mid, page="https://sun.store/en/product/sv-50h")
+        assert sub(c, mid)["source_signed"] is True

@@ -25,6 +25,7 @@ import { PresentPanel } from "@/components/PresentPanel";
 import { SubstitutePanel } from "@/components/SubstitutePanel";
 import { appealStanding, currentEvidence, filedSince, milestoneActs } from "@/lib/acts";
 import { getConfig } from "@/lib/read";
+import { sitesList } from "@/lib/sources";
 import { useWallet } from "@/lib/wallet";
 import {
   appealCaption,
@@ -116,6 +117,11 @@ export default function CaseSheet({ params }: { params: Promise<{ mid: string }>
         <div className="mt-10 flex flex-wrap items-center gap-6">
           <span className="type-caption">{gen(terms.payment_wei)}</span>
           <span className="type-caption">Due {day(terms.deadline)}</span>
+          {terms.trusted_sources?.length ? (
+            <span className="type-caption">
+              A substitute is documented on {sitesList(terms.trusted_sources)}
+            </span>
+          ) : null}
           {m.standing?.appealable && !m.standing.appealed && m.standing.window_ends ? (
             <span className="type-caption">
               Open to challenge {relative(m.standing.window_ends, nowMs)}
@@ -310,6 +316,7 @@ function ActionArea({
     scheduleChanged,
   });
   const can = (id: string) => acts.some((a) => a.id === id && a.available);
+  const sites = terms.trusted_sources ?? [];
   const canFile = can("submit_image");
   /* The installer's own readable items, oldest first, for either kind of round. */
   const mine = (m.evidence[String(m.current_version)] ?? []).filter(
@@ -358,6 +365,7 @@ function ActionArea({
           lines={schedule}
           modelKeyMin={config?.model_key_min}
           urlMax={config?.url_max}
+          sites={sites}
         />
       ) : null}
       {canFile ? (
