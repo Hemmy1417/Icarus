@@ -225,7 +225,7 @@ not reporting.
 |---|---|
 | Contract | Python intelligent contract on GenLayer Studio Next, chain 61997 |
 | Reading and judging | `gl.nondet.exec_prompt` with images, under `gl.vm.run_nondet` |
-| Tests | 499 direct tests against a stubbed runtime, a 203 mutant sweep, and for the interface 234 tests and a 71 mutant sweep |
+| Tests | 499 direct tests against a stubbed runtime, a 203 mutant sweep, and for the interface 234 tests and a 70 mutant sweep |
 | Scripts | Node with `genlayer-js` 2.0.0-rc.1 |
 | Interface | Next.js App Router, TypeScript strict, Tailwind, Transaction Kit rc.2 |
 

@@ -311,10 +311,10 @@ export function milestoneActs({
     /*
      * A substitute coming into force adds one window to the cure period, once.
      * Past where the period first ended, no further one is proposed: it could
-     * be agreed with no time left to cure it.
+     * be agreed with no time left to cure it. A period nothing has moved has
+     * simply ended by then, and the line above has already said so.
      */
-    const extended =
-      !!m.cure_until && m.cure_until !== m.cure_base && nowMs > ms(m.cure_base);
+    const extended = !!m.cure_until && nowMs > ms(m.cure_base);
     acts.push(
       !workOpen
         ? no("propose_substitution", "A substitute is proposed while the work is open: on signed terms, with no acceptance standing and no appeal under way.")
