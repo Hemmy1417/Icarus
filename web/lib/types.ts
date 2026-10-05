@@ -255,6 +255,8 @@ export interface Milestone {
   /** The schedule in force: the signed lines with substitutes put in place. */
   schedule: EquipmentLine[];
   cure_until: string | null;
+  /** Where the cure period first ended, before any substitute moved it. */
+  cure_base: string | null;
   reserved_wei: string;
   created_at: string;
   closed_at: string | null;

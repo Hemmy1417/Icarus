@@ -21,6 +21,7 @@ the reason the signed product cannot be fitted.
 | The owner says no | The proposal is declined and the line stands | The objection is recorded and the validators can be asked at once |
 | The owner says nothing | After the project's window the proposal lapses | After a short objection period the validators can be asked |
 | Anyone asks for a decision | Refused until the window has passed, then it lapses | The validators decide |
+| The time for work on the terms ends first | It lapses | It lapses, and no panel is asked |
 
 "Or equivalent" is a flag on a schedule line, signed by both parties with the
 rest of the terms. Without it, only the owner's own yes changes the line and
@@ -101,9 +102,10 @@ When a substitute comes into force over a decision that fell short, the
 cure period runs a further window from that moment. Without that, an owner
 could sit on a proposal and agree in the last second: the appeal would be
 gone, because the decision was about another schedule, and the time to cure
-would be gone with it. However often it happens, the period never ends more
-than one window after it first would have, so substituting back and forth
-buys nothing.
+would be gone with it. It happens once: no further substitute is proposed
+after the moment the period would first have ended, so the period never ends
+more than one window after that, and substituting back and forth buys
+nothing.
 
 A substitute in force replaces the product a line names, for every later
 round on those terms. The line keeps its role, its quantity and whether its
@@ -130,7 +132,7 @@ rest on at least one item filed after that decision.
 |---|---|
 | Only findings a panel agreed are carried | See "What consensus now binds" below |
 | A substitute in force since the decision reopens its line and every criterion | What was true of the old equipment is not thereby true of the new |
-| A decision that found conflict, or rated any line contradicted, is cured with nothing kept: every line is judged again | Findings resting on evidence at odds with itself are not settled |
+| A decision that found conflict, or rated any line contradicted, is cured with nothing kept: every line is judged again, on at least the evidence the terms require | Findings resting on evidence at odds with itself are not settled, so the round is a full reading |
 | No cure follows an appeal that lapsed undecided | The decision it reviewed was never confirmed |
 | Cure rounds and assessments share one allowance of five per version | A cure is not a way to ask without limit |
 | A cure round never renews the cure period | Asking again is not a way to buy time. Only a substitute coming into force, or an appeal, moves the end of the work |
@@ -208,8 +210,11 @@ break it, and again after each set of fixes.
 | 4 | Nothing that moved money. A sentence still fitted a substitute's maker and rating; an owner's late yes left the installer with neither an appeal nor a cure | The names are fenced as party text wherever a model reads them; a substitute comes into force only while it can be heard, and then leaves a window to cure |
 | 5 | Nothing that moved money. The round-four fix missed decisions in conflict, which had no cure | The special case was removed: a decision in conflict is cured with nothing kept, so a cure exists whenever a decision falls short. The window a substitute adds is capped at one in all |
 
+| 6 | Clean: nothing serious or medium. Four small points, among them that a second substitute could be agreed too late to cure | No second substitute is proposed inside the window the first one added; a cure that keeps nothing is held to the evidence the terms require |
+
 Rounds three to five each found less than the one before, and each fix after
-round two removed a rule or a special case rather than adding one.
+round two removed a rule or a special case rather than adding one. The small
+changes made after round six were tested and swept, and not reviewed again.
 
 One thing the installer has to mind: a cure rests on something filed since
 the decision, and each party may file only so much against one version of

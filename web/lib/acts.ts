@@ -308,6 +308,13 @@ export function milestoneActs({
     /* A substitute for one line of the schedule: the installer asks. */
     const proposed = m.substitutions.filter((s) => s.version === m.current_version).length;
     const allowance = config?.max_substitutions_per_version ?? Infinity;
+    /*
+     * A substitute coming into force adds one window to the cure period, once.
+     * Past where the period first ended, no further one is proposed: it could
+     * be agreed with no time left to cure it.
+     */
+    const extended =
+      !!m.cure_until && m.cure_until !== m.cure_base && nowMs > ms(m.cure_base);
     acts.push(
       !workOpen
         ? no("propose_substitution", "A substitute is proposed while the work is open: on signed terms, with no acceptance standing and no appeal under way.")
@@ -317,11 +324,13 @@ export function milestoneActs({
             ? no("propose_substitution", "A proposal is already open on this milestone.")
             : used >= cap
               ? no("propose_substitution", "These terms have no round left to judge a substitute.")
+              : extended
+                ? no("propose_substitution", "A substitute has already extended the time to cure this decision, and it cannot be extended again.")
                 : proposed >= allowance
-                ? no("propose_substitution", "These terms have had every substitution they allow.")
-                : !m.schedule.length
-                  ? no("propose_substitution", "These terms name no equipment to substitute.")
-                  : ok("propose_substitution", "Ask to fit a different product on one line, and name a page that documents it."),
+                  ? no("propose_substitution", "These terms have had every substitution they allow.")
+                  : !m.schedule.length
+                    ? no("propose_substitution", "These terms name no equipment to substitute.")
+                    : ok("propose_substitution", "Ask to fit a different product on one line, and name a page that documents it."),
     );
     if (open) {
       acts.push(ok("withdraw_substitution", "Take your proposal back. The line stays as it is, and the evidence can be judged again."));

@@ -278,24 +278,45 @@ class TestWhoMayAskAndWhen:
         """Evidence at odds with itself, as a whole or on one line, settles
         no finding. The decision can still be put right, but the cure round
         judges every line and every condition: nothing is carried."""
-        _, mid, _ = fell_short(module, c, lines=lines, conflicts=conflicts)
+        _, mid, first = fell_short(module, c, lines=lines, conflicts=conflicts)
         assert milestone(c, mid)["state"] == "UNDETERMINED"
         assert milestone(c, mid)["cure_until"] == "2026-10-20T12:00:00Z"
         fresh = nameplate(module, c, mid)
         reset_prompts()
-        out = cure(module, c, mid, [fresh], judge_all(basis={k: [fresh] for k in ALL}))
+        out = cure(module, c, mid, [first[0], fresh],
+                   judge_all(basis={k: [fresh] for k in ALL}))
         assert out["decision"] == "ACCEPTED"
         assert out["carried"] == {"from_round": 1, "lines": [], "criteria": []}
         schedule = prompts(kind="judge", role="leader")[0]["prompt"].split("ACCEPTANCE", 1)[0]
         assert "E1 module" in schedule and "E2 inverter" in schedule and "E3 mounting" in schedule
 
     def test_a_cure_of_a_conflict_must_establish_every_line_again(self, module, c):
-        _, mid, _ = fell_short(module, c, lines={"E2": "INSTALLED"}, conflicts=True)
+        _, mid, first = fell_short(module, c, lines={"E2": "INSTALLED"}, conflicts=True)
         fresh = nameplate(module, c, mid)
-        out = cure(module, c, mid, [fresh], judge_answer(
+        out = cure(module, c, mid, [first[0], fresh], judge_answer(
             {"E1": "NOT_SHOWN", "E2": "INSTALLED", "E3": "NOT_SHOWN"}, {"C1": "MET"},
             basis={k: [fresh] for k in ALL}))
         assert out["decision"] == "UNDETERMINED" and out["lines"]["E1"] == "NOT_SHOWN"
+
+    def test_a_cure_that_keeps_nothing_needs_the_evidence_the_terms_require(self, module, c):
+        """The terms ask for two photographs from the installer. A cure that
+        judges every line again is a full reading, and one new photograph
+        with the old ones dropped is not what the parties signed for."""
+        _, mid, first = fell_short(module, c, lines={"E2": "INSTALLED"}, conflicts=True)
+        fresh = nameplate(module, c, mid)
+        llm(look=look_all(), judge=judge_all(basis={k: [fresh] for k in ALL}))
+        as_(module, INSTALLER)
+        with pytest.raises(err(module), match="needs 2 items from the installer"):
+            c.request_cure(mid, json.dumps([fresh]))
+        out = json.loads(c.request_cure(mid, json.dumps([first[0], fresh])))
+        assert out["decision"] == "ACCEPTED"
+
+    def test_a_cure_that_keeps_something_is_not_held_to_the_requirements_again(self, module, c):
+        _, mid, _ = fell_short(module, c)
+        fresh = nameplate(module, c, mid)
+        out = cure(module, c, mid, [fresh], judge_answer({"E2": "INSTALLED"},
+                                                        basis={"E2": [fresh]}))
+        assert out["decision"] == "ACCEPTED"
 
     def test_a_lapsed_appeal_leaves_nothing_to_carry(self, module, c):
         _, mid, _ = fell_short(module, c)
@@ -535,7 +556,7 @@ class TestTheCurePeriod:
             {"E2": "INSTALLED"}, conflicts=True, basis={"E2": [fresh]}))
         assert milestone(c, mid)["cure_until"] == "2026-10-20T12:00:00Z"
         again = image(module, c, mid, caption="The whole plant room", line="E2")
-        out = cure(module, c, mid, [again], judge_all(basis={k: [again] for k in ALL}))
+        out = cure(module, c, mid, [fresh, again], judge_all(basis={k: [again] for k in ALL}))
         assert out["carried"] == {"from_round": 2, "lines": [], "criteria": []}
         assert out["decision"] == "ACCEPTED"
 
@@ -842,7 +863,7 @@ class TestWithASubstitute:
         settled. It can still be cured, with nothing kept, so the yes still
         opens a window."""
         set_now("2026-10-20T11:30:00Z")
-        _, mid, _ = fell_short(module, c, lines={"E3": "CONTRADICTED"})
+        _, mid, first = fell_short(module, c, lines={"E3": "CONTRADICTED"})
         m = milestone(c, mid)
         assert m["state"] == "REJECTED" and m["cure_until"] == "2026-10-20T12:30:00Z"
         as_(module, INSTALLER)
@@ -855,30 +876,47 @@ class TestWithASubstitute:
         assert milestone(c, mid)["cure_until"] == "2026-10-20T13:29:59Z"
         set_now("2026-10-20T13:00:00Z")
         fresh = nameplate(module, c, mid)
-        out = cure(module, c, mid, [fresh], judge_all(basis={k: [fresh] for k in ALL}))
+        out = cure(module, c, mid, [first[0], fresh], judge_all(basis={k: [fresh] for k in ALL}))
         assert out["decision"] == "ACCEPTED" and out["carried"]["lines"] == []
 
     def test_substitutes_never_push_the_end_of_the_work_more_than_one_window(self, module, c):
-        """One product, then back to the signed one, then the first again:
-        each comes into force, and only the installer need act on a line
-        signed or equivalent. The cure period ends at most one window after
-        it first would have, however often that is done."""
+        """Two substitutes, each as late as it can be made. The period ends
+        at most one window after it first would have."""
         set_now("2026-10-20T11:59:00Z")
         _, mid, _ = fell_short(module, c)                    # cure until 12:59
-        ends = []
-        for n, (maker, model) in enumerate((("Solvanta", "SV-50H"), ("Volterra", "VT-50K"),
-                                            ("Solvanta", "SV-50H"))):
-            set_now(f"2026-10-20T12:{58 if n == 0 else 59}:{n:02d}Z") if n == 0 else \
-                set_now(f"2026-10-20T13:{50 + n}:00Z")
-            as_(module, INSTALLER)
+        set_now("2026-10-20T12:30:00Z")
+        self.agreed(module, c, mid)
+        assert milestone(c, mid)["cure_until"] == "2026-10-20T13:30:00Z"
+        set_now("2026-10-20T12:59:00Z")
+        self.agreed(module, c, mid, manufacturer="Volterra", model="VT-50K")
+        m = milestone(c, mid)
+        assert m["cure_until"] == "2026-10-20T13:59:00Z" and m["cure_base"] == "2026-10-20T12:59:00Z"
+
+    def test_no_second_substitute_is_proposed_inside_the_window_the_first_added(self, module, c):
+        """The first substitute pushed the end of the work one window, and
+        it goes no further. A second proposal made inside that window could
+        be agreed in its last second, taking the appeal and leaving no time
+        to cure. So it is not taken at all."""
+        set_now("2026-10-20T11:59:00Z")
+        _, mid, _ = fell_short(module, c)                    # cure until 12:59
+        set_now("2026-10-20T12:58:00Z")
+        self.agreed(module, c, mid)                          # now until 13:58
+        set_now("2026-10-20T12:59:00Z")
+        self.agreed(module, c, mid, manufacturer="Volterra", model="VT-50K")
+        assert milestone(c, mid)["cure_until"] == "2026-10-20T13:59:00Z", \
+            "at the first end itself a proposal is still taken, and has its window"
+        set_now("2026-10-20T12:59:01Z")
+        as_(module, INSTALLER)
+        with pytest.raises(err(module), match="cannot be extended again"):
             c.propose_substitution(mid, "E2", json.dumps(
-                {"manufacturer": maker, "model": model, "rating": "50 kW", "page": self.PAGE,
-                 "reason": "Supply."}))
-            as_(module, OWNER)
-            c.answer_substitution(mid, True, "")
-            ends.append(milestone(c, mid)["cure_until"])
-        assert ends == ["2026-10-20T13:58:00Z", "2026-10-20T13:59:00Z", "2026-10-20T13:59:00Z"]
-        assert milestone(c, mid)["cure_base"] == "2026-10-20T12:59:00Z"
+                {"manufacturer": "Solvanta", "model": "SV-50H", "rating": "50 kW",
+                 "page": self.PAGE, "reason": "Supply."}))
+
+    def test_a_substitute_long_before_the_period_ends_bars_no_later_one(self, module, c):
+        _, mid, _ = fell_short(module, c)                    # cure until the deadline, a month off
+        self.agreed(module, c, mid)
+        self.agreed(module, c, mid, manufacturer="Volterra", model="VT-50K")
+        assert [s["status"] for s in milestone(c, mid)["substitutions"]] == ["AGREED", "AGREED"]
 
     def test_a_substitute_in_force_never_shortens_a_cure_period(self, module, c):
         _, mid, _ = fell_short(module, c)                    # cure until the deadline, a month off

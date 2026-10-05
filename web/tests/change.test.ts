@@ -73,6 +73,7 @@ function milestone(over: Partial<Milestone> = {}): Milestone {
     }],
     evidence: { "1": [item(1), item(2)] }, rounds_count: 0, version_assessments: 0,
     standing: null, appeal: null, substitutions: [], schedule: [LINE], cure_until: null,
+    cure_base: null,
     reserved_wei: "2000000000000000000", created_at: iso(NOW - 86_400_000),
     closed_at: null, close_reason: null, now: iso(NOW), ...over,
   };
@@ -102,7 +103,7 @@ const fellShort = (over: Partial<Standing> = {}): Standing => ({
 /** A milestone a panel rejected a minute ago, with a cure period to the deadline. */
 const rejected = (over: Partial<Milestone> = {}) =>
   milestone({ state: "REJECTED", standing: fellShort(), rounds_count: 1, version_assessments: 1,
-              cure_until: iso(DEADLINE), ...over });
+              cure_until: iso(DEADLINE), cure_base: iso(DEADLINE), ...over });
 
 const actsFor = (addr: string, m: Milestone, nowMs = NOW, standingConflict = false) =>
   milestoneActs({ project, milestone: m, addr, config, nowMs, standingConflict });
@@ -145,7 +146,7 @@ describe("proposing a substitute", () => {
   });
 
   it("stays open through a cure period that outlasts the deadline", () => {
-    const m = rejected({ cure_until: iso(DEADLINE + 600_000) });
+    const m = rejected({ cure_until: iso(DEADLINE + 600_000), cure_base: iso(DEADLINE + 600_000) });
     expect(act(actsFor(INSTALLER, m, DEADLINE + 1), "propose_substitution")?.available).toBe(true);
     expect(act(actsFor(INSTALLER, m, DEADLINE + 600_000), "propose_substitution")?.available).toBe(false);
   });
@@ -179,6 +180,16 @@ describe("proposing a substitute", () => {
     expect(a?.reason).toMatch(/no round left to judge a substitute/);
     expect(act(actsFor(INSTALLER, rejected({ version_assessments: 4 })), "propose_substitution")?.available)
       .toBe(true);
+  });
+
+  it("is not offered again once a substitute has moved the end of the cure period", () => {
+    const moved = rejected({ cure_base: iso(DEADLINE), cure_until: iso(DEADLINE + 600_000) });
+    expect(act(actsFor(INSTALLER, moved, DEADLINE), "propose_substitution")?.available).toBe(true);
+    const a = act(actsFor(INSTALLER, moved, DEADLINE + 1), "propose_substitution");
+    expect(a?.available).toBe(false);
+    expect(a?.reason).toMatch(/cannot be extended again/);
+    const unmoved = rejected({ cure_base: iso(DEADLINE + 600_000), cure_until: iso(DEADLINE + 600_000) });
+    expect(act(actsFor(INSTALLER, unmoved, DEADLINE + 1), "propose_substitution")?.available).toBe(true);
   });
 
   it("needs a schedule to substitute on", () => {

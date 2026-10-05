@@ -49,7 +49,7 @@ function milestone(over: Partial<Milestone> = {}): Milestone {
       deadline: iso(NOW + 14 * 86_400_000), equipment: [], criteria: [], evidence_requirements: [],
     }],
     evidence: {}, rounds_count: 0, version_assessments: 0, standing: null, appeal: null,
-    substitutions: [], schedule: [], cure_until: null,
+    substitutions: [], schedule: [], cure_until: null, cure_base: null,
     reserved_wei: "2000000000000000000", created_at: iso(NOW - 86_400_000),
     closed_at: null, close_reason: null, now: iso(NOW), ...over,
   };
