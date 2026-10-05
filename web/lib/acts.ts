@@ -137,9 +137,9 @@ export interface MilestoneActsInput {
   /** The chain's clock from the read that produced this record. */
   nowMs: number;
   /**
-   * Whether the standing decision found the evidence in conflict. Only the
-   * round's own record says so; a caller that has not read it leaves this
-   * out, and the cure is then offered as though it had found none.
+   * Whether the standing decision found the evidence in conflict. A cure is
+   * offered either way; this only changes what the person is told it will
+   * do, since a decision in conflict keeps nothing.
    */
   standingConflict?: boolean;
   /** Whether a substitute has come into force since the standing decision. */
@@ -291,16 +291,16 @@ export function milestoneActs({
       acts.push(
         standing?.kind === "APPEAL_LAPSED"
           ? no("request_cure", "The last decision was never confirmed on appeal, so nothing in it can be carried forward.")
-          : standingConflict
-            ? no("request_cure", "The last decision found the evidence in conflict, so it settled nothing to carry forward.")
-            : workPassed
-              ? no("request_cure", "The time for putting this decision right has passed.")
-              : open
-                ? no("request_cure", "A proposed substitute is open. It is settled or withdrawn before the evidence is judged.")
-                : used >= cap
-                  ? no("request_cure", "These terms have had every assessment they allow.")
-                  : !filedSince(m).length
-                    ? no("request_cure", "File what puts it right first. A cure rests on something filed since the decision.")
+          : workPassed
+            ? no("request_cure", "The time for putting this decision right has passed.")
+            : open
+              ? no("request_cure", "A proposed substitute is open. It is settled or withdrawn before the evidence is judged.")
+              : used >= cap
+                ? no("request_cure", "These terms have had every assessment they allow.")
+                : !filedSince(m).length
+                  ? no("request_cure", "File what puts it right first. A cure rests on something filed since the decision.")
+                  : standingConflict
+                    ? ok("request_cure", "The last decision found the evidence in conflict, so nothing in it is kept. A panel judges every line again on what you present.")
                     : ok("request_cure", "Have a panel judge only what the last decision left open. What it found in place is kept."),
       );
     }

@@ -73,8 +73,10 @@ for every later round, and the evidence already filed stays where it is.
 A CURE. A full assessment that falls short leaves the installer a period to
 put right what was missing. A cure round keeps every line the standing
 decision found installed and every criterion it found met, and judges only
-what was left open; it must rest on something filed since that decision. The
-milestone still pays whole or not at all. An appeal of any decision judges
+what was left open; it must rest on something filed since that decision.
+Where that decision found the evidence in conflict nothing in it is settled,
+so nothing is kept and the cure round judges every line. The milestone still
+pays whole or not at all. An appeal of any decision judges
 every line afresh on everything the chain of rounds read, so a line carried
 forward is never beyond the owner's reach.
 """
@@ -226,9 +228,12 @@ def _clean(value, limit: int) -> str:
     return " ".join(text.split())[:limit]
 
 
+_FENCE_END = re.compile(r"END (ITEM|NAME|PROPOSAL|REASON|OBJECTION|TERMS|PAGE)")
+
+
 def _defuse(text: str) -> str:
     """Party text can never close a fence or forge a role label in a prompt."""
-    out = str(text or "").replace("END ITEM", "END_ITEM")
+    out = _FENCE_END.sub(r"END_\1", str(text or ""))
     while "<<<" in out or ">>>" in out:
         # Again until none is left: one pass over "<<<<" leaves a fence behind.
         out = out.replace("<<<", "< <<").replace(">>>", ">> >")
@@ -923,21 +928,28 @@ class Icarus(gl.contract.Contract):
         """A substitute changes the schedule only while a round can still
         hear it. Past that it lapses: a line nobody will ever judge is not
         changed, and the standing decision stays one the installer can still
-        appeal. When it does come into force over a decision that fell short
-        and can be cured, the cure period runs at least one more window from
-        now, so that the change is never the thing that leaves the installer
-        with nowhere to go. That can happen at most as often as the terms
-        allow substitutions, and each needs the owner's yes or the
-        validators' approval."""
+        appeal.
+
+        When it comes into force over a decision that fell short, that
+        decision can no longer be appealed, because it was about another
+        schedule. So the cure period then runs a further window from now,
+        which keeps the change from being the thing that leaves the
+        installer with nowhere to go. However often it happens, the period
+        never ends more than one window after it first would have."""
         if now > self._work_ends(m):
-            s["status"] = "LAPSED"
-            s["void_reason"] = "it was settled after the time for work on these terms had ended"
-        else:
-            s["status"] = status
-            if m["cure_until"]:
-                m["cure_until"] = _iso(max(_parse_iso(m["cure_until"]), now + timedelta(
-                    seconds=int(p["appeal_window_seconds"]))))
+            self._lapse(s, now)
+            return
+        s["status"] = status
         s["decided_at"] = _iso(now)
+        if m["cure_until"]:
+            window = timedelta(seconds=int(p["appeal_window_seconds"]))
+            m["cure_until"] = _iso(max(_parse_iso(m["cure_until"]),
+                                       min(now + window, _parse_iso(m["cure_base"]) + window)))
+
+    def _lapse(self, s: dict, now: datetime) -> None:
+        s["status"] = "LAPSED"
+        s["decided_at"] = _iso(now)
+        s["void_reason"] = "it was settled after the time for work on these terms had ended"
 
     def _work_ends(self, m: dict) -> datetime:
         """When work on the signed terms stops being heard: the deadline, or
@@ -1357,7 +1369,7 @@ class Icarus(gl.contract.Contract):
             "versions": [terms], "current_version": 0, "pending_version": 1,
             "version_assessments": 0, "rounds_count": 0,
             "standing": None, "appeal": None,
-            "substitutions": [], "cure_until": None,
+            "substitutions": [], "cure_until": None, "cure_base": None,
             "created_at": _iso(_now()), "closed_at": None, "close_reason": None,
         }
         self._save_milestone(m)
@@ -1538,7 +1550,7 @@ class Icarus(gl.contract.Contract):
     def answer_substitution(self, mid: str, agree: bool, objection: str) -> str:
         """The owner's answer, inside the project's window and before
         anyone has had the proposal decided. A yes puts the substitute in
-        force. A no ends the matter, unless the signed line says "or
+        force, while a round can still hear it. A no ends the matter, unless the signed line says "or
         equivalent": then the question is whether it is one, which is the
         validators' to answer, and the objection is put before them."""
         m = self._milestone(mid)
@@ -1548,8 +1560,11 @@ class Icarus(gl.contract.Contract):
         s = self._open_substitution(m)
         # An owner who objected may still come round to a yes while the
         # question is open. A second no adds nothing.
-        if not s or (s["status"] != "PROPOSED" and agree is not True):
+        if not s:
             _refuse("no substitution awaits the owner's answer on this milestone")
+        if s["status"] != "PROPOSED" and agree is not True:
+            _refuse("your objection is on record and the question is the validators' now; "
+                    "you may still agree")
         now = _now()
         if now > _parse_iso(s["respond_by"]):
             _refuse("the time to answer has passed; the proposal is now decided "
@@ -1711,6 +1726,14 @@ class Icarus(gl.contract.Contract):
         if not s:
             _refuse("no substitution is open on this milestone")
         now = _now()
+        if now > self._work_ends(m):
+            # No round can judge a new product any more, so no panel is asked
+            # whether it is an equivalent.
+            self._lapse(s, now)
+            self._save_milestone(m)
+            self._event(p["project_id"], "SUBSTITUTION_LAPSED", mid, s["id"])
+            return json.dumps({"milestone_id": mid, "substitution_id": s["id"],
+                               "status": "LAPSED"})
         if s["or_equivalent"] and s["status"] == "PROPOSED" \
                 and now <= _parse_iso(s["decide_from"]):
             _refuse("the owner may still object; the validators are asked once the owner "
@@ -2372,18 +2395,19 @@ class Icarus(gl.contract.Contract):
             # window from this decision, or the rest of the time to the
             # deadline if that is longer. Two decisions open one: a full
             # assessment, and an appeal that takes an acceptance away. A cure
-            # round never does, and nor does an appeal the installer brought,
-            # so the installer cannot extend the period by their own acts.
+            # round never does, and nor does an appeal the installer brought:
+            # asking again is not a way to buy time.
             deadline = _parse_iso(self._terms(m, version)["deadline"])
             m["cure_until"] = None if outcome["decision"] == "ACCEPTED" else \
                 _iso(max(deadline, now + timedelta(seconds=window)))
+            # Where the period first ends, which bounds how far a substitute
+            # coming into force can ever move it.
+            m["cure_base"] = m["cure_until"]
         if outcome["decision"] == "ACCEPTED" \
-                or _unsettled(outcome["lines"], outcome["conflicts"]) \
                 or int(m["version_assessments"]) >= MAX_ASSESSMENTS_PER_VERSION:
-            # An acceptance leaves nothing to cure. Evidence in conflict
-            # settles no finding, so there is nothing to carry. Terms with no
-            # round left can hear no cure. In none of these is a period held
-            # open that nothing could use.
+            # An acceptance leaves nothing to cure, and terms with no round
+            # left can hear no cure. In neither is a period held open that
+            # nothing could use.
             m["cure_until"] = None
         self._save_milestone(m)
         self._event(p["project_id"], "DECISION", m["milestone_id"],
@@ -2500,9 +2524,6 @@ class Icarus(gl.contract.Contract):
                     "can be carried forward; ask for a full assessment")
         version = int(m["current_version"])
         base = json.loads(self.rounds[f"{mid}|{int(standing['round'])}"])
-        if _unsettled(base["lines"], base["conflicts_detected"]):
-            _refuse("the last decision found the evidence in conflict, so no finding in it "
-                    "is settled and there is nothing to carry forward")
         if _now() > self._work_ends(m):
             _refuse("the period for curing this decision has ended")
         self._may_judge(m)
@@ -2511,12 +2532,16 @@ class Icarus(gl.contract.Contract):
         # installed as something else, so it is open again. So is every
         # criterion: what was true of the old equipment is not thereby true
         # of the new.
+        # And where that decision found the evidence in conflict, as a whole
+        # or on any line, no finding in it is settled: everything is open.
         equipment = self._schedule(m, version)
         changed = self._changed_since(m, base)
+        nothing_settled = _unsettled(base["lines"], base["conflicts_detected"])
         open_lines = [line["id"] for line in equipment
-                      if base["lines"][line["id"]] != "INSTALLED" or line["id"] in changed]
+                      if base["lines"][line["id"]] != "INSTALLED" or line["id"] in changed
+                      or nothing_settled]
         open_criteria = [cid for cid, status in base["criteria"].items()
-                         if status != "MET" or changed]
+                         if status != "MET" or changed or nothing_settled]
 
         mark = int(standing["item_mark"])
         chosen, others = self._presented(mid, version, named_json)

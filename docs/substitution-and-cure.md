@@ -67,6 +67,9 @@ Each validator fetches the page itself. Then:
 | Not equivalent | Another kind of equipment, or the page's figures fall short | Refused; the line stands |
 | Equivalent | Every one of the answers is a clear yes | Approved; the substitute is in force |
 
+No panel is asked once the time for work on the terms has ended. A proposal
+still open then lapses, because no round could judge the new product.
+
 Only one path approves. An answer a model leaves out counts against.
 
 A substitute is always measured against the line as signed, including when
@@ -94,13 +97,13 @@ settled after the time for work on the terms has ended lapses instead: a
 line no panel will ever read is left as it was, and the standing decision
 stays one the installer can appeal.
 
-When a substitute comes into force over a decision that fell short and can
-be cured, the cure period runs at least one more window from that moment.
-Without that, an owner could sit on a proposal and agree in the last second:
-the appeal would be gone, because the decision was about another schedule,
-and the time to cure would be gone with it. That extension can happen at
-most three times on one version of the terms, and each time needs the
-owner's yes or the validators' approval.
+When a substitute comes into force over a decision that fell short, the
+cure period runs a further window from that moment. Without that, an owner
+could sit on a proposal and agree in the last second: the appeal would be
+gone, because the decision was about another schedule, and the time to cure
+would be gone with it. However often it happens, the period never ends more
+than one window after it first would have, so substituting back and forth
+buys nothing.
 
 A substitute in force replaces the product a line names, for every later
 round on those terms. The line keeps its role, its quantity and whether its
@@ -117,8 +120,7 @@ can withdraw a proposal at any time to lift that.
 A full assessment that falls short opens a cure period: the project's window
 from the decision, or the rest of the time to the deadline if that is longer.
 In it the installer can file more and ask for a cure round. No period opens
-when there is nothing a cure could do: the decision found the evidence in
-conflict, or it was the last round the terms allow.
+when it was the last round the terms allow.
 
 A cure round keeps every line the standing decision found installed and
 every criterion it found met, and judges only what was left open. It must
@@ -128,8 +130,8 @@ rest on at least one item filed after that decision.
 |---|---|
 | Only findings a panel agreed are carried | See "What consensus now binds" below |
 | A substitute in force since the decision reopens its line and every criterion | What was true of the old equipment is not thereby true of the new |
-| Nothing is carried from a decision that found conflict, or rated any line contradicted | Findings resting on evidence at odds with itself are not settled |
-| Nothing is carried from an appeal that lapsed undecided | The decision it reviewed was never confirmed |
+| A decision that found conflict, or rated any line contradicted, is cured with nothing kept: every line is judged again | Findings resting on evidence at odds with itself are not settled |
+| No cure follows an appeal that lapsed undecided | The decision it reviewed was never confirmed |
 | Cure rounds and assessments share one allowance of five per version | A cure is not a way to ask without limit |
 | A cure round never renews the cure period | Asking again is not a way to buy time. Only a substitute coming into force, or an appeal, moves the end of the work |
 
@@ -152,7 +154,7 @@ A cure round reads it. So for any decision that falls short, a validator now
 has to reproduce every line the leader calls installed, every line it calls
 absent, every criterion it calls met or unmet, and must not see a conflict
 the leader does not report. Whether a line is contradicted binds as well,
-both ways, because it decides whether there is anything to cure. A leader
+both ways, because it decides whether a cure keeps anything. A leader
 may assert less than a validator, never more. Only the shade of a doubt is
 free to differ.
 
@@ -164,8 +166,8 @@ doubt, and the round has to be asked again.
 
 A decision about one schedule is not appealed against another. If a
 substitute has come into force since the standing decision, an appeal is
-refused and the way on is a cure round, for which there is always at least
-one window, or a new assessment while the deadline stands. The difference matters: an appeal's
+refused and the way on is a cure round, for which a window is left as set
+out above, or a new assessment while the deadline stands. The difference matters: an appeal's
 acceptance is final, and it would be the first time any panel had judged the
 new product. A cure round's acceptance can still be contested by the owner.
 
@@ -202,5 +204,13 @@ break it, and again after each set of fixes.
 |---|---|---|
 | 1 | A cure carried findings only the leader had asserted, and paid on them | Consensus binds every favourable finding |
 | 2 | An appeal skipped owner evidence filed just before it opened, a hole made by a round-one fix | An appeal reads every owner and inspector item; the wait on the owner was removed rather than patched |
-| 4 | Nothing that moved money. A sentence still fitted a substitute's maker and rating; an owner's late yes left the installer with neither an appeal nor a cure | The names are fenced as party text wherever a model reads them; a substitute comes into force only while it can be heard, and then leaves a window to cure |
 | 3 | Nothing that moved money. A contradicted line rested on the leader alone; a substitute's maker and rating could carry a sentence into later prompts; the owner could be left unheard | Contradiction binds in consensus; names are held to their shapes and quoted; a short objection period |
+| 4 | Nothing that moved money. A sentence still fitted a substitute's maker and rating; an owner's late yes left the installer with neither an appeal nor a cure | The names are fenced as party text wherever a model reads them; a substitute comes into force only while it can be heard, and then leaves a window to cure |
+| 5 | Nothing that moved money. The round-four fix missed decisions in conflict, which had no cure | The special case was removed: a decision in conflict is cured with nothing kept, so a cure exists whenever a decision falls short. The window a substitute adds is capped at one in all |
+
+Rounds three to five each found less than the one before, and each fix after
+round two removed a rule or a special case rather than adding one.
+
+One thing the installer has to mind: a cure rests on something filed since
+the decision, and each party may file only so much against one version of
+the terms. An installer who has used the whole allowance cannot cure.

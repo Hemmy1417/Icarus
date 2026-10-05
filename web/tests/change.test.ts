@@ -344,10 +344,14 @@ describe("the cure round", () => {
     expect(act(actsFor(INSTALLER, held), "request_cure")?.available).toBe(false);
   });
 
-  it("is withheld when the decision found conflict or lapsed on appeal", () => {
+  it("is offered after a decision in conflict, and says nothing is kept", () => {
     const conflict = act(actsFor(INSTALLER, withNew(), NOW, true), "request_cure");
-    expect(conflict?.available).toBe(false);
-    expect(conflict?.reason).toMatch(/evidence in conflict/);
+    expect(conflict?.available).toBe(true);
+    expect(conflict?.reason).toMatch(/nothing in it is kept/);
+    expect(act(actsFor(INSTALLER, withNew()), "request_cure")?.reason).toMatch(/is kept\.$/);
+  });
+
+  it("is withheld when the decision lapsed on appeal", () => {
     const lapsed = withNew({ state: "UNDETERMINED", standing: fellShort({
       decision: "UNDETERMINED", kind: "APPEAL_LAPSED", appealable: false, appealed: true,
       window_ends: null }) });
