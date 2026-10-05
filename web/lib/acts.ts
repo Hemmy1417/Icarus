@@ -352,14 +352,18 @@ export function milestoneActs({
    */
   if (open) {
     /*
-     * On a line signed with or equivalent the validators may be asked at
-     * once, whatever the owner has said: waiting would let silence run out
-     * the installer's time. On any other line only the owner's yes changes
-     * it, so there is nothing to decide until the owner's window has passed.
+     * On a line signed with or equivalent the validators may be asked as
+     * soon as the owner has objected, and otherwise after a short objection
+     * period: long enough that an objection can always be put before them,
+     * short enough that silence cannot run out the installer's time. On any
+     * other line only the owner's yes changes it, so there is nothing to
+     * decide until the owner's window has passed.
      */
     acts.push(
       open.or_equivalent
-        ? ok("decide_substitution", "Have the validators each read the product page and decide whether it is an equivalent.")
+        ? open.status === "PROPOSED" && nowMs <= ms(open.decide_from)
+          ? no("decide_substitution", "The owner may still object. The validators are asked once the owner has, or once the objection period has passed.")
+          : ok("decide_substitution", "Have the validators each read the product page and decide whether it is an equivalent.")
         : nowMs <= ms(open.respond_by)
           ? no("decide_substitution", "This line was signed for one product, so only the owner's yes can change it. The owner may still answer.")
           : ok("decide_substitution", "The owner did not answer and the line allows no equivalent. Close the proposal; the line stays as signed."),

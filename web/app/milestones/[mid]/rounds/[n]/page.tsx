@@ -98,7 +98,8 @@ export default function ReadingPage({
 
   const r = round.data;
   const terms = milestone.data?.versions.find((v) => v.version === r.version);
-  const lines = terms?.equipment ?? [];
+  /* The schedule this round judged against, substitutes included. */
+  const lines = r.schedule?.length ? r.schedule : (terms?.equipment ?? []);
   const names = referenceNames(lines, terms?.criteria ?? []);
 
   return (
@@ -161,7 +162,10 @@ export default function ReadingPage({
           <ul>
             {lines.map((l) => {
               const drove = r.decisive.lines.includes(l.id);
-              const note = r.notes.line_notes[l.id];
+              const kept = r.kind === "CURE" && !!r.carried?.lines.includes(l.id);
+              const note = kept
+                ? "Found installed by the decision this round answers, and kept. This round did not read it again."
+                : r.notes.line_notes[l.id];
               return (
                 <li
                   key={l.id}

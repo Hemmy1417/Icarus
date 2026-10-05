@@ -36,6 +36,8 @@ consequences rather than words. It disagrees when:
 | Condition | Why it matters |
 |---|---|
 | Its own findings would give a different decision | The decision is the consequence. Differing wording that gives the same decision is not disagreement. |
+| The leader finds a line installed or absent, or a criterion met or unmet, and it does not | A cure round carries those findings forward, so each is a consequence too, even in a decision it did not drive. Only the shade of a doubt is free to differ. |
+| It sees a conflict the leader does not report | A conflict settles no finding, so a decision recorded without it would hand a later round findings that were never settled. |
 | The leader could not see the images | A node that cannot see the evidence must not decide it, and a validator will not endorse one that did. |
 | It could not see the images itself | It cannot check the leader's work, so it withholds its endorsement rather than guessing. |
 | The leader's grounds do not hold | A line the leader rated on a basis that cannot carry that finding, or a line it did not rate at all. |

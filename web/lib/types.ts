@@ -87,6 +87,7 @@ export interface SubstituteFindings {
   page_chars: number;
   page_sha256: string;
   names_model: boolean;
+  documents_model: boolean;
   publisher: string;
   same_role: boolean;
   meets: string;
@@ -109,6 +110,8 @@ export interface Substitution {
   status: SubstitutionStatus;
   proposed_at: string;
   respond_by: string;
+  /** On an "or equivalent" line: when the validators may first be asked without an objection. */
+  decide_from: string;
   objection: string;
   answered_at: string | null;
   decided_at: string | null;

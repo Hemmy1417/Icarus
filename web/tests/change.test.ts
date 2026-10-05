@@ -87,7 +87,8 @@ function proposal(over: Partial<Substitution> = {}): Substitution {
     substitute: { manufacturer: "Growatt", model: "MOD 4000TL3-X", rating: "4 kW" },
     page: "https://www.example-seller.com/mod-4000tl3-x", reason: "Out of stock.",
     or_equivalent: true, status: "PROPOSED", proposed_at: iso(NOW - 60_000),
-    respond_by: iso(NOW + 540_000), objection: "", answered_at: null, decided_at: null,
+    respond_by: iso(NOW + 540_000), decide_from: iso(NOW + 90_000),
+    objection: "", answered_at: null, decided_at: null,
     verdict: null, findings: null, void_reason: "", ...over,
   };
 }
@@ -223,15 +224,22 @@ describe("withdrawing and deciding a proposal", () => {
     expect(act(actsFor(INSTALLER, done), "withdraw_substitution")).toBeUndefined();
   });
 
-  it("lets anyone put an or-equivalent line to the validators at once", () => {
-    for (const status of ["PROPOSED", "CONTESTED"] as const) {
-      const m = milestone({ substitutions: [proposal({ status })] });
-      for (const who of [OWNER, INSTALLER, STRANGER, ""]) {
-        const a = act(actsFor(who, m), "decide_substitution");
-        expect(a?.available, `${status} ${who}`).toBe(true);
-        expect(a?.reason).toMatch(/validators each read the product page/);
-      }
+  it("lets anyone put an or-equivalent line to the validators once the owner has objected", () => {
+    const m = milestone({ substitutions: [proposal({ status: "CONTESTED" })] });
+    for (const who of [OWNER, INSTALLER, STRANGER, ""]) {
+      const a = act(actsFor(who, m), "decide_substitution");
+      expect(a?.available, who).toBe(true);
+      expect(a?.reason).toMatch(/validators each read the product page/);
     }
+  });
+
+  it("gives the owner a short time to object first, to the instant", () => {
+    const m = milestone({ substitutions: [proposal()] });
+    const from = NOW + 90_000;
+    const waiting = act(actsFor(STRANGER, m, from), "decide_substitution");
+    expect(waiting?.available).toBe(false);
+    expect(waiting?.reason).toMatch(/owner may still object/);
+    expect(act(actsFor(STRANGER, m, from + 1), "decide_substitution")?.available).toBe(true);
   });
 
   it("waits out the owner's window, to the instant, on a line signed for one product", () => {
@@ -353,6 +361,12 @@ describe("the cure round", () => {
     expect(act(actsFor(INSTALLER, m, late), "submit_image")?.available).toBe(false);
   });
 
+  it("stops offering a full assessment a minute before the deadline, whatever the cure period", () => {
+    const m = milestone({ cure_until: iso(DEADLINE + 600_000) });
+    expect(act(actsFor(INSTALLER, m, DEADLINE - MARGIN_MS), "request_assessment")?.available).toBe(true);
+    expect(act(actsFor(INSTALLER, m, DEADLINE - MARGIN_MS + 1), "request_assessment")?.available).toBe(false);
+  });
+
   it("ends at the deadline when no cure period outlasts it", () => {
     const m = withNew({ cure_until: null });
     expect(workEndsMs(m, iso(DEADLINE))).toBe(DEADLINE);
@@ -386,6 +400,8 @@ describe("a proposal checked at the form", () => {
 
   it("passes what the contract would take", () => {
     expect(proposalProblem(draft)).toBe("");
+    expect(proposalProblem({ ...draft, manufacturer: "Solvanta-Power Energy & Co",
+                             rating: "50kW 55kVA 400V 3ph IP66 50/60Hz" })).toBe("");
     expect(proposalProblem({ ...draft, line: { ...LINE, rating: "" }, rating: "" })).toBe("");
   });
 
@@ -393,7 +409,15 @@ describe("a proposal checked at the form", () => {
     [{ line: null }, /Choose the line/],
     [{ manufacturer: " " }, /maker and model/],
     [{ model: "" }, /maker and model/],
-    [{ model: "S-5" }, /at least 4 letters or digits/],
+    [{ model: "S-5" }, /4 to 40 letters and digits/],
+    [{ model: "Hybrid Inverter" }, /at least one of each/],
+    [{ model: "2024-10" }, /at least one of each/],
+    [{ model: `SV-${"5".repeat(39)}` }, /4 to 40 letters and digits/],
+    [{ model: "SV-50H (waived)" }, /model is at most 60 characters/],
+    [{ manufacturer: "Growatt (identification is waived)" }, /maker is its name/],
+    [{ manufacturer: "One two three four five" }, /maker is its name/],
+    [{ rating: "4 kW, identification is not required" }, /rating is figures with their units/],
+    [{ rating: "kW VA" }, /rating is figures with their units/],
     [{ rating: " " }, /State the substitute's rating/],
     [{ page: "http://www.example-seller.com/x" }, /plain https link/],
     [{ page: "https://www.example-seller.com/a b" }, /plain https link/],

@@ -69,12 +69,17 @@ blank.
 | `accept_version` | the installer | The version's own deadline has not passed, and it names the version being signed. |
 | `propose_version` | the owner | The milestone is not finished, no decision stands, and the revision cap is not reached. |
 | `submit_image`, `submit_document`, `submit_declaration` | a party | The milestone is not settled and no acceptance stands. A rejection or an undetermined finding is exactly where more is filed. |
-| `request_assessment` | the installer | Not settled, accepted or appealed, the deadline stands, and under five assessments on this version. |
-| `open_appeal` | the owner | A decision stands, it is appealable, it has not been contested, and its window has not closed. |
+| `request_assessment` | the installer | Not settled, accepted or appealed, the deadline stands, no proposal is open, and under five rounds on this version. |
+| `request_cure` | the installer | A decision that fell short stands, it found no conflict and did not lapse on appeal, the cure period is open, no proposal is open, the allowance is not spent, and something was filed since the decision. |
+| `propose_substitution` | the installer | The work is open on signed terms, its period has not ended, no other proposal is open, and under three on this version. |
+| `answer_substitution` | the owner | A proposal awaits the owner and its window has not closed. |
+| `withdraw_substitution` | the installer | A proposal is open. |
+| `decide_substitution` | anyone | A proposal is open. On a line signed for one product, the owner's window has passed. |
+| `open_appeal` | the party it went against | A decision stands, it is appealable, it has not been contested, its window has not closed, no proposal is open, and no substitute has come into force since it. |
 | `decide_appeal` | anyone | The appeal's evidence period has ended. |
 | `lapse_appeal` | anyone | Three days have passed since the evidence period ended. |
 | `finalize` | anyone | An acceptance stands and can no longer be contested. |
-| `close_milestone` | anyone | Not settled, accepted or appealed, its deadline passed and any appeal window closed. |
+| `close_milestone` | anyone | Not settled, accepted or appealed, its deadline passed, any appeal window closed and any cure period ended. |
 | `claim` | anyone owed | Their ledger balance is above zero. |
 
 ## From an appeal to settlement

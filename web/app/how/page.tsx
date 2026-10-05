@@ -3,7 +3,7 @@
 /**
  * How the decision is made, for somebody deciding whether to trust it.
  *
- * Four rules and four limits. The rules are what the code will not let a
+ * Six rules and six limits. The rules are what the code will not let a
  * model do; the limits are what this cannot do at all. A page that printed
  * only the first half would be marketing, and a page that printed every
  * mechanism would be a manual, so this prints neither.
@@ -29,11 +29,24 @@ const RULES: Array<{ rule: string; says: string }> = [
   },
 ];
 
+const CHANGES: Array<{ rule: string; says: string }> = [
+  {
+    rule: "A different product needs a yes, or a page that proves it.",
+    says: "When the unit on the schedule cannot be had, the installer may propose another for that line. The owner can agree. Where the line was signed with the words or equivalent, validators each fetch the product page the installer names and say whether it documents that model, of the same kind, at a rating no lower than the line asks. Code turns their answers into the verdict, and anything short of a clear yes leaves the line as signed. On a line signed for one product, only the owner's yes changes it.",
+  },
+  {
+    rule: "What a panel found in place stays found.",
+    says: "A decision that falls short leaves the installer time to put right what was missing. A cure round judges only the lines and conditions that decision left open, and keeps the rest. That is safe because every finding it keeps is one the whole panel reproduced, not one node's reading. The milestone still pays whole or not at all, and an appeal judges every line again.",
+  },
+];
+
 const LIMITS: string[] = [
   "A node handed the wrong photograph will describe that photograph rather than report itself unable to read. Only a panel of differing models catches that, and in the live runs it did.",
   "A legible nameplate is close to the edge of what such a panel will agree on. When it splits, nothing is recorded and the milestone is untouched.",
   "An appeal nobody decides within three days lapses, and the milestone is undetermined. An acceptance that was contested and never confirmed does not pay.",
   "This judges evidence, not workmanship. A photograph of the right inverter on the right wall is not an electrical inspection.",
+  "Who published a product page is each validator's judgment. Code checks that the page loads, sits on a public site and names the model. It cannot tell the maker's site from a convincing copy of it.",
+  "Agreeing every finding costs rounds. A line one node reads as installed and another as not identified now records nothing, and has to be asked again.",
 ];
 
 export default function How() {
@@ -55,6 +68,27 @@ export default function How() {
         </h2>
         <ul className="flex flex-col">
           {RULES.map((r, i) => (
+            <li
+              key={r.rule}
+              className={`grid gap-5 py-10 md:grid-cols-[minmax(0,360px)_minmax(0,1fr)] md:gap-16 ${
+                i > 0 ? "border-t border-mist" : ""
+              }`}
+            >
+              <h3 className="text-[24px] leading-[1.2] tracking-[-0.02em] text-graphite [font-family:var(--font-display)]">
+                {r.rule}
+              </h3>
+              <p className="max-w-[58ch] text-[17px] leading-[1.6] text-steel">{r.says}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="border-t border-mist py-20">
+        <h2 className="display mb-12 text-[14px] uppercase tracking-[0.12em] text-slate">
+          When the job does not go to plan
+        </h2>
+        <ul className="flex flex-col">
+          {CHANGES.map((r, i) => (
             <li
               key={r.rule}
               className={`grid gap-5 py-10 md:grid-cols-[minmax(0,360px)_minmax(0,1fr)] md:gap-16 ${

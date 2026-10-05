@@ -36,15 +36,31 @@ export interface ProposalDraft {
  * terms, or "" when it can go. Checked here so a person is told at the form
  * rather than by a refused transaction they paid a fee for.
  */
+const MAKER = /^[A-Za-z0-9&-]{1,20}(?: [A-Za-z0-9&-]{1,20}){0,3}$/;
+const PART = "(?:[0-9][0-9.,/]*[A-Za-z%]{0,4}|[A-Za-z]{1,3}[0-9]{0,3})";
+const RATING = new RegExp(`^${PART}(?: ${PART}){0,5}$`);
+
 export function proposalProblem(d: ProposalDraft, modelKeyMin = 4, urlMax = 300): string {
   if (!d.line) return "Choose the line the substitute is for.";
-  if (!d.manufacturer.trim() || !d.model.trim()) return "Name the substitute's maker and model.";
-  const key = d.model.replace(/[^A-Za-z0-9]/g, "");
-  if (key.length < modelKeyMin) {
-    return `The model needs at least ${modelKeyMin} letters or digits, so a page can be checked for it.`;
+  const maker = d.manufacturer.trim().replace(/\s+/g, " ");
+  const model = d.model.trim().replace(/\s+/g, " ");
+  const rating = d.rating.trim().replace(/\s+/g, " ");
+  if (!maker || !model) return "Name the substitute's maker and model.";
+  if (!MAKER.test(maker)) {
+    return "The maker is its name: up to four words of letters, digits, & and -.";
   }
-  if (d.line.rating && !d.rating.trim()) {
+  if (model.length > 60 || !/^[A-Za-z0-9 ./+-]*$/.test(model)) {
+    return "The model is at most 60 characters: letters, digits, spaces and . / + -.";
+  }
+  const key = model.replace(/[^A-Za-z0-9]/g, "");
+  if (key.length < modelKeyMin || key.length > 40 || !/[A-Za-z]/.test(key) || !/[0-9]/.test(key)) {
+    return `The model needs ${modelKeyMin} to 40 letters and digits, with at least one of each, so a page can be checked for it.`;
+  }
+  if (d.line.rating && !rating) {
     return "State the substitute's rating. The line it would replace has one.";
+  }
+  if (rating && (rating.length > 60 || !RATING.test(rating) || !/[0-9]/.test(rating))) {
+    return "The rating is figures with their units, such as 50 kW or 5000 VA 48 V, in up to six parts.";
   }
   const page = d.page.trim();
   if (!/^https:\/\/[A-Za-z0-9\-._~:/?#[\]@!$&()*+,;=%]+$/.test(page) || page.length > urlMax) {

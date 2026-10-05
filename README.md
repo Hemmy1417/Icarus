@@ -76,7 +76,7 @@ instructions in a prompt that a model may or may not follow.
                     ▼                        ▼                          ▼
                 ACCEPTED                 REJECTED                  UNDETERMINED
            owner may contest         installer files more,      installer files more,
-           inside the window         then reassesses            then reassesses
+           inside the window         then cures or reassesses   then cures or reassesses
                     │
                     └───────► APPEALED
                           evidence period, then anyone decides:
@@ -84,15 +84,23 @@ instructions in a prompt that a model may or may not follow.
                           undecided for three days: lapses to UNDETERMINED
                     │
       finalize (anyone, after the window) ──► FINALIZED ── claim
-      close (anyone, after the deadline) ──► CLOSED
+      close (anyone, after the deadline and any cure period) ──► CLOSED
 ```
+
+Two things can happen while the work is open, and neither changes what pays.
+The installer can propose a **substitute** for one line of the schedule, which
+comes into force if the owner agrees or, on a line signed "or equivalent", if
+validators who each read its product page find it equivalent. And after a
+decision that falls short the installer can ask for a **cure round**, which
+keeps what that decision found in place and judges only what it left open.
+Both are set out in [`docs/substitution-and-cure.md`](docs/substitution-and-cure.md).
 
 | State | Who moves it | If nobody acts |
 |---|---|---|
 | `AWAITING_TERMS` | the installer signs the terms in force | anyone closes it after the deadline |
 | `AWAITING_EVIDENCE` | the installer requests an assessment, up to five per version | anyone closes it after the deadline |
 | `ACCEPTED` | the owner contests it, or anyone finalizes after the window | finalize is open to anyone once the window passes |
-| `REJECTED`, `UNDETERMINED` | the installer files more evidence and reassesses | anyone closes it after the deadline |
+| `REJECTED`, `UNDETERMINED` | the installer files more evidence, then asks for a cure round or a full reassessment | anyone closes it after the deadline and any cure period |
 | `APPEALED` | anyone decides once the evidence period ends | anyone lapses it three days later, to `UNDETERMINED` |
 | `FINALIZED`, `CLOSED` | terminal | the ledger holds the credit until it is claimed |
 
@@ -117,7 +125,12 @@ instructions in a prompt that a model may or may not follow.
 | `submit_document` | a party | Files a document's text. |
 | `submit_declaration` | a party | Records a statement that no panel will read. |
 | `request_assessment` | the installer | Puts the evidence to a panel. |
-| `open_appeal` | the owner | Contests a decision inside its window, once. |
+| `request_cure` | the installer | After a decision that fell short, has a panel judge only what it left open. |
+| `propose_substitution` | the installer | Asks to fit a different product on one schedule line, naming a page that documents it. |
+| `answer_substitution` | the owner | Agrees to the substitute, or says no. |
+| `withdraw_substitution` | the installer | Takes an open proposal back. |
+| `decide_substitution` | anyone | On an "or equivalent" line, has validators read the page and decide; on any other, lapses a proposal the owner left unanswered. |
+| `open_appeal` | the party it went against | Contests a decision inside its window, once. |
 | `decide_appeal` | anyone | Has a fresh panel judge the milestone again. |
 | `lapse_appeal` | anyone | Closes an appeal no panel decided in three days. |
 | `finalize` | anyone | Settles an acceptance that can no longer be contested. |
@@ -138,6 +151,11 @@ instructions in a prompt that a model may or may not follow.
   nothing and leaves the milestone untouched.
 - The decision is derived from the findings in code, so a leader cannot record an outcome its
   own findings do not support.
+- Every finding that counts for or against a party is one the validator reproduced: each line
+  found installed or absent, each criterion found met or unmet. A cure round carries findings
+  forward, so none of them may rest on the leader alone.
+- A substitute is approved only if the validator approves it on its own reading of the page,
+  and refused only if the validator read the page too.
 
 ## Verified end to end
 

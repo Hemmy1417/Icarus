@@ -53,8 +53,8 @@ Applied to this build, with where each one is met.
   and nothing is recorded. That is a liveness cost, not a safety one: the
   milestone is untouched and the round can be asked again.
 - **A leader's prose, which consensus does not bind.** Validators agree the
-  decision, that every line and criterion was rated, and that the grounds
-  behind each finding hold. They do not compare the reasoning the panel
+  decision, that every line and criterion was rated, and every finding of
+  installed, absent, met or unmet. They do not compare the reasoning the panel
   writes, nor the per-image readings. A leader whose findings a majority
   reproduces could still record misleading wording beside them.
 
@@ -65,6 +65,11 @@ Applied to this build, with where each one is met.
   contract computed when the bytes were filed. So the record a later panel
   reconsiders was never authored by a leader. The prose is shown on the case
   sheet as the panel's own words, and that is all it is.
+- **Who published a product page.** When validators decide whether a
+  substitute is an equivalent, code checks that the page loads, is public
+  and names the model. Whether its publisher is the maker, a seller or
+  nobody is each validator's judgment. See
+  `docs/substitution-and-cure.md` for what that leaves open.
 - **Workmanship and safety.** A photograph showing the right inverter on the
   right wall is not an electrical inspection.
 - **The network itself.** This runs on a test network whose validators, fee

@@ -467,6 +467,40 @@ class TestTheCurePeriod:
         with pytest.raises(err(module), match="found the evidence in conflict"):
             c.request_cure(mid, json.dumps([fresh]))
 
+    @pytest.mark.parametrize("leader,validator,why", [
+        ("CONTRADICTED", "NOT_SHOWN", "the leader reports a conflict this node does not see"),
+        ("NOT_SHOWN", "CONTRADICTED", "this node sees a conflict the leader does not report"),
+        ("CONTRADICTED", "UNIDENTIFIED", "the leader reports a conflict this node does not see"),
+    ])
+    def test_a_contradicted_line_is_not_one_nodes_to_declare_or_to_hide(
+            self, module, c, leader, validator, why):
+        """Whether a line is contradicted decides whether there is a cure
+        at all, so it is not a shade of doubt and both nodes must find it."""
+        _, mid = active_milestone(module, c)
+        a = image(module, c, mid, caption="The array", line="E1")
+        b = image(module, c, mid, caption="The wall", line="E2")
+        basis = {k: [a, b] for k in ALL}
+        with pytest.raises(err(module), match="did not agree"):
+            assess(module, c, mid, [a, b],
+                   judge=judge_answer({"E1": "INSTALLED", "E2": leader, "E3": "INSTALLED"},
+                                      {"C1": "MET"}, basis=basis),
+                   v_judge=judge_answer({"E1": "INSTALLED", "E2": validator, "E3": "INSTALLED"},
+                                        {"C1": "MET"}, basis=basis))
+        assert any(why in p for p in prints() if "[DISAGREE]" in p)
+        assert milestone(c, mid)["rounds_count"] == 0
+
+    def test_a_conflict_flag_and_a_contradicted_line_are_the_same_finding(self, module, c):
+        _, mid = active_milestone(module, c)
+        a = image(module, c, mid, caption="The array", line="E1")
+        b = image(module, c, mid, caption="The wall", line="E2")
+        basis = {k: [a, b] for k in ALL}
+        out = assess(module, c, mid, [a, b],
+                     judge=judge_answer({"E1": "INSTALLED", "E2": "NOT_SHOWN", "E3": "INSTALLED"},
+                                        {"C1": "MET"}, conflicts=True, basis=basis),
+                     v_judge=judge_answer({"E1": "INSTALLED", "E2": "CONTRADICTED",
+                                           "E3": "INSTALLED"}, {"C1": "MET"}, basis=basis))
+        assert out["decision"] == "UNDETERMINED" and milestone(c, mid)["cure_until"] is None
+
     def test_the_last_round_the_terms_allow_opens_no_cure_period(self, module, c):
         _, mid, first = fell_short(module, c)
         for n in range(3):
@@ -532,17 +566,21 @@ class TestTheCurePeriod:
         assert milestone(c, mid)["cure_until"] == "2026-10-20T12:30:00Z"
         assert json.loads(c.close_milestone(mid))["state"] == "CLOSED"
 
-    def test_an_appeal_that_upholds_an_acceptance_clears_the_period(self, module, c):
+    def test_any_acceptance_ends_the_cure_period(self, module, c):
         _, mid, first = fell_short(module, c)
+        assert milestone(c, mid)["cure_until"] == "2026-10-20T12:00:00Z"
         fresh = nameplate(module, c, mid)
         cure(module, c, mid, [fresh], judge_answer({"E2": "INSTALLED"}, basis={"E2": [fresh]}))
-        assert milestone(c, mid)["cure_until"] == "2026-10-20T12:00:00Z"
-        as_(module, OWNER)
-        c.open_appeal(mid, "The array is not the specified module.")
+        assert milestone(c, mid)["cure_until"] is None, "accepted by a cure round"
+
+    def test_an_installers_appeal_that_wins_ends_the_cure_period(self, module, c):
+        _, mid, first = fell_short(module, c)
+        as_(module, INSTALLER)
+        c.open_appeal(mid, "The wall is the right wall.")
         set_now("2026-09-20T10:00:01Z")
-        llm(look=look_all(), judge=judge_all(basis={k: first + [fresh] for k in ALL}))
+        llm(look=look_all(), judge=judge_all(basis={k: first for k in ALL}))
         as_(module, STRANGER)
-        c.decide_appeal(mid)
+        assert json.loads(c.decide_appeal(mid))["decision"] == "ACCEPTED"
         assert milestone(c, mid)["cure_until"] is None
 
     def test_signing_new_terms_ends_the_cure_period(self, module, c):
@@ -681,7 +719,8 @@ class TestWithASubstitute:
         assert out["carried"] == {"from_round": 1, "lines": ["E1", "E3"], "criteria": []}, \
             "what was true of the old equipment is judged again with the new"
         prompt = prompts(kind="judge", role="leader")[0]["prompt"]
-        assert "E2 inverter: Solvanta SV-50H, 50 kW" in prompt and "VT-50K" not in prompt
+        assert 'E2 inverter: the product named "Solvanta SV-50H, 50 kW"' in prompt
+        assert "VT-50K" not in prompt
         record = rounds(c, mid, 2)
         assert record["schedule"][1]["model"] == "SV-50H"
         assert rounds(c, mid, 1)["schedule"][1]["model"] == "VT-50K", \
@@ -689,7 +728,7 @@ class TestWithASubstitute:
 
     def test_a_line_substituted_since_the_decision_is_judged_again(self, module, c):
         _, mid, _ = fell_short(module, c)
-        self.agreed(module, c, mid, line="E3", manufacturer="Kestrel", model="KM-Ballast",
+        self.agreed(module, c, mid, line="E3", manufacturer="Kestrel", model="KM-40 Flat",
                     rating="")
         fresh = nameplate(module, c, mid)
         reset_prompts()
@@ -700,7 +739,7 @@ class TestWithASubstitute:
         assert out["carried"] == {"from_round": 1, "lines": ["E1"], "criteria": []}, \
             "the mounting was found installed as Ridgeline; as Kestrel it is an open question"
         schedule = prompts(kind="judge", role="leader")[0]["prompt"].split("ACCEPTANCE", 1)[0]
-        assert "E3 mounting: Kestrel KM-Ballast" in schedule and "E2 inverter" in schedule
+        assert 'E3 mounting: the product named "Kestrel KM-40 Flat"' in schedule and "E2 inverter" in schedule
 
     def test_a_line_is_reopened_by_the_substitution_not_by_how_the_product_is_spelled(
             self, module, c):
@@ -725,7 +764,7 @@ class TestWithASubstitute:
         _, mid, _ = fell_short(module, c)
         as_(module, INSTALLER)
         c.propose_substitution(mid, "E3", json.dumps(
-            {"manufacturer": "Kestrel", "model": "KM-Ballast", "page": self.PAGE,
+            {"manufacturer": "Kestrel", "model": "KM-40 Flat", "page": self.PAGE,
              "reason": "Supply."}))
         c.withdraw_substitution(mid)
         fresh = nameplate(module, c, mid)

@@ -42,8 +42,8 @@ Then it derives the decision:
 A validator agrees with the leader only when it reproduces the decision and
 every finding in it that can count for or against a party: each line the
 leader found installed, each it found absent, each criterion it found met or
-unmet, and any conflict either of them sees. Only the shade of a doubt is
-free to differ. So a finding on the record is one the panel agreed, and a
+unmet, and whether the evidence is in conflict, as a whole or on any line.
+Only the shade of a doubt is free to differ. So a finding on the record is one the panel agreed, and a
 later round may rely on it.
 
 A declaration is a party's statement for the record: stored, hashed and shown,
@@ -62,7 +62,8 @@ Two things a real job needs sit on top of that.
 A SUBSTITUTION. The installer may propose a different product for one line of
 the schedule, naming a public page that documents it. The owner may agree to
 it. Where the signed line says "or equivalent", anyone may instead put the
-question to the validators, at once: each reads the page itself and says
+question to the validators once the owner has objected or a short objection
+period has passed: each reads the page itself and says
 whether it documents exactly that model, of the same role, at a rating no
 lower than the signed line asks. Code turns those answers into a verdict;
 anything short of a clear yes changes nothing. Where the line does not say
@@ -132,6 +133,10 @@ PAGE_MIN_CHARS = 300
 MODEL_KEY_MIN = 4
 MODEL_KEY_MAX = 40
 SUBSTITUTE_NAME_MAX = 60
+# How long the owner has to put an objection on record before anyone may ask
+# the validators about an "or equivalent" line: a quarter of the project's
+# window, and never more than this.
+OBJECTION_SECONDS_MAX = 600
 
 # What each party may file against one version of the terms.
 QUOTAS = {
@@ -347,6 +352,12 @@ def _decisive(lines: dict, criteria: dict, decision: str) -> dict:
     return {"lines": [], "criteria": []}
 
 
+def _unsettled(lines: dict, conflicts: bool) -> bool:
+    """Whether a decision found the evidence at odds with itself, as a whole
+    or on any line. Such a decision settles nothing a later round may keep."""
+    return bool(conflicts) or "CONTRADICTED" in lines.values()
+
+
 def _unconfirmed(theirs_lines: dict, theirs_crit: dict, theirs_conflicts: bool,
                  mine_lines: dict, mine_crit: dict, mine_conflicts: bool,
                  line_ids: list, crit_ids: list) -> str:
@@ -357,9 +368,10 @@ def _unconfirmed(theirs_lines: dict, theirs_crit: dict, theirs_conflicts: bool,
     for line. A decision that falls short stands only if this node also
     finds installed every line the leader found installed, met every
     criterion it found met, absent every line it found absent and unmet
-    every criterion it found unmet, and sees no conflict the leader does
-    not report. A cure round carries those findings forward, so none of
-    them may rest on the leader alone. A leader may assert less than this
+    every criterion it found unmet, and agrees with the leader on whether
+    the evidence is in conflict, as a whole or on any line. A cure round
+    carries those findings forward, so none of them may rest on the leader
+    alone. A leader may assert less than this
     node, never more, and may never withhold an acceptance this node would
     grant. Between the shades of doubt, nodes are free to differ."""
     tl = {lid: theirs_lines.get(lid) for lid in line_ids}
@@ -368,8 +380,6 @@ def _unconfirmed(theirs_lines: dict, theirs_crit: dict, theirs_conflicts: bool,
         return "the leader's result does not rate every line of the equipment schedule"
     if any(v not in CRITERION_STATUSES for v in tc.values()):
         return "the leader's result does not rate every criterion"
-    if theirs_conflicts and not mine_conflicts:
-        return "the leader reports a conflict this node does not see"
 
     ml = {lid: mine_lines[lid] for lid in line_ids}
     mc = {cid: mine_crit[cid] for cid in crit_ids}
@@ -380,7 +390,12 @@ def _unconfirmed(theirs_lines: dict, theirs_crit: dict, theirs_conflicts: bool,
         if my_decision != "ACCEPTED":
             return "the leader accepts; this node finds " + my_decision.lower()
         return ""
-    if mine_conflicts and not theirs_conflicts:
+    # Whether the evidence is at odds with itself, as a whole or on any one
+    # line, decides whether anything in this round can be carried forward
+    # and whether there is a cure at all. So the two nodes must agree on it.
+    if _unsettled(tl, theirs_conflicts) and not _unsettled(ml, mine_conflicts):
+        return "the leader reports a conflict this node does not see"
+    if _unsettled(ml, mine_conflicts) and not _unsettled(tl, theirs_conflicts):
         return "this node sees a conflict the leader does not report"
     for lid in line_ids:
         if tl[lid] in ("INSTALLED", "ABSENT") and ml[lid] != tl[lid]:
@@ -432,9 +447,14 @@ def _coverage_gap(terms: dict, items: list) -> str:
 
 _WORDS = re.compile(r"[A-Za-z0-9]+")
 # A substitute's maker, model and rating go into prompts and, once in force,
-# into the schedule every later round reads. They are names, so they are held
-# to the characters names are written in.
-_PLAIN = re.compile(r"[A-Za-z0-9 .,&/()+\-]*")
+# into the schedule every later round reads. Code ties the model to the page.
+# Nothing ties the other two to anything, so they are held to shapes a
+# sentence does not fit: a maker is a few words of a name, and a rating is
+# figures with their units.
+_PLAIN = re.compile(r"[A-Za-z0-9 ./+\-]*")
+_MAKER = re.compile(r"[A-Za-z0-9&\-]{1,20}(?: [A-Za-z0-9&\-]{1,20}){0,3}")
+_RATING = re.compile(r"(?:[0-9][0-9.,/]*[A-Za-z%]{0,4}|[A-Za-z]{1,3}[0-9]{0,3})"
+                     r"(?: (?:[0-9][0-9.,/]*[A-Za-z%]{0,4}|[A-Za-z]{1,3}[0-9]{0,3})){0,5}")
 _LINK = re.compile(r"https://[A-Za-z0-9\-._~:/?#\[\]@!$&()*+,;=%]+")
 _HOSTNAME = re.compile(r"(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,24}")
 _NOT_PUBLIC = (".local", ".internal", ".test", ".localhost", ".invalid", ".example",
@@ -513,14 +533,21 @@ def _find_model(page: str, model: str) -> int:
     key = _model_key(model)
     if not MODEL_KEY_MIN <= len(key) <= MODEL_KEY_MAX:
         return -1
-    words = [(m.start(), m.group().upper()) for m in _WORDS.finditer(page)]
-    for i, (at, word) in enumerate(words):
-        built, j = word, i
-        while key.startswith(built) and len(built) < len(key) and j + 1 < len(words):
-            j += 1
-            built += words[j][1]
-        if built == key:
-            return at
+    # The page's words run together, with a note of where each begins. A hit
+    # counts only when it begins at the start of a word and ends at the end
+    # of one, so the work is one search over the page and no more.
+    begins, parts, length = {}, [], 0
+    for m in _WORDS.finditer(page):
+        begins[length] = m.start()
+        parts.append(m.group().upper())
+        length += len(parts[-1])
+    begins[length] = len(page)
+    run = "".join(parts)
+    at = run.find(key)
+    while at >= 0:
+        if at in begins and at + len(key) in begins:
+            return begins[at]
+        at = run.find(key, at + 1)
     return -1
 
 
@@ -574,12 +601,6 @@ def _substitute_verdict(found: dict) -> str:
     if found["meets"] == "YES":
         return "EQUIVALENT"
     return "UNPROVEN"
-
-
-def _unsettled(lines: dict, conflicts: bool) -> bool:
-    """Whether a decision found the evidence at odds with itself, as a whole
-    or on any line. Such a decision settles nothing a later round may keep."""
-    return bool(conflicts) or "CONTRADICTED" in lines.values()
 
 
 def _same_product(a: dict, b: dict) -> bool:
@@ -886,7 +907,7 @@ class Icarus(gl.contract.Contract):
         return None
 
     def _void_substitution(self, m: dict, why: str) -> None:
-        """A proposal nobody answered dies with the terms it was made under."""
+        """A proposal still open dies with the terms it was made under."""
         s = self._open_substitution(m)
         if s:
             s["status"] = "VOID"
@@ -921,6 +942,7 @@ class Icarus(gl.contract.Contract):
             "max_substitutions_per_version": MAX_SUBSTITUTIONS_PER_VERSION,
             "model_key_min": MODEL_KEY_MIN,
             "model_key_max": MODEL_KEY_MAX,
+            "objection_seconds_max": OBJECTION_SECONDS_MAX,
             "substitute_name_max": SUBSTITUTE_NAME_MAX,
             "url_max": URL_MAX,
             "page_min_chars": PAGE_MIN_CHARS,
@@ -1435,14 +1457,23 @@ class Icarus(gl.contract.Contract):
                       "rating": _clean(raw.get("rating"), LINE_MAX)}
         if not substitute["manufacturer"] or not substitute["model"]:
             _refuse("a substitute needs a manufacturer and a model")
-        if any(len(v) > SUBSTITUTE_NAME_MAX or not _PLAIN.fullmatch(v)
-               for v in substitute.values()):
-            _refuse(f"a substitute's maker, model and rating are each at most "
-                    f"{SUBSTITUTE_NAME_MAX} characters: letters, digits, spaces and . , & / ( ) + -")
+        if len(substitute["model"]) > SUBSTITUTE_NAME_MAX \
+                or not _PLAIN.fullmatch(substitute["model"]):
+            _refuse(f"a substitute's model is at most {SUBSTITUTE_NAME_MAX} characters: "
+                    "letters, digits, spaces and . / + -")
+        if not _MAKER.fullmatch(substitute["manufacturer"]):
+            _refuse("a substitute's maker is its name: up to four words of letters, "
+                    "digits, & and -")
+        if substitute["rating"] and (len(substitute["rating"]) > SUBSTITUTE_NAME_MAX
+                                     or not _RATING.fullmatch(substitute["rating"])
+                                     or not any(ch.isdigit() for ch in substitute["rating"])):
+            _refuse("a substitute's rating is figures with their units, such as "
+                    "50 kW or 5000 VA 48 V, in up to six parts")
         key = _model_key(substitute["model"])
-        if not MODEL_KEY_MIN <= len(key) <= MODEL_KEY_MAX or not any(ch.isalpha() for ch in key):
+        if not MODEL_KEY_MIN <= len(key) <= MODEL_KEY_MAX \
+                or not any(ch.isalpha() for ch in key) or not any(ch.isdigit() for ch in key):
             _refuse(f"the substitute's model needs {MODEL_KEY_MIN} to {MODEL_KEY_MAX} letters "
-                    "and digits, at least one of them a letter, so that a page can be "
+                    "and digits, with at least one of each, so that a page can be "
                     "checked for it")
         if line["rating"] and not substitute["rating"]:
             _refuse("state the substitute's rating; the line it would replace has one")
@@ -1464,6 +1495,9 @@ class Icarus(gl.contract.Contract):
             "or_equivalent": bool(line["or_equivalent"]),
             "status": "PROPOSED", "proposed_at": _iso(now),
             "respond_by": _iso(now + timedelta(seconds=int(p["appeal_window_seconds"]))),
+            # The owner's time to object before the validators may be asked.
+            "decide_from": _iso(now + timedelta(seconds=min(
+                OBJECTION_SECONDS_MAX, int(p["appeal_window_seconds"]) // 4))),
             "objection": "", "answered_at": None, "decided_at": None,
             "verdict": None, "findings": None, "void_reason": "",
         })
@@ -1556,10 +1590,14 @@ class Icarus(gl.contract.Contract):
             f"THE LINE AS SIGNED ({s['role'].lower()}, quantity {quantity}): "
             f"{_defuse(old['manufacturer'])} {_defuse(old['model'])}"
             + (f", {_defuse(old['rating'])}" if old["rating"] else ", no rating stated") + "\n"
-            f"What the milestone requires: {_defuse(terms['requirements'])}\n"
-            + (f"Specification: {_defuse(terms['specification'])}\n"
-               if terms["specification"] else "")
-            + "THE PROPOSED SUBSTITUTE, as the installer states it, which is their claim, "
+            "For context, what the milestone asks of the installation. Only what this says "
+            "about the product itself, its type, size and ratings, bears on your answer. How "
+            "and where it is fitted, and whether it can be identified on site, are judged "
+            "later from photographs and are not your question:\n"
+            f"<<<BEGIN TERMS\n{_defuse(terms['requirements'])}\n"
+            + (f"{_defuse(terms['specification'])}\n" if terms["specification"] else "")
+            + "END TERMS>>>\n"
+            "THE PROPOSED SUBSTITUTE, as the installer states it, which is their claim, "
             "and the address of the page they name for it:\n"
             f"<<<BEGIN PROPOSAL\nmaker: {_defuse(new['manufacturer'])}\n"
             f"model: {_defuse(new['model'])}\n"
@@ -1584,10 +1622,12 @@ class Icarus(gl.contract.Contract):
             "same_role: true only if the page documents the substitute as equipment of the "
             "role the signed line names.\n"
             "meets: YES when the page's own figures show the substitute is no lower than the "
-            "signed line in every rating the line and the specification state, and it is "
-            "compatible with what the milestone requires. NO when the page shows that it "
-            "falls short in any of them. UNCLEAR when the page does not give the figures "
-            "needed to say. The rating the installer claims is not a figure from the page.\n"
+            "signed line in every rating the line states, and in any rating or product "
+            "characteristic the terms above state for this equipment. NO when the page shows "
+            "that it falls short in any of them. UNCLEAR when the page does not give a "
+            "figure needed to say. A page cannot show how a unit will be fitted, so nothing "
+            "about fitting, wiring or site photographs makes this UNCLEAR. The rating the "
+            "installer claims is not a figure from the page.\n"
             "shortfalls: each respect in which the substitute falls short or cannot be "
             "checked, in a few words; an empty list when there is none.\n"
             "Write in English. Answer STRICT JSON, reasoning first: "
@@ -1628,18 +1668,24 @@ class Icarus(gl.contract.Contract):
     def decide_substitution(self, mid: str) -> str:
         """Permissionless. Settles a proposal the parties have not settled
         between them. Where the signed line allows an equivalent, the
-        validators may be asked at once, whatever the owner has or has not
-        said: each reads the page, and the substitute is approved only if
-        they agree that it is one. Waiting on the owner would let silence
-        run out the installer's time. Where the line allows none, the owner
-        has the project's window to answer, and after it the proposal
-        lapses: silence is not consent."""
+        validators are asked: each reads the page, and the substitute is
+        approved only if they agree that it is one. They may be asked as
+        soon as the owner has objected, and otherwise after a short
+        objection period, so that the owner can always put an objection
+        before them and silence can never run out the installer's time.
+        Where the line allows no equivalent, the owner has the project's
+        window to answer, and after it the proposal lapses: silence is not
+        consent."""
         m = self._milestone(mid)
         p = self._project(m["project_id"])
         s = self._open_substitution(m)
         if not s:
             _refuse("no substitution is open on this milestone")
         now = _now()
+        if s["or_equivalent"] and s["status"] == "PROPOSED" \
+                and now <= _parse_iso(s["decide_from"]):
+            _refuse("the owner may still object; the validators are asked once the owner "
+                    "has, or once the objection period has passed")
         if not s["or_equivalent"]:
             if now <= _parse_iso(s["respond_by"]):
                 _refuse("the owner's time to answer is still running, and this line was "
@@ -1685,14 +1731,15 @@ class Icarus(gl.contract.Contract):
             return True
 
         # The verdict is derived here, in code, from findings rebuilt field by
-        # field: no node chooses the label, and nothing a node sends is stored
-        # as it came.
+        # field, and nothing a node sends is stored as it came. Between the
+        # two ways of falling short the findings are the leader's; both
+        # refuse, so nothing turns on which.
         found = _findings(gl.vm.run_nondet(leader_fn, validator_fn))
         verdict = _substitute_verdict(found)
         if verdict == "UNREAD":
             _refuse("no page could be read as text at the link, so nothing is decided and "
-                    "the proposal stays open. If the link is wrong or the site turns "
-                    "readers away, withdraw it and propose again with a page that loads")
+                    "the proposal stays open. If the link is wrong or the page does not "
+                    "load, withdraw it and propose again with one that does")
         s["verdict"] = verdict
         s["findings"] = found
         s["status"] = "APPROVED" if verdict == "EQUIVALENT" else "REFUSED"
@@ -1741,10 +1788,9 @@ class Icarus(gl.contract.Contract):
         return who
 
     def _appeal_allowance(self, m: dict, who: str, bucket: str, kind: str) -> None:
-        """An appeal reads a bounded number of new items from each party:
-        those filed in its evidence period, counted from the moment it
-        opened. A declaration is never read, so it never uses the
-        allowance."""
+        """During an appeal each party may file a bounded number of new
+        items, counted from the moment it opened. A declaration is never
+        read, so it never uses the allowance."""
         if m["state"] != "APPEALED" or kind == "DECLARATION":
             return
         mark = int(m["appeal"]["item_mark"])
@@ -1893,9 +1939,13 @@ class Icarus(gl.contract.Contract):
             # a declaration is stored and shown, and no round reads it
 
         def written(line: dict) -> str:
-            return (f"- {line['id']} {line['role'].lower()}: {_defuse(line['manufacturer'])} "
-                    f"{_defuse(line['model'])}"
-                    + (f", {_defuse(line['rating'])}" if line["rating"] else "")
+            product = (f"{_defuse(line['manufacturer'])} {_defuse(line['model'])}"
+                       + (f", {_defuse(line['rating'])}" if line["rating"] else ""))
+            if line.get("substitution"):
+                # Named by the installer, not written by both parties: shown
+                # as a quoted name, so nothing in it reads as a term.
+                product = f'the product named "{product}" (a substitute in force for this line)'
+            return (f"- {line['id']} {line['role'].lower()}: {product}"
                     + (f", quantity {line['quantity']}" if line["quantity"] > 1 else "")
                     + ("; its nameplate must be legible in the evidence" if line["identify"]
                        else "; identification is not required"))
@@ -2294,11 +2344,13 @@ class Icarus(gl.contract.Contract):
             deadline = _parse_iso(self._terms(m, version)["deadline"])
             m["cure_until"] = None if outcome["decision"] == "ACCEPTED" else \
                 _iso(max(deadline, now + timedelta(seconds=window)))
-        if _unsettled(outcome["lines"], outcome["conflicts"]) \
+        if outcome["decision"] == "ACCEPTED" \
+                or _unsettled(outcome["lines"], outcome["conflicts"]) \
                 or int(m["version_assessments"]) >= MAX_ASSESSMENTS_PER_VERSION:
-            # Evidence in conflict settles no finding, so there is nothing
-            # to carry; and terms with no round left can hear no cure. Either
-            # way no period is held open that nothing could use.
+            # An acceptance leaves nothing to cure. Evidence in conflict
+            # settles no finding, so there is nothing to carry. Terms with no
+            # round left can hear no cure. In none of these is a period held
+            # open that nothing could use.
             m["cure_until"] = None
         self._save_milestone(m)
         self._event(p["project_id"], "DECISION", m["milestone_id"],
@@ -2308,7 +2360,7 @@ class Icarus(gl.contract.Contract):
     def _may_judge(self, m: dict) -> None:
         """What stands in the way of any new round on the signed terms."""
         if self._open_substitution(m):
-            _refuse("a substitution is open on this milestone; it is answered or "
+            _refuse("a substitution is open on this milestone; it is settled or "
                     "withdrawn before the evidence is judged")
         if int(m["version_assessments"]) >= MAX_ASSESSMENTS_PER_VERSION:
             _refuse(f"these terms have had the {MAX_ASSESSMENTS_PER_VERSION} assessments "
@@ -2491,7 +2543,7 @@ class Icarus(gl.contract.Contract):
             contested = "an acceptance" if against == "ACCEPTED" else "a rejection"
             _refuse(f"only the {allowed.lower()} appeals {contested}")
         if self._open_substitution(m):
-            _refuse("a substitution is open on this milestone; it is answered or "
+            _refuse("a substitution is open on this milestone; it is settled or "
                     "withdrawn before the decision is appealed")
         if self._changed_since(m, json.loads(self.rounds[f"{mid}|{int(standing['round'])}"])):
             # An appeal says the panel judged wrongly. It did not judge this
@@ -2519,9 +2571,10 @@ class Icarus(gl.contract.Contract):
     @gl.public.write
     def decide_appeal(self, mid: str) -> str:
         """Permissionless once the evidence period has ended: judge every
-        line again on everything the appealed decision rests on, plus what
-        was filed during the appeal. The outcome is final; an acceptance it
-        upholds pays at once."""
+        line again on everything the appealed decision rests on, what the
+        installer filed during the appeal, and everything the owner and the
+        inspector have filed on these terms. The outcome is final; an
+        acceptance it upholds pays at once."""
         m = self._milestone(mid)
         p = self._project(m["project_id"])
         if m["state"] != "APPEALED":
