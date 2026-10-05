@@ -160,7 +160,7 @@ Both are set out in [`docs/substitution-and-cure.md`](docs/substitution-and-cure
 ## Verified end to end
 
 Every line below is a transaction, not a local simulation.
-The deployment of record is `0x38b195DF0E491F2B53347fb856D50090cE1C7823`.
+The deployment of record is `0x5Ea657820B3355E310BAf2f71282D518cD398cfc`.
 `docs/proof-run.txt` is the full log and `web/lib/proof-log.json` pairs each reading with the
 transaction that produced it.
 
@@ -173,6 +173,22 @@ transaction that produced it.
 | Off-grid power room | one photograph of the room | `ACCEPTED` | all three lines |
 | Contested acceptance | the owner appeals, a fresh panel judges again | readjudicated | the acceptance held |
 
+Substitution and cure, in a run of their own (`scripts/substitution-cure.mjs`, logged in
+`docs/substitution-cure-run.txt`): 30 checks over 46 transactions, and every panel
+reached a majority on its first asking.
+
+| Case | What happens | Outcome |
+|---|---|---|
+| The unit on the wall is not the one signed | the plate reads `MOD 4000TL3-X`, the terms name `MOD 3000TL3-X` | `REJECTED`, and a cure period opens |
+| A page about another maker's inverter | the proposal names the fitted unit and a page that never mentions it | refused in code, no model asked |
+| The fitted unit, on a seller's catalogue page | the owner objects; validators each fetch the page | approved as equivalent, on a line signed "or equivalent" |
+| The cure round | the plate photographed again, judged against the substitute | `ACCEPTED`, and paid after its window |
+| A smaller unit claimed as 10 kW | the page's own figures say 4 kW | refused; the installer's stated rating counts for nothing |
+| A datasheet nobody answerable published | every figure a datasheet has, on a code host | refused |
+| A line signed for one product | the owner says no | declined, and no panel sits |
+| The parties agree | the owner says yes | in force at once, with no panel |
+| A decision in doubt, nothing substituted | the wall is shown but not the plate; then the plate is filed | the cure keeps the condition already met and judges only the open line: `ACCEPTED` |
+
 Refusals proved live: a stranger cannot file evidence or ask for an assessment, the installer
 cannot contest their own acceptance, a milestone cannot be finalized inside its window, and a
 decision cannot be contested after it.
@@ -181,8 +197,9 @@ A second run, `scripts/paths.mjs`, logged in `docs/paths-run.txt`, proves the wr
 adjudication never touches: funding
 escrow after the fact, an inspector taking the appointment, revising a schedule and
 countersigning it, withdrawing what no milestone reserved, closing a milestone nobody accepted
-once its deadline has passed, and cancelling a project before the installer signs. Eighteen of
-the contract's nineteen writes are proved on chain this way. The nineteenth, `lapse_appeal`,
+once its deadline has passed, and cancelling a project before the installer signs. Twenty-three
+of the contract's twenty-four writes are proved on chain across the three runs. The last,
+`lapse_appeal`,
 needs three days to pass after an appeal's evidence period; its refusal wall is proved live
 instead, and `docs/e2e-verification.md` sets out the arithmetic rather than leaving an
 impression of coverage.
@@ -208,7 +225,7 @@ not reporting.
 |---|---|
 | Contract | Python intelligent contract on GenLayer Studio Next, chain 61997 |
 | Reading and judging | `gl.nondet.exec_prompt` with images, under `gl.vm.run_nondet` |
-| Tests | 162 direct tests against a stubbed runtime, a 64 mutant sweep, and 156 for the interface |
+| Tests | 499 direct tests against a stubbed runtime, a 203 mutant sweep, and for the interface 234 tests and a 71 mutant sweep |
 | Scripts | Node with `genlayer-js` 2.0.0-rc.1 |
 | Interface | Next.js App Router, TypeScript strict, Tailwind, Transaction Kit rc.2 |
 
@@ -216,9 +233,10 @@ not reporting.
 
 ```text
 contracts/icarus.py        the contract
-tests/direct/              162 tests against a stubbed runtime
-tests/mutation/mutate.py   64 mutants, each of which must fail the suite
-scripts/                   deploy, fixtures, the live proof run, the proof log
+tests/direct/              499 tests against a stubbed runtime
+tests/mutation/mutate.py   203 mutants, each of which must fail the suite
+scripts/                   deploy, fixtures, the three live runs, the proof log
+fixtures/pages/            the self-published datasheet the substitution run is shown
 fixtures/images/           the photographs the demonstration files
 docs/                      architecture, consensus, evidence, security, the probe report
 web/                       the interface
@@ -235,7 +253,7 @@ python -m venv .venv && .venv/Scripts/pip install -r requirements.txt
 Every one of these runs in CI on each push, in three jobs: the contract
 (`genvm-lint check` and the direct suite), the contract's mutation sweep, and
 the web app (lint, types, tests, its own mutation sweep, a production build,
-and a check that the app, both proof logs, the committed contract schema and
+and a check that the app, the run logs, the committed contract schema and
 the documents all name one deployment). The live runs are not in CI, because
 they sign real transactions and wait out real appeal windows; they run by
 hand and their logs are committed.

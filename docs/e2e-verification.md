@@ -14,7 +14,7 @@ where they differed, which is impossible against a live panel.
 .venv/Scripts/python -m pytest tests/direct -q
 ```
 
-162 tests. They cover the state machine, who may do what and when, quotas and
+499 tests. They cover the state machine, who may do what and when, quotas and
 caps, the grounding floors in both directions, the derivation table, every
 condition under which a validator disagrees, prompt fencing, and the
 randomized walk in `test_invariants.py` that drives arbitrary legal sequences
@@ -31,10 +31,11 @@ A passing suite proves the tests run, not that they would notice a change.
 .venv/Scripts/python tests/mutation/mutate.py
 ```
 
-64 mutants. Each one removes or inverts a rule that matters, and the sweep
+203 mutants. Each one removes or inverts a rule that matters, and the sweep
 requires the suite to **fail** for every one, plus a control run on the
-unmodified contract that must pass. At the deployment of record: 64 of 64
-killed, control passes.
+unmodified contract that must pass. At the deployment of record: 203 of 203
+killed, control passes. The sweep runs in CI on every push; a survivor is
+named on the run's own page.
 
 Every floor named in `docs/security.md` has a mutant here, so none of them can
 be deleted without a test noticing. Mutants that turned out to be equivalent,
@@ -53,7 +54,7 @@ node scripts/proof-log.mjs <address>
 ```
 
 Every step is a signed transaction on Studio Next.
-The deployment of record is `0x38b195DF0E491F2B53347fb856D50090cE1C7823`. The run is resumable: each write is remembered by name, so a segment
+The deployment of record is `0x5Ea657820B3355E310BAf2f71282D518cD398cfc`. The run is resumable: each write is remembered by name, so a segment
 that stops resumes at the step that had not landed rather than repeating the
 ones that had.
 
@@ -92,6 +93,58 @@ window, nor contested after it. Evidence cannot be filed against a decision
 that already stands. Each of these is a real transaction whose refusal text is
 checked, not a local assertion.
 
+### On the deployment of record, 5 October 2026
+
+Six cases and the appeal, all with the outcome the table above requires. One
+round reached no majority and was asked again; it is named at the foot of
+`docs/proof-run.txt`. The run's last check failed once for a reason that was
+the script's and not the contract's: it read the installer's wallet in the
+second the claim became final, before the transfer a claim emits had landed.
+The wallet held the payment when read a moment later. The script now reads
+until the wallet moves, the failed line is left in the log, and the run was
+resumed to its end.
+
+## 3b. Substitution and cure, live
+
+```bash
+node scripts/substitution-cure.mjs <address>
+```
+
+The two rules added in `icarus-rules-2`, set out in
+[substitution-and-cure.md](substitution-and-cure.md). 30 checks over
+46 transactions on the deployment of record, every panel reaching a
+majority on its first asking. The log is `docs/substitution-cure-run.txt`.
+
+| Case | What must happen |
+|---|---|
+| The unit on the wall is not the one the terms name | Not accepted as that line, and a cure period opens. |
+| A cure asked for on nothing new | Refused: a cure rests on something filed since the decision. |
+| A stranger proposes a substitute | Refused. |
+| A proposal naming a page about another maker's product | Refused as unproven by code, with no model asked, and the line unchanged. |
+| An assessment asked for while a proposal is open | Refused. |
+| The fitted unit, on a seller's catalogue page, with the owner objecting | Each validator fetches the page; the substitute is approved, the schedule in force changes, and the signed terms do not. |
+| The cure round after it | Judged against the substitute, accepted, recorded as a cure of the round it answers with the schedule it judged and every item it rests on; paid after its window. |
+| A unit whose own page shows 4 kW, proposed for a 10 kW line as "10 kW" | Refused: the figures come from the page, not from the installer. |
+| A page with every figure a datasheet has, published by nobody answerable | Refused. |
+| A fourth proposal on one version of the terms | Refused. |
+| A no on a line signed for one product | Declined; no panel sits. |
+| A yes | In force at once; no panel sits. |
+| A decision left in doubt with nothing substituted | The cure keeps the condition the first panel found met, judges only the open line, and accepts. |
+| A proposal taken back | Withdrawn, and the line stays as it was. |
+
+The page used for the approval is a real seller's catalogue page for the unit
+in the photographs. The self-published page is `fixtures/pages/` in this
+repository, read from a commit-pinned raw address: it says so in its last
+paragraph, and it is refused on its publisher, not on that paragraph.
+
+Four rehearsals on disposable deployments came before this run, and two of
+them changed the contract. In one, two of five validators withheld approval
+because the product page could not show how the unit was wired on site; the
+question put to them now says that fitting is judged later, from photographs.
+In another, a leader hedged twice and the round rotated until a leader that
+found the page sufficient was confirmed. Both are what the rule is for: an
+approval nobody else reproduces is not recorded.
+
 ## 4. The interface's write path
 
 The three layers above prove the contract. None of them touches a page: a
@@ -118,7 +171,8 @@ an untyped array and nothing downstream knows what belongs in it:
 | filing and reassessment shut on a rejected or undetermined milestone | the recovery path was unreachable |
 | `close_milestone` restricted to the owner, and offered before the deadline | wrong in both directions at once |
 
-The bench is a one-off; `web/tests/calls.test.ts` is what holds. It reads the
+The bench is a one-off; `web/tests/calls.test.ts` is what holds, and it now covers twenty-four
+writes, read from the current deployment by `scripts/schema.mjs`. It reads the
 contract's own signatures from the deployment with `gen_getContractSchema`,
 commits them, and checks every composed call against them: the arity of each,
 that every write is reachable from somewhere, and that value is sent to
@@ -150,8 +204,9 @@ shapes is in [state-machine.md](state-machine.md#from-an-appeal-to-settlement).
 **The proof.** `scripts/appeal-settlement.mjs` imports the interface's real
 rule (`web/lib/acts.ts`, loaded, not copied), reads the milestone off the
 chain at each moment, asks the rule what it would offer, and then sends the
-write to show the contract agrees. Run on the deployment of record,
-21 September 2026, twelve transactions, seventeen checks, none failed:
+write to show the contract agrees. Run on the deployment that was then of
+record (the `icarus-rules-1` contract, whose address is the one in the lines
+below), 21 September 2026, twelve transactions, seventeen checks, none failed:
 
 ```text
 [19:27:59] appeal-to-settlement verification on 0x38b195DF0E491F2B53347fb856D50090cE1C7823
@@ -192,17 +247,30 @@ leftover. It upheld.
 Every transaction is in `.data/` for the run and on the explorer; the log
 above is committed as `docs/appeal-settlement-run.txt`.
 
+**On the current deployment.** The same script was run again on the
+deployment of record on 5 October 2026, against the `icarus-rules-2` contract
+and the interface as it now stands: ten transactions, thirteen checks, none
+failed. The fresh panel upheld the acceptance, so the upheld path was shown:
+settling was not offered while the appeal was open and the contract refused
+it, then it was offered at once, the owner was offered no second appeal and
+the contract refused one, and the installer's claim grew by exactly the
+payment. The log is `docs/appeal-settlement-run.txt`. The step that settled a
+leftover case on the earlier deployment is gone from the script, since it was
+about that deployment's history.
+
 ## Which writes are proved live, and which are not
 
 The arithmetic, rather than an impression of coverage. The contract has
-nineteen writes. `scripts/proofs.mjs` follows the adjudication and reaches
+twenty-four writes. `scripts/proofs.mjs` follows the adjudication and reaches
 eleven of them; `scripts/paths.mjs` proves seven more, along with five
-refusal walls.
+refusal walls; `scripts/substitution-cure.mjs` proves the five that
+substitution and cure added.
 
 | proved by | writes |
 |---|---|
 | `proofs.mjs`, the adjudication | `create_project`, `accept_project`, `add_milestone`, `submit_image`, `submit_document`, `submit_declaration`, `request_assessment`, `open_appeal`, `decide_appeal`, `finalize`, `claim` |
 | `paths.mjs`, terms and escrow | `fund_project`, `accept_inspector_role`, `propose_version`, `accept_version`, `withdraw_escrow`, `close_milestone`, `cancel_project` |
+| `substitution-cure.mjs`, substitution and cure | `propose_substitution`, `answer_substitution`, `decide_substitution`, `withdraw_substitution`, `request_cure` |
 | not reachable in a run | `lapse_appeal` |
 
 `lapse_appeal` needs three days to pass after an appeal's evidence period, so
@@ -216,6 +284,10 @@ stated here rather than left as a gap somebody else has to find.
   deployment of record, including the rounds that reached no majority.
 - `docs/paths-run.txt`, the terms and escrow run, with the five refusal walls
   it proves and the contract's own sentence for each.
+- `docs/substitution-cure-run.txt`, the substitution and cure run, with every
+  validator's vote on each panel and what each leader found on the page.
+- `docs/appeal-settlement-run.txt`, the appeal-to-settlement run repeated on
+  the current deployment.
 - `web/lib/proof-log.json`, pairing each reading with the transaction that
   produced it, generated from the run's own receipts by
   `scripts/proof-log.mjs`. The milestone in each pairing is read back out of

@@ -62,7 +62,8 @@ for (const doc of ["../../README.md", "../../docs/e2e-verification.md"]) {
   }
 }
 
-for (const doc of ["../../docs/proof-run.txt", "../../docs/paths-run.txt"]) {
+for (const doc of ["../../docs/proof-run.txt", "../../docs/paths-run.txt",
+                   "../../docs/substitution-cure-run.txt", "../../docs/appeal-settlement-run.txt"]) {
   const text = read(doc);
   const found = new Set(text.match(ADDRESS) ?? []);
   if (text && !found.size) problems.push(`${shown(doc)} names no contract`);

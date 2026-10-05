@@ -4,7 +4,7 @@
  * environment override points a checkout at another deployment (a disposable
  * one for testing), and the app says so on every sheet it renders.
  */
-export const RECORD_ADDRESS = "0x38b195DF0E491F2B53347fb856D50090cE1C7823";
+export const RECORD_ADDRESS = "0x5Ea657820B3355E310BAf2f71282D518cD398cfc";
 
 const override = process.env.NEXT_PUBLIC_ICARUS_CONTRACT?.trim() ?? "";
 
@@ -14,7 +14,7 @@ export const IS_RECORD = CONTRACT_ADDRESS.toLowerCase() === RECORD_ADDRESS.toLow
 
 /** The sha256 of the contract source these bytes were compiled from. */
 export const SOURCE_SHA256 =
-  "0d421a1b277171b27e69fe95034ef5525335c2497873f45ea0b3f1cd3621d0bc";
+  "ccfc1c1e8c00bd75d38f75a435517e3c8b05fb35d65f2be1706b234e96d396db";
 
 /** The repository whose contract file this deployment was built from. */
 export const REPO_URL = "https://github.com/Hemmy1417/Icarus";

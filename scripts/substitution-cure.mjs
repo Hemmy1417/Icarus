@@ -35,8 +35,16 @@ const say = (m) => console.log(`[${new Date().toISOString().slice(11, 19)}] ${m}
 const clientFor = (role) => createClient({ chain, account: createAccount(KEYS[role].pk) });
 const reader = createClient({ chain, account: createAccount(KEYS.STRANGER.pk) });
 
-/** A claim the run makes. A false one stops it; a true one is counted. */
+/**
+ * A claim the run makes. A false one stops it; a true one is counted. A claim
+ * that held in an earlier sitting stands: the record has moved on since, and
+ * asking the same question of a later state would test something else.
+ */
 function check(cond, claim) {
+  if (run.checks.includes(claim)) {
+    say(`  ok, in an earlier sitting: ${claim}`);
+    return;
+  }
   if (!cond) {
     say(`CHECK FAILED: ${claim}`);
     process.exit(2);
@@ -301,11 +309,21 @@ await step("story.finalize_early", "STRANGER", "finalize", [mid], { refused: "th
 m = await readJson("get_milestone", [mid]);
 await waitUntil(m.standing.window_ends, "the cured acceptance's appeal window");
 await step("story.finalize", "STRANGER", "finalize", [mid]);
+// A balance can only be compared around a claim made in this sitting; on a
+// resumed run the claim landed earlier and the check it made then stands.
+const claimedEarlier = Boolean(run.steps["story.claim"]);
 const before = await balance("INSTALLER");
 await step("story.claim", "INSTALLER", "claim", [], { transfer: true });
-const gained = (await balance("INSTALLER")) - before;
-say(`story.claim: the installer's balance moved by ${gained} atto`);
-check(gained > GEN, "the installer is paid the milestone, whole");
+if (!claimedEarlier) {
+  // The transfer lands a moment after the claim is final: read until it moves.
+  let gained = (await balance("INSTALLER")) - before;
+  for (let i = 0; i < 18 && gained <= GEN; i++) {
+    await sleep(5000);
+    gained = (await balance("INSTALLER")) - before;
+  }
+  say(`story.claim: the installer's balance moved by ${gained} atto`);
+  check(gained > GEN, "the installer is paid the milestone, whole");
+}
 
 // ── 2. Substitutes that do not pass ──────────────────────────────────────────
 
@@ -386,6 +404,17 @@ if (short.decision === "UNDETERMINED" && short.criteria.C1 === "MET" && short.li
     + `${JSON.stringify(short.lines)} ${JSON.stringify(short.criteria)}, which is not the shape `
     + "this case was written to cure, so no claim is made from it");
 }
+
+// ── 5. A proposal taken back ─────────────────────────────────────────────────
+
+await propose("agreed.again.propose", agreed.mid, "E1",
+              { manufacturer: "Growatt", model: "MOD 5000TL3-X", rating: "5 kW" }, CATALOGUE,
+              "A larger unit came into stock.");
+const back = jsonFrom((await step("agreed.again.withdraw", "INSTALLER", "withdraw_substitution",
+                                  [agreed.mid])).text);
+m = await readJson("get_milestone", [agreed.mid]);
+check(back.status === "WITHDRAWN" && m.schedule[0].model === "MOD 4000TL3-X",
+      "the installer takes an open proposal back and the line stays as it was");
 
 const stats = await readJson("get_stats", []);
 say(`stats: ${JSON.stringify(stats)}`);

@@ -19,9 +19,8 @@
  *      If the fresh panel upholds the acceptance:
  *        the interface: appeal DECIDED, settling offered at once, no second appeal
  *        the contract:  finalize lands, the payment becomes the installer's claim
- *   3. The record's own leftover. ms-00002 was accepted, appealed and upheld
- *      on 20 Sep and then sat unsettled, because the interface of that day
- *      could not offer to settle it. It is settled here.
+ *      If it does not, nothing settles, and the run says that the upheld
+ *      path was not shown on this case; run it again for a fresh one.
  *
  * Resumable: every write is remembered in .data/appeal-settlement-<addr>.json.
  */
@@ -116,23 +115,6 @@ async function interfaceSays(mid, role) {
 }
 
 say(`appeal-to-settlement verification on ${ADDRESS}`);
-
-// ── 3 first, because it needs no panel: the record's own leftover ───────────
-{
-  const before = await interfaceSays("ms-00002", "STRANGER");
-  if (before.m.state === "ACCEPTED") {
-    say(`ms-00002 on the record: ${before.m.state}, standing kind ${before.m.standing.kind}, `
-      + `appealable ${before.m.standing.appealable}, appealed ${before.m.standing.appealed}, `
-      + `window ${before.m.standing.window_ends}, reserved ${before.m.reserved_wei}`);
-    expect(before.appeal === "DECIDED", "leftover: the interface reads the upheld appeal as DECIDED", before.appeal);
-    expect(before.finalize?.available === true, "leftover: the interface now offers to settle it", before.finalize?.reason);
-    await step("leftover.finalize", "STRANGER", "finalize", ["ms-00002"]);
-  }
-  const after = await interfaceSays("ms-00002", "STRANGER");
-  expect(after.m.state === "FINALIZED" && after.m.reserved_wei === "0",
-    "leftover: settled on-chain, nothing left reserved", `${after.m.state}, reserved ${after.m.reserved_wei}`);
-  expect(after.finalize?.available === false, "leftover: the interface no longer offers to settle it", after.finalize?.reason);
-}
 
 // ── 1. a fresh acceptance, appealed ─────────────────────────────────────────
 const params = JSON.stringify({
@@ -233,8 +215,8 @@ say(`2. THE APPEAL IS DECIDED: ${decided.decision} (round ${decided.round}, revi
     expect(s.finalize?.available === false, `interface: offers no settlement after a ${decided.decision} appeal`, s.finalize?.reason);
     await step("overturned.finalize_refused", "STRANGER", "finalize", [mid],
       { refused: "only a standing acceptance is finalized" });
-    say("the fresh panel did not uphold the acceptance, so the upheld path was not exercised on this case; "
-      + "the leftover above is the upheld path on the record");
+    say("the fresh panel did not uphold the acceptance, so the upheld path was not shown on this case; "
+      + "run again for a fresh one");
   }
 }
 

@@ -1,5 +1,5 @@
 {
-  "address": "0x38b195DF0E491F2B53347fb856D50090cE1C7823",
+  "address": "0x5Ea657820B3355E310BAf2f71282D518cD398cfc",
   "writes": {
     "accept_inspector_role": {
       "params": [
@@ -41,6 +41,19 @@
       ],
       "payable": false
     },
+    "answer_substitution": {
+      "params": [
+        "mid",
+        "agree",
+        "objection"
+      ],
+      "types": [
+        "string",
+        "bool",
+        "string"
+      ],
+      "payable": false
+    },
     "cancel_project": {
       "params": [
         "pid"
@@ -74,6 +87,15 @@
       "payable": true
     },
     "decide_appeal": {
+      "params": [
+        "mid"
+      ],
+      "types": [
+        "string"
+      ],
+      "payable": false
+    },
+    "decide_substitution": {
       "params": [
         "mid"
       ],
@@ -120,6 +142,19 @@
       ],
       "payable": false
     },
+    "propose_substitution": {
+      "params": [
+        "mid",
+        "line_id",
+        "proposal_json"
+      ],
+      "types": [
+        "string",
+        "string",
+        "string"
+      ],
+      "payable": false
+    },
     "propose_version": {
       "params": [
         "mid",
@@ -132,6 +167,17 @@
       "payable": false
     },
     "request_assessment": {
+      "params": [
+        "mid",
+        "named_json"
+      ],
+      "types": [
+        "string",
+        "string"
+      ],
+      "payable": false
+    },
+    "request_cure": {
       "params": [
         "mid",
         "named_json"
@@ -186,6 +232,15 @@
       ],
       "types": [
         "string",
+        "string"
+      ],
+      "payable": false
+    },
+    "withdraw_substitution": {
+      "params": [
+        "mid"
+      ],
+      "types": [
         "string"
       ],
       "payable": false

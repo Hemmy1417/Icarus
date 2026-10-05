@@ -1,91 +1,143 @@
 {
-  "address": "0x38b195DF0E491F2B53347fb856D50090cE1C7823",
-  "source_commit": "2314191",
-  "finished_at": "2026-09-20T18:59:58.056Z",
+  "address": "0x5Ea657820B3355E310BAf2f71282D518cD398cfc",
+  "source_commit": "1c0e5b0",
+  "finished_at": "2026-10-05T21:08:45.305Z",
   "rounds": {
-    "ms-00001/1": "0xc4b3ebd9abe5d349c794c25a1b968699473a5d56f97ceea43a4b55f20c107532",
-    "ms-00002/1": "0xd748e1211fd1238da9b0478e6b1913c4b8649ac1fd0321b88429f97b4e6ee4c6",
-    "ms-00003/1": "0xa0c939b2895639dff79afe2a7fe53112c56fa923dec771b59ec5d15381d70a47",
-    "ms-00004/1": "0x03a07333b80506d631d874e1b65d114a8c04627a95fae7b7bf360a8ea49b706a",
-    "ms-00005/1": "0x80fb23670c3db16a4c3d71a4c4fc02dc07875a2f0dacd479123bdf68ae27dad8",
-    "ms-00006/1": "0x603984211f681914ee9b1f0810ba097fc2c2ecb72ab1382d6264f60a0a83961c",
-    "ms-00002/2": "0xa4e9a59d9db4b171b032b1077a106ea8c4cc211f00854e1514939b5c7ad603d8"
+    "ms-00005/1": "0xa04ca3397ccb09d85478322f1e79881a34e7f86812a9067d3e2a67bd1eb581d6",
+    "ms-00006/1": "0x1987a2c6c686f68e726d1740f90ac990a699cc42f83af972965d81556c764acf",
+    "ms-00007/1": "0x96ec5ec79468ad5f7cad7a800ad9111a84e33c8401724f16736939dfae89ceb4",
+    "ms-00008/1": "0x18d9c8c88603e285ce44e49def325c80a8f6b0447257b421bb9c4bfd0d1f76d5",
+    "ms-00009/1": "0xa124ec3ce7c5adeeb98b7a085a734ed7f9cd7aa6c55ba5c7611efb6d23ffa944",
+    "ms-00010/1": "0xfe262a267146900cb230be1d5df46b9f041ac6482a8698ead1f9a50875cb95fd",
+    "ms-00006/2": "0x93d7a822ff441f831b6713acc8417b12295a2fb075d966c033c04dd95a4a28a7",
+    "ms-00001/1": "0x5b4babd4ab3914f17b967f7331dd3fe746e21d7c51d8cf4b6022f239bdd3a173",
+    "ms-00001/2": "0xf114cbcd4ed93e473c5c91c9d94433036b9db22a7e08e277de70b4c6d19826f8",
+    "ms-00004/1": "0xc286dec7ad175c7feb0db72233b95cbe13d540c1a4d2f5bd7061f1f7e81ed61c",
+    "ms-00004/2": "0x463bbeb47fbe77ee4bd7c151a59fab9a30fbe6e64553057afeb452c5056e7ab0"
   },
   "proofs": [
     {
-      "step": "flagship.assess",
+      "step": "story.assess",
       "milestone_id": "ms-00001",
-      "round": 1,
-      "decision": "ACCEPTED",
-      "lines": {
-        "E1": "INSTALLED"
-      },
-      "seconds": 97,
-      "hash": "0xc4b3ebd9abe5d349c794c25a1b968699473a5d56f97ceea43a4b55f20c107532",
-      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0xc4b3ebd9abe5d349c794c25a1b968699473a5d56f97ceea43a4b55f20c107532"
-    },
-    {
-      "step": "appealcase.assess",
-      "milestone_id": "ms-00002",
-      "round": 1,
-      "decision": "ACCEPTED",
-      "lines": {
-        "E1": "INSTALLED"
-      },
-      "seconds": 82,
-      "hash": "0xd748e1211fd1238da9b0478e6b1913c4b8649ac1fd0321b88429f97b4e6ee4c6",
-      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0xd748e1211fd1238da9b0478e6b1913c4b8649ac1fd0321b88429f97b4e6ee4c6"
-    },
-    {
-      "step": "appeal.decide",
-      "milestone_id": "ms-00002",
-      "round": 2,
-      "decision": "ACCEPTED",
-      "lines": null,
-      "seconds": 64,
-      "hash": "0xa4e9a59d9db4b171b032b1077a106ea8c4cc211f00854e1514939b5c7ad603d8",
-      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0xa4e9a59d9db4b171b032b1077a106ea8c4cc211f00854e1514939b5c7ad603d8"
-    },
-    {
-      "step": "paper.assess",
-      "milestone_id": "ms-00003",
-      "round": 1,
-      "decision": "UNDETERMINED",
-      "lines": {
-        "E1": "UNIDENTIFIED"
-      },
-      "seconds": 72,
-      "hash": "0xa0c939b2895639dff79afe2a7fe53112c56fa923dec771b59ec5d15381d70a47",
-      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0xa0c939b2895639dff79afe2a7fe53112c56fa923dec771b59ec5d15381d70a47"
-    },
-    {
-      "step": "mismatch.assess",
-      "milestone_id": "ms-00004",
       "round": 1,
       "decision": "REJECTED",
       "lines": {
         "E1": "ABSENT"
       },
+      "seconds": 86,
+      "hash": "0x5b4babd4ab3914f17b967f7331dd3fe746e21d7c51d8cf4b6022f239bdd3a173",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x5b4babd4ab3914f17b967f7331dd3fe746e21d7c51d8cf4b6022f239bdd3a173"
+    },
+    {
+      "step": "story.cure",
+      "milestone_id": "ms-00001",
+      "round": 2,
+      "decision": "ACCEPTED",
+      "lines": {
+        "E1": "INSTALLED"
+      },
+      "seconds": 82,
+      "hash": "0xf114cbcd4ed93e473c5c91c9d94433036b9db22a7e08e277de70b4c6d19826f8",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0xf114cbcd4ed93e473c5c91c9d94433036b9db22a7e08e277de70b4c6d19826f8"
+    },
+    {
+      "step": "kept.assess",
+      "milestone_id": "ms-00004",
+      "round": 1,
+      "decision": "UNDETERMINED",
+      "lines": {
+        "E1": "UNIDENTIFIED"
+      },
       "seconds": 70,
-      "hash": "0x03a07333b80506d631d874e1b65d114a8c04627a95fae7b7bf360a8ea49b706a",
-      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x03a07333b80506d631d874e1b65d114a8c04627a95fae7b7bf360a8ea49b706a"
+      "hash": "0xc286dec7ad175c7feb0db72233b95cbe13d540c1a4d2f5bd7061f1f7e81ed61c",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0xc286dec7ad175c7feb0db72233b95cbe13d540c1a4d2f5bd7061f1f7e81ed61c"
+    },
+    {
+      "step": "kept.cure",
+      "milestone_id": "ms-00004",
+      "round": 2,
+      "decision": "ACCEPTED",
+      "lines": {
+        "E1": "INSTALLED"
+      },
+      "seconds": 90,
+      "hash": "0x463bbeb47fbe77ee4bd7c151a59fab9a30fbe6e64553057afeb452c5056e7ab0",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x463bbeb47fbe77ee4bd7c151a59fab9a30fbe6e64553057afeb452c5056e7ab0"
+    },
+    {
+      "step": "flagship.assess",
+      "milestone_id": "ms-00005",
+      "round": 1,
+      "decision": "ACCEPTED",
+      "lines": {
+        "E1": "INSTALLED"
+      },
+      "seconds": 286,
+      "hash": "0xa04ca3397ccb09d85478322f1e79881a34e7f86812a9067d3e2a67bd1eb581d6",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0xa04ca3397ccb09d85478322f1e79881a34e7f86812a9067d3e2a67bd1eb581d6"
+    },
+    {
+      "step": "appealcase.assess",
+      "milestone_id": "ms-00006",
+      "round": 1,
+      "decision": "ACCEPTED",
+      "lines": {
+        "E1": "INSTALLED"
+      },
+      "seconds": 74,
+      "hash": "0x1987a2c6c686f68e726d1740f90ac990a699cc42f83af972965d81556c764acf",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x1987a2c6c686f68e726d1740f90ac990a699cc42f83af972965d81556c764acf"
+    },
+    {
+      "step": "appeal.decide",
+      "milestone_id": "ms-00006",
+      "round": 2,
+      "decision": "ACCEPTED",
+      "lines": null,
+      "seconds": 160,
+      "hash": "0x93d7a822ff441f831b6713acc8417b12295a2fb075d966c033c04dd95a4a28a7",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x93d7a822ff441f831b6713acc8417b12295a2fb075d966c033c04dd95a4a28a7"
+    },
+    {
+      "step": "paper.assess",
+      "milestone_id": "ms-00007",
+      "round": 1,
+      "decision": "UNDETERMINED",
+      "lines": {
+        "E1": "UNIDENTIFIED"
+      },
+      "seconds": 69,
+      "hash": "0x96ec5ec79468ad5f7cad7a800ad9111a84e33c8401724f16736939dfae89ceb4",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x96ec5ec79468ad5f7cad7a800ad9111a84e33c8401724f16736939dfae89ceb4"
+    },
+    {
+      "step": "mismatch.assess",
+      "milestone_id": "ms-00008",
+      "round": 1,
+      "decision": "REJECTED",
+      "lines": {
+        "E1": "ABSENT"
+      },
+      "seconds": 4851,
+      "hash": "0x18d9c8c88603e285ce44e49def325c80a8f6b0447257b421bb9c4bfd0d1f76d5",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x18d9c8c88603e285ce44e49def325c80a8f6b0447257b421bb9c4bfd0d1f76d5"
     },
     {
       "step": "battery.assess",
-      "milestone_id": "ms-00005",
+      "milestone_id": "ms-00009",
       "round": 1,
       "decision": "UNDETERMINED",
       "lines": {
         "E1": "INSTALLED",
         "E2": "NOT_SHOWN"
       },
-      "seconds": 86,
-      "hash": "0x80fb23670c3db16a4c3d71a4c4fc02dc07875a2f0dacd479123bdf68ae27dad8",
-      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x80fb23670c3db16a4c3d71a4c4fc02dc07875a2f0dacd479123bdf68ae27dad8"
+      "seconds": 101,
+      "hash": "0xa124ec3ce7c5adeeb98b7a085a734ed7f9cd7aa6c55ba5c7611efb6d23ffa944",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0xa124ec3ce7c5adeeb98b7a085a734ed7f9cd7aa6c55ba5c7611efb6d23ffa944"
     },
     {
       "step": "offgrid.assess",
-      "milestone_id": "ms-00006",
+      "milestone_id": "ms-00010",
       "round": 1,
       "decision": "ACCEPTED",
       "lines": {
@@ -93,10 +145,17 @@
         "E2": "INSTALLED",
         "E3": "INSTALLED"
       },
-      "seconds": 82,
-      "hash": "0x603984211f681914ee9b1f0810ba097fc2c2ecb72ab1382d6264f60a0a83961c",
-      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x603984211f681914ee9b1f0810ba097fc2c2ecb72ab1382d6264f60a0a83961c"
+      "seconds": 67,
+      "hash": "0xfe262a267146900cb230be1d5df46b9f041ac6482a8698ead1f9a50875cb95fd",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0xfe262a267146900cb230be1d5df46b9f041ac6482a8698ead1f9a50875cb95fd"
     }
   ],
-  "no_consensus": []
+  "no_consensus": [
+    {
+      "step": "appealcase.assess",
+      "hash": "0x814874d0d05a753a201dcd68c69f2ac95b14adb0b56e2ae159fc639339b054f2",
+      "at": "2026-10-05T18:41:27.738Z",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x814874d0d05a753a201dcd68c69f2ac95b14adb0b56e2ae159fc639339b054f2"
+    }
+  ]
 }

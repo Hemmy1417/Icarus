@@ -1,15 +1,17 @@
 # What running this on a real panel actually looks like
 
 Measured on GenLayer Studio Next between 11:30 and 19:00 UTC on 20 September
-2026, across twelve live proof runs. None of it is inferred from
+2026, across twelve live proof runs of the `icarus-rules-1` contract, on the
+deployment that was then of record. What the current deployment did is in
+`docs/e2e-verification.md`. None of it is inferred from
 documentation; every line here is something a node did, with the transaction
 it did it in. It is recorded because a build that only reports the run that
 worked is not reporting.
 
 ## The adjudication does what it was built to do
 
-Read off the deployment of record, `0x38b195DF…7823`, in the run published as
-`docs/proof-run.txt`.
+Read off that deployment, `0x38b195DF…7823`, in the run published at the
+time as `docs/proof-run.txt`.
 
 | case | evidence | decision | the line |
 |---|---|---|---|

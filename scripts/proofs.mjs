@@ -391,10 +391,13 @@ await step("walls.stranger_assessment", "STRANGER", "request_assessment",
 // 7. The appeal: its own record, because only an acceptance or a rejection
 //    can be contested and the mismatch is free to fail either way. The owner
 //    contests an acceptance on the same evidence that produced it.
-const contested = await readJson("get_milestone", [appealMid]);
-assert(contested.state === "APPEALED", `the appeal did not open: ${contested.state}`);
-const appealEnds = contested.appeal.evidence_ends;
-await waitUntil(appealEnds, "the appeal's evidence period");
+// Checked only while the appeal is still to be decided: on a resumed run it
+// already has been, and the milestone has rightly moved on.
+if (!run.steps["appeal.decide"]) {
+  const contested = await readJson("get_milestone", [appealMid]);
+  assert(contested.state === "APPEALED", `the appeal did not open: ${contested.state}`);
+  await waitUntil(contested.appeal.evidence_ends, "the appeal's evidence period");
+}
 const appealRec = await step("appeal.decide", "STRANGER", "decide_appeal", [appealMid]);
 const appealRecord = await readJson("get_round", [appealMid, jsonFrom(appealRec.text).round]);
 assert(appealRecord.kind === "APPEAL", "the appeal did not record an appeal round");
@@ -408,13 +411,35 @@ say(`appeal: reviewed round 1, decided ${appealRecord.decision}, `
 const standing = (await readJson("get_milestone", [flagMid])).standing;
 await waitUntil(standing.window_ends, "the flagship's appeal window");
 await step("flagship.finalize", "STRANGER", "finalize", [flagMid]);
-const owed = BigInt((await readJson("get_balance", [KEYS.INSTALLER.addr])).claimable);
-assert(owed >= 2n * GEN, `the installer is owed ${owed}`);
-const before = await balance("INSTALLER");
+// The transfer a claim emits lands a moment after the claim itself is final,
+// so the wallet is read until it moves rather than once. The balance before
+// is kept with the run, so a resumed run compares against the same figure.
+const claimedEarlier = Boolean(run.steps["flagship.claim"]);
+if (!claimedEarlier) {
+  const owed = BigInt((await readJson("get_balance", [KEYS.INSTALLER.addr])).claimable);
+  assert(owed >= 2n * GEN, `the installer is owed ${owed}`);
+}
+if (!claimedEarlier && run.claim_before === undefined) {
+  run.claim_before = (await balance("INSTALLER")).toString();
+  save();
+}
 await step("flagship.claim", "INSTALLER", "claim", [], { transfer: true });
-const after = await balance("INSTALLER");
-assert(after > before, "the claim did not reach the wallet");
-say(`the installer's wallet received ${after - before} wei`);
+if (run.claim_before !== undefined) {
+  let after = await balance("INSTALLER");
+  for (let i = 0; i < 18 && after <= BigInt(run.claim_before); i++) {
+    await sleep(5000);
+    after = await balance("INSTALLER");
+  }
+  assert(after > BigInt(run.claim_before), "the claim did not reach the wallet");
+  say(`flagship.claim: the installer's wallet moved by ${after - BigInt(run.claim_before)} atto`);
+} else {
+  // The claim landed in an earlier sitting that did not keep the balance
+  // before it. The contract's own ledger still says what was drawn.
+  const row = await readJson("get_balance", [KEYS.INSTALLER.addr]);
+  assert(BigInt(row.claimed) >= 2n * GEN, `the ledger records only ${row.claimed} claimed`);
+  say(`flagship.claim: sent in an earlier sitting; the ledger records ${row.claimed} atto drawn by the `
+    + `installer, and the wallet now holds ${await balance("INSTALLER")} atto`);
+}
 assert((await readJson("get_balance", [KEYS.INSTALLER.addr])).claimable === "0",
        "the ledger still owes after a claim");
 
