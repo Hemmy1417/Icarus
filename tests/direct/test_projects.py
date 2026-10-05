@@ -201,7 +201,10 @@ class TestReading:
 
     def test_the_config_names_every_limit_the_contract_enforces(self, module, c):
         cfg = json.loads(c.get_config())
-        assert cfg["ruleset"] == "icarus-rules-1"
+        assert cfg["ruleset"] == "icarus-rules-2"
+        assert cfg["max_substitutions_per_version"] == 3
+        assert cfg["model_key_min"] == 4 and cfg["url_max"] == 300
+        assert "CONTESTED" in cfg["substitution_states"]
         assert cfg["images_per_prompt"] == 2
         assert "MODULE" in cfg["equipment_roles"]
         assert "INSTALLED" in cfg["line_statuses"]

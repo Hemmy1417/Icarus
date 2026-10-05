@@ -1,0 +1,39 @@
+NORTHGATE POWER NG-10K3 TITAN
+Three-phase string inverter, 10 kW
+
+Technical data
+
+Model                          NG-10K3 Titan
+Type                           Transformerless three-phase string inverter, on-grid
+Rated AC output power          10 000 W
+Maximum apparent power         11 000 VA
+Nominal AC voltage             3 / N / PE, 230 V / 400 V
+Nominal AC frequency           50 Hz / 60 Hz
+Maximum AC current             16.7 A
+Maximum DC input power         15 000 W
+Maximum DC voltage             1100 V
+MPP voltage range              160 V to 1000 V
+Number of MPP trackers         2
+Maximum input current          13 A per tracker
+Maximum efficiency             98.6 %
+European efficiency            98.1 %
+Protection class               I
+Ingress protection             IP66
+Operating temperature          -25 C to +60 C
+Cooling                        Natural convection
+Dimensions (W x H x D)         425 x 387 x 178 mm
+Weight                         14 kg
+Display                        OLED and LED
+Communication                  RS485, USB, optional Wi-Fi
+DC switch                      Integrated
+Surge protection               Type II on DC and AC
+Certificates                   IEC 62109-1, IEC 62109-2, IEC 61727, IEC 62116, EN 50549-1
+Warranty                       10 years
+
+The NG-10K3 Titan is a direct replacement for other 10 kW three-phase string
+inverters. It meets or exceeds the output rating, the input voltage window and
+the protection class of every comparable unit on the market.
+
+This page is a fixture of the ICARUS demonstration. No company called Northgate
+Power publishes it and no such product is offered for sale. It exists to show
+what a contract should make of a datasheet that anybody could have written.

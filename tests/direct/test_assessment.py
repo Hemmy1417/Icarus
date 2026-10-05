@@ -226,18 +226,64 @@ class TestConsensus:
                                          "E3": "INSTALLED"}, {"C1": "MET"}, basis=b))
         assert any("withholds" in line for line in prints() if "[DISAGREE]" in line)
 
-    def test_a_reading_that_decides_nothing_may_differ(self, module, c):
-        """Both nodes reject on E2; they may disagree about a line that did
-        not decide anything."""
+    def test_only_the_shade_of_a_doubt_may_differ(self, module, c):
+        """Both nodes reject on E2 and both leave E1 in doubt; one calls the
+        doubt unidentified and the other not shown. Neither word moves
+        anything, now or in a later round."""
         _, mid = active_milestone(module, c)
         items = two_images(module, c, mid)
         b = {k: [items[0], items[1]] for k in ("E1", "E2", "E3", "C1")}
         out = assess(module, c, mid, items,
-                     judge=judge_answer({"E1": "INSTALLED", "E2": "ABSENT", "E3": "INSTALLED"},
+                     judge=judge_answer({"E1": "UNIDENTIFIED", "E2": "ABSENT", "E3": "INSTALLED"},
                                         {"C1": "MET"}, basis=b),
-                     v_judge=judge_answer({"E1": "UNIDENTIFIED", "E2": "ABSENT",
+                     v_judge=judge_answer({"E1": "NOT_SHOWN", "E2": "ABSENT",
                                            "E3": "INSTALLED"}, {"C1": "MET"}, basis=b))
+        assert out["decision"] == "REJECTED" and out["lines"]["E1"] == "UNIDENTIFIED"
+
+    @pytest.mark.parametrize("leader,validator,why", [
+        ({"E1": "INSTALLED", "E2": "ABSENT", "E3": "INSTALLED"},
+         {"E1": "UNIDENTIFIED", "E2": "ABSENT", "E3": "INSTALLED"},
+         "line E1: the leader finds it installed, this node finds it unidentified"),
+        ({"E1": "INSTALLED", "E2": "NOT_SHOWN", "E3": "INSTALLED"},
+         {"E1": "INSTALLED", "E2": "NOT_SHOWN", "E3": "NOT_SHOWN"},
+         "line E3: the leader finds it installed, this node finds it not_shown"),
+    ])
+    def test_a_line_found_installed_is_reproduced_even_when_it_decides_nothing(
+            self, module, c, leader, validator, why):
+        """A decision that falls short still records which lines were found
+        in place, and a cure round relies on them. So they bind."""
+        _, mid = active_milestone(module, c)
+        items = two_images(module, c, mid)
+        b = {k: [items[0], items[1]] for k in ("E1", "E2", "E3", "C1")}
+        with pytest.raises(err(module), match="validators did not agree"):
+            assess(module, c, mid, items, judge=judge_answer(leader, {"C1": "MET"}, basis=b),
+                   v_judge=judge_answer(validator, {"C1": "MET"}, basis=b))
+        assert any(why in line for line in prints() if "[DISAGREE]" in line)
+        assert milestone(c, mid)["rounds_count"] == 0
+
+    def test_a_criterion_found_met_is_reproduced_even_when_it_decides_nothing(self, module, c):
+        _, mid = active_milestone(module, c)
+        items = two_images(module, c, mid)
+        b = {k: [items[0], items[1]] for k in ("E1", "E2", "E3", "C1")}
+        short = {"E1": "INSTALLED", "E2": "NOT_SHOWN", "E3": "INSTALLED"}
+        with pytest.raises(err(module), match="validators did not agree"):
+            assess(module, c, mid, items, judge=judge_answer(short, {"C1": "MET"}, basis=b),
+                   v_judge=judge_answer(short, {"C1": "UNCLEAR"}, basis=b))
+        assert any("criterion C1: the leader finds it met, this node finds it unclear" in line
+                   for line in prints())
+
+    def test_a_leader_may_find_less_than_a_validator(self, module, c):
+        _, mid = active_milestone(module, c)
+        items = two_images(module, c, mid)
+        b = {k: [items[0], items[1]] for k in ("E1", "E2", "E3", "C1")}
+        out = assess(module, c, mid, items,
+                     judge=judge_answer({"E1": "NOT_SHOWN", "E2": "ABSENT", "E3": "INSTALLED"},
+                                        {"C1": "UNCLEAR"}, basis=b),
+                     v_judge=judge_answer({"E1": "INSTALLED", "E2": "ABSENT", "E3": "INSTALLED"},
+                                          {"C1": "MET"}, basis=b))
         assert out["decision"] == "REJECTED"
+        assert out["lines"]["E1"] == "NOT_SHOWN" and out["criteria"]["C1"] == "UNCLEAR", \
+            "the record carries what both nodes stand behind, which is the lesser finding"
 
     def test_a_forged_leader_result_is_refused(self, module, c):
         _, mid = active_milestone(module, c)
@@ -360,14 +406,20 @@ class TestConsensusRulesTheSweepFound:
                    v_judge=judge_answer(allin, {"C1": "MET"}, basis=b))
         assert any("criterion C1" in line for line in prints() if "[DISAGREE]" in line)
 
-    def test_a_rejection_never_stands_over_a_conflict_the_validator_sees(self, module, c):
+    @pytest.mark.parametrize("lines", [
+        {"E1": "INSTALLED", "E2": "ABSENT", "E3": "INSTALLED"},
+        {"E1": "INSTALLED", "E2": "NOT_SHOWN", "E3": "INSTALLED"},
+    ])
+    def test_no_decision_stands_over_a_conflict_the_validator_sees(self, module, c, lines):
+        """A rejection, and a decision left in doubt, both record findings a
+        cure may carry. A conflict settles none of them, so a node that sees
+        one cannot confirm a leader that reports none."""
         mid, items, b = self.setup_items(module, c)
-        lines = {"E1": "INSTALLED", "E2": "ABSENT", "E3": "INSTALLED"}
         with pytest.raises(err(module), match="validators did not agree"):
             assess(module, c, mid, items,
                    judge=judge_answer(lines, {"C1": "MET"}, basis=b),
                    v_judge=judge_answer(lines, {"C1": "MET"}, conflicts=True, basis=b))
-        assert any("conflict the leader's rejection ignores" in line for line in prints())
+        assert any("a conflict the leader does not report" in line for line in prints())
 
     def test_a_conflict_only_the_leader_sees_is_never_recorded(self, module, c):
         mid, items, b = self.setup_items(module, c)

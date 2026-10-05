@@ -2,6 +2,11 @@
 the direct suite fails, then prove the unbroken contract passes.
 
 Run from the repo root:  python tests/mutation/mutate.py
+Name some words to run only the mutants whose description contains one of
+them:  python tests/mutation/mutate.py cure substitut
+Two switches narrow a local run further; neither is used in CI:
+  --since=N       only the mutants from position N in the list onwards
+  --tests=a,b     run these test files instead of the whole direct suite
 Exit status 0 only if every mutant is killed and the control passes. The
 sweep works on a temporary copy of contracts/ and tests/, so the repository's
 own files are never touched. A floor guarded in two places is broken in both
@@ -60,14 +65,24 @@ MUTATIONS = [
 
     # ── consensus: what a validator must reproduce ──────────────────────────
     ("an acceptance stands without the validator's own acceptance",
-     '    if leader_decision == "ACCEPTED" and my_decision != "ACCEPTED":', "    if False:"),
-    ("a rejection stands on a line the validator does not reproduce",
-     '            if tl[lid] == "ABSENT" and ml[lid] != "ABSENT":', "            if False:"),
-    ("a rejection stands on a criterion the validator does not reproduce",
-     '            if tc[cid] == "NOT_MET" and mc[cid] != "NOT_MET":', "            if False:"),
-    ("a rejection ignores a conflict the validator sees",
-     "        if mine_conflicts:\n            return \"this node sees a conflict",
-     "        if False:\n            return \"this node sees a conflict"),
+     '        if my_decision != "ACCEPTED":\n            return "the leader accepts',
+     '        if False:\n            return "the leader accepts'),
+    ("a rejection stands on a line the validator does not find absent",
+     '        if tl[lid] in ("INSTALLED", "ABSENT") and ml[lid] != tl[lid]:',
+     '        if tl[lid] in ("INSTALLED",) and ml[lid] != tl[lid]:'),
+    ("a line is recorded installed on the leader's word alone",
+     '        if tl[lid] in ("INSTALLED", "ABSENT") and ml[lid] != tl[lid]:',
+     '        if tl[lid] in ("ABSENT",) and ml[lid] != tl[lid]:'),
+    ("a rejection stands on a criterion the validator does not find unmet",
+     '        if tc[cid] in ("MET", "NOT_MET") and mc[cid] != tc[cid]:',
+     '        if tc[cid] in ("MET",) and mc[cid] != tc[cid]:'),
+    ("a criterion is recorded met on the leader's word alone",
+     '        if tc[cid] in ("MET", "NOT_MET") and mc[cid] != tc[cid]:',
+     '        if tc[cid] in ("NOT_MET",) and mc[cid] != tc[cid]:'),
+    ("a decision that falls short ignores a conflict the validator sees",
+     '    if mine_conflicts and not theirs_conflicts:\n'
+     '        return "this node sees a conflict the leader does not report"',
+     '    if False:\n        return "this node sees a conflict the leader does not report"'),
     ("a leader withholds an acceptance a validator would grant",
      '    if leader_decision == "UNDETERMINED" and my_decision == "ACCEPTED":', "    if False:"),
     ("a conflict the leader alone reports is recorded",
@@ -179,8 +194,9 @@ MUTATIONS = [
     ("an acceptance pays inside its appeal window",
      '        if standing["appealable"] and _now() <= _parse_iso(standing["window_ends"]):',
      "        if False:"),
-    ("a milestone closes before its deadline",
-     '            if now <= _parse_iso(self._terms(m, version)["deadline"]):', "            if False:"),
+    ("a milestone closes before its deadline", [
+        ('            if now <= _parse_iso(self._terms(m, version)["deadline"]):', "            if False:"),
+        ("            if now <= self._work_ends(m):", "            if False:")]),
     ("a close kills terms the installer can still sign",
      '        if pending and _parse_iso(self._terms(m, int(pending))["deadline"]) > now:',
      "        if False:"),
@@ -222,11 +238,262 @@ MUTATIONS = [
     ("a view raises at a reader who mistypes an address",
      "        return self.ledger.get(_address_or_refuse(addr)) or",
      "        return self.ledger.get(str(addr)) or"),
+
+    # ── a substitute: who may ask, and what a proposal must be ──────────────
+    ("a stranger proposes a substitute",
+     '            _refuse("only the installer proposes a substitute")', "            pass"),
+    ("a substitute is proposed against a standing acceptance or an open appeal",
+     '        if m["state"] not in ("AWAITING_EVIDENCE", "REJECTED", "UNDETERMINED"):\n'
+     '            _refuse("a substitute is proposed',
+     '        if False:\n            _refuse("a substitute is proposed'),
+    ("a substitute is proposed after the time for the work",
+     '            _refuse("the time for work on these terms has passed")', "            pass"),
+    ("two proposals are open at once",
+     '            _refuse("a substitution is already open on this milestone")', "            pass"),
+    ("proposals are unbounded per version",
+     "                >= MAX_SUBSTITUTIONS_PER_VERSION:", "                >= 10**9:"),
+    ("a model too short to check a page for",
+     '        if len(_model_key(substitute["model"])) < MODEL_KEY_MIN:', "        if False:"),
+    ("a rated line is replaced by a product with no stated rating",
+     '        if line["rating"] and not substitute["rating"]:', "        if False:"),
+    ("the line's own product is proposed as its substitute",
+     "        if _same_product(substitute, line):", "        if False:"),
+    ("five point nought and fifty are one rating",
+     '        return "".join(ch for ch in str(value or "").upper() if ch.isalnum() or ch == ".")',
+     '        return "".join(ch for ch in str(value or "").upper() if ch.isalnum())'),
+    ("a proposal gives no reason",
+     '        if not reason:\n            _refuse("say why', '        if False:\n            _refuse("say why'),
+    ("a product link of any scheme and any character",
+     "    if len(url) > URL_MAX or not _LINK.fullmatch(url):", "    if len(url) > URL_MAX:"),
+    ("a product link of any length",
+     "    if len(url) > URL_MAX or not _LINK.fullmatch(url):", "    if not _LINK.fullmatch(url):"),
+    ("a product page sits on an unnamed or numeric host",
+     "    if not _HOSTNAME.fullmatch(host) or host.endswith(_NOT_PUBLIC):",
+     "    if host.endswith(_NOT_PUBLIC):"),
+    ("a product page sits on a private name",
+     "    if not _HOSTNAME.fullmatch(host) or host.endswith(_NOT_PUBLIC):",
+     "    if not _HOSTNAME.fullmatch(host):"),
+
+    # ── a substitute: the owner's answer, and silence ───────────────────────
+    ("a stranger answers a proposal",
+     '            _refuse("only the owner answers a proposed substitute")', "            pass"),
+    ("the owner answers after the window",
+     '        if now > _parse_iso(s["respond_by"]):', "        if False:"),
+    ("the owner answers a proposal already before the validators",
+     '        if not s or s["status"] != "PROPOSED":', "        if not s:"),
+    ("anything truthy counts as the owner's yes",
+     "        if agree is True:", "        if agree:"),
+    ("a refusal needs no grounds",
+     "            if not grounds:", "            if False:"),
+    ("a no on a plain line goes to the validators",
+     '            if s["or_equivalent"]:\n                s["status"] = "CONTESTED"',
+     '            if True:\n                s["status"] = "CONTESTED"'),
+    ("a no on an or-equivalent line ends the matter",
+     '            if s["or_equivalent"]:\n                s["status"] = "CONTESTED"',
+     '            if False:\n                s["status"] = "CONTESTED"'),
+    ("a stranger withdraws a proposal",
+     '            _refuse("only the installer withdraws their proposal")', "            pass"),
+    ("a proposal is decided while the owner may still answer",
+     '            if now <= _parse_iso(s["respond_by"]):', "            if False:"),
+    ("silence on a plain line is put to the validators",
+     '            if not s["or_equivalent"]:', "            if False:"),
+
+    # ── a substitute: the page, and what code takes from a reading ──────────
+    ("a page too short to be a page is weighed",
+     '        at = _find_model(page, s["substitute"]["model"]) if len(page) >= PAGE_MIN_CHARS else -1',
+     '        at = _find_model(page, s["substitute"]["model"])'),
+    ("a page that never names the model is weighed",
+     "        if at < 0:\n            found[\"reasoning\"]",
+     "        if len(page) < PAGE_MIN_CHARS:\n            found[\"reasoning\"]"),
+    ("an error page is read as the product page",
+     '            if int(getattr(got, "status", 0)) != 200:', "            if False:"),
+    ("text inside a script names the model",
+     '_BLOCK_TAGS = ("script", "style", "noscript", "template", "svg")', "_BLOCK_TAGS = ()"),
+    ("a two-character model is found in any page",
+     "    if len(key) < MODEL_KEY_MIN:\n        return -1", "    if False:\n        return -1"),
+    ("a longer model number counts as the one proposed",
+     "        if built == key:\n            return at",
+     "        if built.startswith(key):\n            return at"),
+    ("a page nobody could read is recorded as a refusal", [
+        ('        if verdict == "UNREAD":', "        if False:")]),
+    ("an unread page is weighed like a read one",
+     '    if found["page_chars"] < PAGE_MIN_CHARS:\n        return "UNREAD"',
+     '    if False:\n        return "UNREAD"'),
+    ("a page nobody answerable published approves a substitute",
+     '    if not found["names_model"] or found["publisher"] == "UNKNOWN":',
+     '    if not found["names_model"]:'),
+    ("the verdict ignores whether the page names the model",
+     '    if not found["names_model"] or found["publisher"] == "UNKNOWN":',
+     '    if found["publisher"] == "UNKNOWN":'),
+    ("equipment of another role approves",
+     '    if not found["same_role"] or found["meets"] == "NO":', '    if found["meets"] == "NO":'),
+    ("a shortfall the page shows is only doubt",
+     '    if not found["same_role"] or found["meets"] == "NO":', '    if not found["same_role"]:'),
+    ("a page that does not give the figures approves",
+     '    if found["meets"] == "YES":\n        return "EQUIVALENT"',
+     '    if True:\n        return "EQUIVALENT"'),
+    ("anything truthy counts as the same role",
+     '        "same_role": raw.get("same_role") is True,',
+     '        "same_role": bool(raw.get("same_role")),'),
+    ("anything truthy counts as naming the model",
+     '        "names_model": raw.get("names_model") is True,',
+     '        "names_model": bool(raw.get("names_model")),'),
+    ("any word a node sends counts as a publisher",
+     '        "publisher": publisher if publisher in PAGE_PUBLISHERS else "UNKNOWN",',
+     '        "publisher": publisher or "UNKNOWN",'),
+    ("a node reports a page longer than a page can be",
+     '        "page_chars": chars if type(chars) is int and 0 <= chars <= PAGE_RAW_MAX else 0,',
+     '        "page_chars": chars if type(chars) is int and 0 <= chars else 0,'),
+    ("true counts as a page length",
+     '        "page_chars": chars if type(chars) is int and 0 <= chars <= PAGE_RAW_MAX else 0,',
+     '        "page_chars": chars if isinstance(chars, int) and 300 * chars <= PAGE_RAW_MAX else 0,'),
+    ("what is not findings is read as findings",
+     '    if not isinstance(raw, dict):\n        raise gl.vm.UserError(f"{ERROR_LLM} the validators returned no usable findings")',
+     '    if not isinstance(raw, dict):\n        raw = {}'),
+    ("a node's reasoning is stored at any length",
+     '        "reasoning": _clean(raw.get("reasoning"), 900) if isinstance(raw.get("reasoning"), str)',
+     '        "reasoning": raw.get("reasoning") if isinstance(raw.get("reasoning"), str)'),
+    ("the prompt carries the whole page",
+     "    return page[start:start + PAGE_EXCERPT_CHARS]", "    return page[start:]"),
+    ("the prompt carries the top of the page whatever it names",
+     "    start = max(0, at - PAGE_EXCERPT_CHARS // 3)", "    start = 0"),
+    ("page text closes a fence",
+     'f"<<<BEGIN PAGE\\n{_defuse(excerpt)}\\nEND PAGE>>>\\n"',
+     'f"<<<BEGIN PAGE\\n{excerpt}\\nEND PAGE>>>\\n"'),
+    ("the installer's reason closes a fence",
+     'f"<<<BEGIN REASON\\n{_defuse(s[\'reason\'])}\\nEND REASON>>>\\n"',
+     'f"<<<BEGIN REASON\\n{s[\'reason\']}\\nEND REASON>>>\\n"'),
+    ("the owner's objection closes a fence",
+     'f"<<<BEGIN OBJECTION\\n{_defuse(s[\'objection\'])}\\nEND OBJECTION>>>"',
+     'f"<<<BEGIN OBJECTION\\n{s[\'objection\']}\\nEND OBJECTION>>>"'),
+    ("a second substitute is measured against the first, not against what was signed",
+     '        old, new = s["signed"], s["substitute"]', '        old, new = s["replaces"], s["substitute"]'),
+    # ("a leader result that is not a dict is weighed") is left out: with the
+    # check removed the rebuild of the findings raises inside the validator,
+    # and a validator that raises has not agreed. Equivalent.
+
+    # ── a substitute: consensus, and when it is in force ────────────────────
+    ("a substitute is approved without the validator's own approval",
+     '            if (theirs == "EQUIVALENT") != (mine == "EQUIVALENT"):', "            if False:"),
+    ("a failed reading of the page is agreed with",
+     '                print("[DISAGREE] the leader\'s reading failed")\n                return False',
+     '                print("mutant")\n                return True'),
+    ("a validator that could not weigh the substitute agrees",
+     '                print("[DISAGREE] this validator could not weigh the substitute: " + str(e)[:200])\n'
+     "                return False",
+     '                print("mutant")\n                return True'),
+    ("any verdict puts the substitute in force",
+     '        s["status"] = "APPROVED" if verdict == "EQUIVALENT" else "REFUSED"',
+     '        s["status"] = "APPROVED"'),
+    ("a proposal changes the schedule before anyone agrees to it",
+     '            if int(s["version"]) != int(version) or s["status"] not in SUBSTITUTION_IN_FORCE:',
+     '            if int(s["version"]) != int(version):'),
+    ("a substitute follows the milestone into new terms",
+     '            if int(s["version"]) != int(version) or s["status"] not in SUBSTITUTION_IN_FORCE:',
+     '            if s["status"] not in SUBSTITUTION_IN_FORCE:'),
+    ("an open proposal survives the signing of new terms",
+     '        self._void_substitution(m, "new terms were signed")', "        pass"),
+    ("an open proposal survives the closing of its milestone",
+     '        self._void_substitution(m, "the milestone closed")', "        pass"),
+    ("a round runs while the schedule is in question",
+     '        if self._open_substitution(m):\n'
+     '            _refuse("a substitution is open on this milestone; it is answered or "\n'
+     '                    "withdrawn before the evidence is judged")',
+     "        pass"),
+    ("a decision is appealed while the schedule is in question",
+     '        if self._open_substitution(m):\n'
+     '            _refuse("a substitution is open on this milestone; it is answered or "\n'
+     '                    "withdrawn before the decision is appealed")',
+     "        pass"),
+
+    # ── the cure round ──────────────────────────────────────────────────────
+    ("a stranger asks for a cure round",
+     '            _refuse("only the installer asks for a cure round")', "            pass"),
+    ("a cure carries findings from a decision that lapsed on appeal",
+     '        if standing["kind"] == "APPEAL_LAPSED":', "        if False:"),
+    ("a cure carries findings from a decision that found conflict",
+     '        if base["conflicts_detected"]:', "        if False:"),
+    ("a cure is heard after its period",
+     '            _refuse("the period for curing this decision has ended")', "            pass"),
+    ("a cure asks the same question again on the same evidence",
+     "        if not any(_num(e) > mark for e in chosen):", "        if False:"),
+    ("an item held back from the decision counts as filed since",
+     '            # what a cure may rest on.\n'
+     '            "item_mark": int(self.counters.get("item") or "0"),',
+     '            # what a cure may rest on.\n'
+     '            "item_mark": max([_num(e) for e in eids] or [0]),'),
+    ("a line the decision found missing is carried as installed",
+     '                      if base["lines"][line["id"]] != "INSTALLED" or line["id"] in changed]',
+     '                      if line["id"] in changed]'),
+    ("a line substituted since the decision is carried as installed",
+     '                      if base["lines"][line["id"]] != "INSTALLED" or line["id"] in changed]',
+     '                      if base["lines"][line["id"]] != "INSTALLED"]'),
+    ("a criterion left open is carried as met",
+     '                         if status != "MET" or changed]', "                         if changed]"),
+    ("a criterion met with the old equipment is carried over to the new",
+     '                         if status != "MET" or changed]', '                         if status != "MET"]'),
+    ("a criterion already met is judged again",
+     '                         if status != "MET" or changed]', "                         if True]"),
+    ("a cure round rates lines the decision settled",
+     '                      if scope is None or line["id"] in scope["lines"]]',
+     "                      if True]"),
+    ("a cure round rates criteria the decision settled",
+     '                         if scope is None or c["id"] in scope["criteria"]]',
+     "                         if True]"),
+    ("cure rounds are not counted against the allowance",
+     '        if kind in ("ASSESSMENT", "CURE"):\n            m["version_assessments"]',
+     '        if kind == "ASSESSMENT":\n            m["version_assessments"]'),
+    ("a cured decision cannot be appealed",
+     '        appealable = kind in ("ASSESSMENT", "CURE") \\',
+     '        appealable = kind == "ASSESSMENT" \\'),
+    ("every cure round renews the cure period",
+     '        if kind == "ASSESSMENT" or (kind == "APPEAL" and appeal["against"] == "ACCEPTED"):',
+     '        if kind != "APPEAL" or (kind == "APPEAL" and appeal["against"] == "ACCEPTED"):'),
+    ("an acceptance lost on appeal leaves no time to cure",
+     '        if kind == "ASSESSMENT" or (kind == "APPEAL" and appeal["against"] == "ACCEPTED"):',
+     '        if kind == "ASSESSMENT":'),
+    ("the installer's own appeal renews the cure period",
+     '        if kind == "ASSESSMENT" or (kind == "APPEAL" and appeal["against"] == "ACCEPTED"):',
+     '        if kind == "ASSESSMENT" or kind == "APPEAL":'),
+    ("evidence in conflict leaves a cure period open",
+     '        if outcome["conflicts"]:\n            # Evidence in conflict settles',
+     '        if False:\n            # Evidence in conflict settles'),
+    ("an acceptance leaves a cure period open",
+     '            m["cure_until"] = None if outcome["decision"] == "ACCEPTED" else \\',
+     '            m["cure_until"] = None if False else \\'),
+    ("a decision at the deadline leaves no time to cure",
+     "                _iso(max(deadline, now + timedelta(seconds=window)))", "                _iso(deadline)"),
+    ("a cure period cuts the time to the deadline short",
+     "                _iso(max(deadline, now + timedelta(seconds=window)))",
+     "                _iso(now + timedelta(seconds=window))"),
+    ("the cure period is not time in which work is heard",
+     '        if m.get("cure_until"):\n            ends = max(', '        if False:\n            ends = max('),
+    ("a milestone closes inside its cure period",
+     "            if now <= self._work_ends(m):", "            if False:"),
+    ("a cure period outlives the terms it belonged to",
+     '        m["cure_until"] = None\n        self._void_substitution(m, "new terms were signed")',
+     '        self._void_substitution(m, "new terms were signed")'),
+    ("an appeal of a cured decision reads only the cure's own evidence",
+     '        recorded = list(prior["chain"])',
+     '        recorded = [row["item_id"] for row in prior["evidence"]]'),
+    ("an appeal sweeps in everything filed since the decision",
+     '                       "item_mark": int(self.counters.get("item") or "0"),',
+     '                       "item_mark": int(standing["item_mark"]),'),
+    ("a cure's record forgets the evidence it carries findings from",
+     '            "chain": (list(base["chain"]) + [e for e in eids if e not in base["chain"]])\n'
+     "                     if base else list(eids),",
+     '            "chain": list(eids),'),
+    ("a round records the schedule as signed, not as judged",
+     '            "schedule": outcome["equipment"],',
+     '            "schedule": self._terms(m, version)["equipment"],'),
 ]
 
 
+TESTS = ["tests/direct/"]
+
+
 def suite_passes(work: pathlib.Path) -> tuple:
-    r = subprocess.run([sys.executable, "-m", "pytest", "tests/direct/", "-q", "-x",
+    r = subprocess.run([sys.executable, "-m", "pytest", *TESTS, "-q", "-x",
                         "--tb=no", "-p", "no:cacheprovider"],
                        cwd=work, capture_output=True, text=True)
     tail = [ln for ln in r.stdout.splitlines() if ln.strip()][-1:] or [""]
@@ -242,6 +509,16 @@ def apply(text: str, edits: list):
 
 
 def main() -> int:
+    words, since = [], 0
+    for arg in sys.argv[1:]:
+        if arg.startswith("--since="):
+            since = int(arg.split("=", 1)[1])
+        elif arg.startswith("--tests="):
+            TESTS[:] = arg.split("=", 1)[1].split(",")
+        else:
+            words.append(arg.lower())
+    chosen = [m for m in MUTATIONS[since:]
+              if not words or any(w in m[0].lower() for w in words)]
     survivors = []
     with tempfile.TemporaryDirectory(prefix="icarus-mutants-") as tmp:
         work = pathlib.Path(tmp)
@@ -250,7 +527,7 @@ def main() -> int:
                         ignore=shutil.ignore_patterns("__pycache__", "mutation"))
         shutil.copy(REPO / "pyproject.toml", work / "pyproject.toml")
         target = work / "contracts" / "icarus.py"
-        for entry in MUTATIONS:
+        for entry in chosen:
             name = entry[0]
             edits = entry[1] if isinstance(entry[1], list) else [(entry[1], entry[2])]
             mutant = apply(TEXT, edits)
@@ -266,7 +543,7 @@ def main() -> int:
         target.write_text(TEXT, encoding="utf-8", newline="\n")
         passed, tail = suite_passes(work)
     print(f"control, the contract as written: {'passes' if passed else 'FAILS'} ({tail})")
-    print(f"{len(MUTATIONS) - len(survivors)}/{len(MUTATIONS)} mutants killed")
+    print(f"{len(chosen) - len(survivors)}/{len(chosen)} mutants killed")
     if survivors:
         print("survivors: " + "; ".join(survivors))
     return 0 if passed and not survivors else 1

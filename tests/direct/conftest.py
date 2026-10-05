@@ -14,6 +14,10 @@
   THE CLOCK. `set_now(iso)` sets the transaction datetime; nothing advances
   on its own, so both sides of every deadline and window are testable.
 
+  THE WEB. `gl.nondet.web.get` answers from `web_page(url, body)`; the leader
+  and the validator can be served different pages, and a link nobody
+  registered answers 404, so a round can never read the real network.
+
   MONEY. `pay(who, wei)` sets the transaction value; `_Payee.emit_transfer`
   appends to `transfers()`. A public write that raises reverts every tree,
   like the runtime, so a refusal can never leave half a state behind.
@@ -50,6 +54,8 @@ _FORGED = []
 _ACCEPTED = []
 _PRINTS = []
 _TRANSFERS = []
+_PAGES = {"leader": {}, "validator": {}}
+_FETCHES = []
 _NOW = [datetime(2026, 9, 20, 9, 0, 0, tzinfo=timezone.utc)]
 
 
@@ -196,6 +202,23 @@ def _exec_prompt(prompt, response_format=None, images=None):
     return answer
 
 
+class _Fetched:
+    def __init__(self, status, body):
+        self.status = status
+        self.body = body
+
+
+def _web_get(url):
+    role = _ROLE[0]
+    _FETCHES.append({"role": role, "url": url})
+    served = _PAGES[role].get(url, _PAGES["leader"].get(url))
+    if served is None:
+        return _Fetched(404, b"")
+    if isinstance(served, BaseException):
+        raise served
+    return _Fetched(*served)
+
+
 class _PayeeProxy:
     def __init__(self, addr):
         self.addr = str(addr)
@@ -220,7 +243,7 @@ def _install():
     gl.vm = types.SimpleNamespace(UserError=_UserError, VMError=_VMError,
                                   Return=_Return, run_nondet=_run_nondet)
     gl.nondet = types.SimpleNamespace(exec_prompt=_exec_prompt,
-                                      web=types.SimpleNamespace())
+                                      web=types.SimpleNamespace(get=_web_get))
     gl.message = types.SimpleNamespace(sender_address=DEPLOYER, value=0)
     gl.evm = types.SimpleNamespace(contract_interface=_contract_interface)
     gl_types = types.ModuleType("genlayer.types")
@@ -283,7 +306,9 @@ _PUBLIC_WRITES = ("create_project", "fund_project", "accept_project", "accept_in
                   "cancel_project", "withdraw_escrow", "add_milestone", "propose_version",
                   "accept_version", "submit_image", "submit_document", "submit_declaration",
                   "request_assessment", "open_appeal", "decide_appeal", "lapse_appeal",
-                  "finalize", "close_milestone", "claim")
+                  "finalize", "close_milestone", "claim", "request_cure",
+                  "propose_substitution", "answer_substitution", "withdraw_substitution",
+                  "decide_substitution")
 
 
 def _revert_on_raise(inst, name):
@@ -328,6 +353,9 @@ def _reset():
     _ACCEPTED.clear()
     _PRINTS.clear()
     _TRANSFERS.clear()
+    _PAGES["leader"].clear()
+    _PAGES["validator"].clear()
+    _FETCHES.clear()
     _NOW[0] = datetime(2026, 9, 20, 9, 0, 0, tzinfo=timezone.utc)
 
 
@@ -367,6 +395,17 @@ def prints():
 
 def transfers():
     return list(_TRANSFERS)
+
+
+def web_page(url, body, status=200, validator=None):
+    """Serve a page to every node; `validator` serves that role another body."""
+    _PAGES["leader"][url] = body if isinstance(body, BaseException) else (status, body)
+    if validator is not None:
+        _PAGES["validator"][url] = (status, validator)
+
+
+def fetches(role=None):
+    return [f["url"] for f in _FETCHES if role is None or f["role"] == role]
 
 
 def forge_leader(value):
