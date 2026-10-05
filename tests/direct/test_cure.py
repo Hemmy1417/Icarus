@@ -455,6 +455,31 @@ class TestTheCurePeriod:
         as_(module, STRANGER)
         assert json.loads(c.close_milestone(mid))["state"] == "CLOSED"
 
+    def test_a_line_the_evidence_disagrees_about_settles_nothing_either(self, module, c):
+        """A panel can rate one line as contradicted without calling the
+        whole case a conflict. The other findings rest on the same evidence,
+        so nothing is carried from such a decision."""
+        _, mid, _ = fell_short(module, c, lines={"E2": "CONTRADICTED"})
+        assert milestone(c, mid)["state"] == "UNDETERMINED"
+        assert milestone(c, mid)["cure_until"] is None
+        fresh = nameplate(module, c, mid)
+        as_(module, INSTALLER)
+        with pytest.raises(err(module), match="found the evidence in conflict"):
+            c.request_cure(mid, json.dumps([fresh]))
+
+    def test_the_last_round_the_terms_allow_opens_no_cure_period(self, module, c):
+        _, mid, first = fell_short(module, c)
+        for n in range(3):
+            assess(module, c, mid, first, judge=judge_answer(
+                {"E1": "INSTALLED", "E2": "ABSENT", "E3": "INSTALLED"}, {"C1": "MET"},
+                basis={k: first for k in ALL}))
+            assert milestone(c, mid)["cure_until"] == "2026-10-20T12:00:00Z"
+        assess(module, c, mid, first, judge=judge_answer(
+            {"E1": "INSTALLED", "E2": "ABSENT", "E3": "INSTALLED"}, {"C1": "MET"},
+            basis={k: first for k in ALL}))
+        m = milestone(c, mid)
+        assert m["version_assessments"] == 5 and m["cure_until"] is None
+
     def test_a_cure_round_that_finds_conflict_ends_the_cure_period(self, module, c):
         set_now("2026-10-20T11:30:00Z")
         _, mid, _ = fell_short(module, c)
@@ -596,21 +621,28 @@ class TestTheOwnersReach:
         as_(module, INSTALLER)
         assert json.loads(c.open_appeal(mid, "The label reads VT-50K."))["against"] == "REJECTED"
 
-    def test_an_appeal_reads_the_chain_and_what_its_evidence_period_brought(self, module, c):
-        """What was filed between a decision and its appeal, and never put
-        to a round, is not swept into the appeal: the allowance is counted
-        from the moment the appeal opens, and so is what it reads."""
+    def test_an_appeal_reads_the_chain_the_other_parties_and_its_own_evidence_period(
+            self, module, c):
+        """From the installer, an appeal reads what the appealed decision
+        rests on and what its own evidence period brought: not everything
+        left unpresented since. From the owner and the inspector it reads
+        everything, whenever filed, as every round does. Evidence filed in
+        answer to a rejection is not lost because the installer appealed
+        instead of curing."""
         _, mid, first = fell_short(module, c)
         unused = [image(module, c, mid, caption=f"Unused {i}") for i in range(6)]
-        theirs = image(module, c, mid, who=OWNER, req="", caption="The wall on Tuesday")
+        theirs = [image(module, c, mid, who=OWNER, req="", caption=f"The wall, view {i}")
+                  for i in range(3)]
         as_(module, INSTALLER)
         c.open_appeal(mid, "The wall is the right wall.")
-        assert milestone(c, mid)["appeal"]["item_mark"] == 9
+        assert milestone(c, mid)["appeal"]["item_mark"] == 11
+        as_(module, OWNER)
+        with pytest.raises(err(module), match="you have filed the 3 images"):
+            c.submit_image(mid, "{}", b"\xff\xd8\xff\xe0again")
         late = [image(module, c, mid, caption=f"For the appeal {i}") for i in range(2)]
         as_(module, INSTALLER)
         with pytest.raises(err(module), match="at most 2 new images from each party"):
             c.submit_image(mid, "{}", b"\xff\xd8\xff\xe0third")
-        answer = image(module, c, mid, who=OWNER, req="", caption="The wall today")
         set_now("2026-09-20T10:00:01Z")
         reset_prompts()
         llm(look=look_all(), judge=judge_answer(
@@ -618,11 +650,11 @@ class TestTheOwnersReach:
             basis={k: first for k in ALL}))
         as_(module, STRANGER)
         out = json.loads(c.decide_appeal(mid))
-        assert out["new_items"] == late + [answer]
+        assert out["new_items"] == theirs + late
         read = [row["item_id"] for row in rounds(c, mid, 2)["evidence"]]
-        assert read == first + late + [answer]
-        assert not set(unused) & set(read) and theirs not in read
-        assert sum(p["images"] for p in prompts(kind="look", role="leader")) == 5
+        assert read == first + theirs + late
+        assert not set(unused) & set(read)
+        assert sum(p["images"] for p in prompts(kind="look", role="leader")) == 7
 
 class TestWithASubstitute:
     PAGE = "https://www.solvanta-power.com/products/sv-50h"
@@ -701,16 +733,31 @@ class TestWithASubstitute:
                                                         basis={"E2": [fresh]}))
         assert out["carried"]["lines"] == ["E1", "E3"]
 
-    def test_an_appeal_judges_against_the_schedule_in_force(self, module, c):
+    def test_a_decision_about_another_schedule_is_cured_not_appealed(self, module, c):
+        """An appeal says the panel judged wrongly, and its acceptance is
+        final. A panel that rejected the old product did not judge the new
+        one, so the installer goes by the cure round, whose acceptance the
+        owner can still contest."""
         _, mid, first = fell_short(module, c)
         self.agreed(module, c, mid)
         as_(module, INSTALLER)
-        c.open_appeal(mid, "The unit on the wall is the one now agreed.")
-        set_now("2026-09-20T10:00:01Z")
-        reset_prompts()
-        llm(look=look_all(), judge=judge_all(basis={k: first for k in ALL}))
-        as_(module, STRANGER)
-        assert json.loads(c.decide_appeal(mid))["decision"] == "ACCEPTED"
-        assert "E2 inverter: Solvanta SV-50H" in prompts(kind="judge",
-                                                         role="leader")[0]["prompt"]
-        assert rounds(c, mid, 2)["schedule"][1]["substitution"] == "S1"
+        with pytest.raises(err(module), match="a substitute has come into force since"):
+            c.open_appeal(mid, "The unit on the wall is the one now agreed.")
+        assert milestone(c, mid)["state"] == "REJECTED"
+        fresh = nameplate(module, c, mid)
+        out = cure(module, c, mid, [fresh], judge_answer(
+            {"E2": "INSTALLED"}, {"C1": "MET"}, basis={"E2": [fresh], "C1": [fresh]}))
+        assert out["decision"] == "ACCEPTED"
+        assert milestone(c, mid)["standing"]["appealable"] is True
+
+    def test_a_substitute_that_did_not_come_into_force_bars_no_appeal(self, module, c):
+        _, mid, _ = fell_short(module, c)
+        as_(module, INSTALLER)
+        c.propose_substitution(mid, "E2", json.dumps(
+            {"manufacturer": "Solvanta", "model": "SV-50H", "rating": "50 kW", "page": self.PAGE,
+             "reason": "Supply."}))
+        as_(module, OWNER)
+        c.answer_substitution(mid, False, "We signed for the Volterra unit.")
+        as_(module, INSTALLER)
+        assert json.loads(c.open_appeal(mid, "The wall is the right wall."))["against"] == "REJECTED"
+

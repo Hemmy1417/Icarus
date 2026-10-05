@@ -135,6 +135,7 @@ export const quality = (s: string) => label(QUALITY, s);
 
 const ROUND_KIND: Record<string, string> = {
   ASSESSMENT: "Assessment",
+  CURE: "Cure round",
   APPEAL: "Appeal",
 };
 export const roundKind = (s: string) => label(ROUND_KIND, s);
@@ -183,6 +184,15 @@ const EVENT: Record<string, string> = {
   APPEAL_LAPSED: "Appeal lapsed undecided",
   MILESTONE_PAID: "Milestone settled",
   MILESTONE_CLOSED: "Milestone closed",
+  SUBSTITUTION_PROPOSED: "Substitute proposed",
+  SUBSTITUTION_AGREED: "Owner agreed to the substitute",
+  SUBSTITUTION_DECLINED: "Owner declined the substitute",
+  SUBSTITUTION_CONTESTED: "Owner objected; validators to decide",
+  SUBSTITUTION_APPROVED: "Validators approved the substitute",
+  SUBSTITUTION_REFUSED: "Validators refused the substitute",
+  SUBSTITUTION_WITHDRAWN: "Substitute withdrawn",
+  SUBSTITUTION_LAPSED: "Proposal lapsed unanswered",
+  SUBSTITUTION_VOID: "Open proposal set aside",
 };
 export const eventKind = (s: string) => label(EVENT, s);
 
@@ -390,6 +400,84 @@ export function shortAddress(addr: string): string {
 export function shortDigest(hex: string): string {
   const h = String(hex ?? "");
   return h.length > 16 ? `${h.slice(0, 8)}…${h.slice(-8)}` : h;
+}
+
+/** A product as a person would say it: "Growatt MOD 4000TL3-X, 4 kW". */
+export function productName(p: { manufacturer?: string; model?: string; rating?: string }): string {
+  const made = [p.manufacturer, p.model].filter(Boolean).join(" ").trim();
+  return p.rating ? `${made}, ${p.rating}` : made;
+}
+
+/**
+ * Where a proposed substitute stands, as a short heading. The nine states
+ * the contract keeps come down to three things a reader needs to know: is it
+ * still open, did it change the line, or did it not.
+ */
+const SUBSTITUTION_STATUS: Record<string, string> = {
+  PROPOSED: "Awaiting the owner",
+  CONTESTED: "With the validators",
+  AGREED: "In force by agreement",
+  APPROVED: "In force, approved as equivalent",
+  DECLINED: "Declined by the owner",
+  REFUSED: "Refused by the validators",
+  WITHDRAWN: "Withdrawn",
+  LAPSED: "Lapsed unanswered",
+  VOID: "Set aside",
+};
+export const substitutionStatus = (s: string) => label(SUBSTITUTION_STATUS, s);
+
+/** The same, as the sentence that says what happened and what it means. */
+const SUBSTITUTION_SAID: Record<string, string> = {
+  PROPOSED:
+    "The installer has asked to fit this in place of the product on the line. The owner has yet to answer.",
+  CONTESTED:
+    "The owner objected. The signed line allows an equivalent, so the validators each read the product page and decide whether it is one.",
+  AGREED: "The owner agreed. Every later reading of the evidence is judged against this product.",
+  APPROVED:
+    "The owner objected or did not answer, and validators who each read the product page found it equivalent. Every later reading of the evidence is judged against this product.",
+  DECLINED:
+    "The owner said no. The line was signed for one product and no other, so that ends it and the line is unchanged.",
+  REFUSED: "Validators who each read the product page did not find it equivalent. The line is unchanged.",
+  WITHDRAWN: "The installer took the proposal back. The line is unchanged.",
+  LAPSED:
+    "The owner did not answer in time. The line was signed for one product and no other, and silence is not agreement, so the line is unchanged.",
+  VOID: "The proposal was still open when the terms it was made under ended. The line is unchanged.",
+};
+export const substitutionSaid = (s: string) => SUBSTITUTION_SAID[String(s ?? "")] ?? "";
+
+/** Why the validators did not approve, in the words of the rule that decided it. */
+const VERDICT_SAID: Record<string, string> = {
+  EQUIVALENT:
+    "The page names the product, somebody answerable for it published the page, it is the same kind of equipment, and its own figures meet what the line asks.",
+  NOT_EQUIVALENT:
+    "The page documents the product, and by the page's own figures it is a different kind of equipment or falls short of what the line asks.",
+  UNPROVEN:
+    "The page does not establish the product: it never names the model, nobody answerable for the product published it, or it does not give the figures needed.",
+};
+export const verdictSaid = (s: string | null | undefined) => VERDICT_SAID[String(s ?? "")] ?? "";
+
+const PUBLISHER: Record<string, string> = {
+  MANUFACTURER: "The maker's own page",
+  DISTRIBUTOR: "A seller's catalogue",
+  REGISTRY: "A certification body or public register",
+  UNKNOWN: "No publisher answerable for the product",
+};
+export const publisher = (s: string) => label(PUBLISHER, s);
+
+const MEETS: Record<string, string> = {
+  YES: "Meets what the line asks",
+  NO: "Falls short of what the line asks",
+  UNCLEAR: "The page does not give the figures",
+};
+export const meets = (s: string) => label(MEETS, s);
+
+/** A web address shown as the site it sits on, never as a raw link in a sentence. */
+export function siteOf(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "";
+  }
 }
 
 /** One short caption for where a milestone stands on appeal, or "" for none.

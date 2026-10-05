@@ -13,7 +13,7 @@ import { useState } from "react";
 
 import { Button, Card, Hairline } from "./bits";
 import { TxPanel, type TxOutcome } from "./TxPanel";
-import type { Act, ActId } from "@/lib/acts";
+import { methodOf, type Act, type ActId } from "@/lib/acts";
 import { CONTRACT_ADDRESS } from "@/lib/config";
 import { useTransactionKit } from "@/lib/kit";
 import { gen, parseGen } from "@/lib/present";
@@ -33,6 +33,12 @@ const LABEL: Record<ActId, string> = {
   submit_document: "File a document",
   submit_declaration: "Record a statement",
   request_assessment: "Ask a panel to assess it",
+  request_cure: "Ask for a cure round",
+  propose_substitution: "Propose a substitute",
+  agree_substitution: "Agree to the substitute",
+  decline_substitution: "Say no to the substitute",
+  withdraw_substitution: "Withdraw your proposal",
+  decide_substitution: "Have the proposal decided",
   open_appeal: "Contest this decision",
   decide_appeal: "Have a fresh panel decide",
   lapse_appeal: "Close the undecided appeal",
@@ -55,6 +61,11 @@ const INPUT: Partial<Record<ActId, Input>> = {
     label: "Amount to take back",
     help: "Only escrow that no milestone has reserved can be withdrawn.",
   },
+  decline_substitution: {
+    kind: "text",
+    label: "What is wrong with the substitute",
+    help: "If the validators come to decide this, they read it as your argument. It is not evidence: they judge the product page itself.",
+  },
   open_appeal: {
     kind: "text",
     label: "Why you are contesting this",
@@ -71,12 +82,15 @@ const ELSEWHERE: Partial<Record<ActId, string>> = {
   submit_image: "Use the evidence panel below",
   submit_document: "Use the evidence panel below",
   submit_declaration: "Use the evidence panel below",
+  request_assessment: "Choose what to present below",
+  request_cure: "Choose what to present below",
+  propose_substitution: "Use the substitute panel below",
 };
 
 /** The round writes take minutes, so the panel says what is happening. */
 const WORKING: Partial<Record<ActId, string>> = {
-  request_assessment: "Each validator is reading the photographs and matching them to the schedule.",
   decide_appeal: "A fresh panel is judging the milestone from the start.",
+  decide_substitution: "Each validator is fetching the product page and reading it for itself.",
 };
 
 export function Acts({
@@ -228,7 +242,7 @@ export function Acts({
                 <div className="mt-5">
                   <TxPanel
                     kit={kit}
-                    tx={{ kind: "write", address: CONTRACT_ADDRESS, method: signing.id, args: signing.args }}
+                    tx={{ kind: "write", address: CONTRACT_ADDRESS, method: methodOf(signing.id), args: signing.args }}
                     value={signing.value}
                     confirmText={LABEL[signing.id]}
                     working={WORKING[signing.id]}

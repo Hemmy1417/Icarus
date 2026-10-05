@@ -49,6 +49,7 @@ function milestone(over: Partial<Milestone> = {}): Milestone {
       deadline: iso(NOW + 14 * 86_400_000), equipment: [], criteria: [], evidence_requirements: [],
     }],
     evidence: {}, rounds_count: 0, version_assessments: 0, standing: null, appeal: null,
+    substitutions: [], schedule: [], cure_until: null,
     reserved_wei: "2000000000000000000", created_at: iso(NOW - 86_400_000),
     closed_at: null, close_reason: null, now: iso(NOW), ...over,
   };
@@ -456,7 +457,7 @@ describe("the project", () => {
         milestone_id: "ms-00001", index: 0, title: "", milestone_type: "COMMISSIONING",
         state: "FINALIZED", deadline: iso(NOW), payment_wei: "0", current_version: 1,
         latest_version: 1, pending_version: null, rounds_count: 1, schedule_lines: 1,
-        standing: null, appeal: null,
+        standing: null, appeal: null, cure_until: null, open_substitution: false,
       }],
     });
     expect(projectActs(p, OWNER).find((x) => x.id === "cancel_project")?.available).toBe(false);

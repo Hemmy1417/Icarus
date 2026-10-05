@@ -21,20 +21,24 @@ import { Acts } from "@/components/Acts";
 import { Loading, ReadFailure, Tag } from "@/components/bits";
 import { EvidenceFigure } from "@/components/Evidence";
 import { FilePanel } from "@/components/FilePanel";
-import { appealStanding, currentEvidence, milestoneActs } from "@/lib/acts";
+import { PresentPanel } from "@/components/PresentPanel";
+import { SubstitutePanel } from "@/components/SubstitutePanel";
+import { appealStanding, currentEvidence, filedSince, milestoneActs } from "@/lib/acts";
 import { getConfig } from "@/lib/read";
 import { useWallet } from "@/lib/wallet";
 import {
   appealCaption,
   criterionStatus, day, decision, gen, lineName, lineStatus, lineStatusSaid,
-  milestoneState,
-  moment, referenceNames, relative, writeOut,
+  meets, milestoneState,
+  moment, productName, prose, publisher, referenceNames, relative, siteOf, substitutionSaid,
+  substitutionStatus, verdictSaid, writeOut,
 } from "@/lib/present";
 import { getMilestone, getProject, getRound } from "@/lib/read";
 import { roundTx } from "@/lib/txlog";
 import { txUrl } from "@/lib/chain";
 import type {
-  Config, EvidenceItem, Milestone, Project as ProjectRecord, Round, TermsVersion,
+  Config, EquipmentLine, EvidenceItem, Milestone, Project as ProjectRecord, Round, Substitution,
+  TermsVersion,
 } from "@/lib/types";
 import { useChain } from "@/lib/useChain";
 
@@ -69,11 +73,18 @@ export default function CaseSheet({ params }: { params: Promise<{ mid: string }>
   if (!terms) return <div className={`${frame} py-24`}><ReadFailure what="the terms in force" /></div>;
 
   const r = round.data ?? null;
-  const names = referenceNames(terms.equipment, terms.criteria);
+  /* The schedule in force: the signed lines, with any substitute put in place. */
+  const schedule: EquipmentLine[] = m.schedule.length ? m.schedule : terms.equipment;
+  const names = referenceNames(schedule, terms.criteria);
   const items = currentEvidence(m);
   const nowMs = new Date(m.now).getTime();
-  const active = selected ?? terms.equipment[0]?.id ?? null;
-  const line = terms.equipment.find((l) => l.id === active) ?? null;
+  const active = selected ?? schedule[0]?.id ?? null;
+  const line = schedule.find((l) => l.id === active) ?? null;
+  const inForce = (l: EquipmentLine): Substitution | null =>
+    m.substitutions.find((s) => s.id === l.substitution && s.version === m.current_version) ?? null;
+  const curable =
+    (m.state === "REJECTED" || m.state === "UNDETERMINED") && !!m.cure_until
+    && nowMs <= new Date(m.cure_until).getTime();
 
   /* The photographs the panel rested this line on, in the order they were filed. */
   const restedOn: EvidenceItem[] = line && r
@@ -113,6 +124,12 @@ export default function CaseSheet({ params }: { params: Promise<{ mid: string }>
           {appealCaption(appealStanding(m)) ? (
             <span className="type-caption">{appealCaption(appealStanding(m))}</span>
           ) : null}
+          {curable ? (
+            <span className="type-caption">
+              Can be put right, closing {relative(m.cure_until, nowMs)}
+            </span>
+          ) : null}
+          {r?.kind === "CURE" ? <span className="type-caption">Decided by a cure round</span> : null}
           <Link href={`/projects/${m.project_id}`} className="type-caption hover:text-graphite">
             The project
           </Link>
@@ -126,10 +143,12 @@ export default function CaseSheet({ params }: { params: Promise<{ mid: string }>
             What was contracted
           </h2>
           <ul>
-            {terms.equipment.map((l) => {
+            {schedule.map((l) => {
               const status = r?.lines[l.id];
               const drove = r?.decisive.lines.includes(l.id);
               const on = l.id === active;
+              const swapped = inForce(l);
+              const kept = r?.kind === "CURE" && !!r.carried?.lines.includes(l.id);
               return (
                 <li key={l.id}>
                   <button
@@ -151,7 +170,15 @@ export default function CaseSheet({ params }: { params: Promise<{ mid: string }>
                         {status ? lineStatus(status) : "Not yet assessed"}
                       </span>
                       {l.identify ? <span className="type-caption">Nameplate must be legible</span> : null}
+                      {kept ? <span className="type-caption">Kept from the earlier decision</span> : null}
                     </span>
+                    {swapped ? (
+                      <span className="type-caption mt-2 block">
+                        In place of {productName(swapped.signed)}
+                      </span>
+                    ) : l.or_equivalent ? (
+                      <span className="type-caption mt-2 block">Signed with or equivalent</span>
+                    ) : null}
                   </button>
                 </li>
               );
@@ -217,13 +244,25 @@ export default function CaseSheet({ params }: { params: Promise<{ mid: string }>
         </div>
       </section>
 
+      {m.substitutions.length ? <Substitutions list={m.substitutions} nowMs={nowMs} /> : null}
+
       <ActionArea
         mid={mid}
         m={m}
         terms={terms}
+        schedule={schedule}
         addr={wallet.address}
         config={config.data ?? null}
         nowMs={nowMs}
+        standingConflict={
+          !!r && (r.conflicts_detected || Object.values(r.lines).includes("CONTRADICTED"))
+        }
+        scheduleChanged={
+          !!r && schedule.some(
+            (l) => (l.substitution ?? null)
+              !== (r.schedule.find((x) => x.id === l.id)?.substitution ?? null),
+          )
+        }
       />
 
       {r ? <Footer mid={mid} round={r} /> : null}
@@ -239,16 +278,22 @@ function ActionArea({
   mid,
   m,
   terms,
+  schedule,
   addr,
   config,
   nowMs,
+  standingConflict,
+  scheduleChanged,
 }: {
   mid: string;
   m: Milestone;
   terms: TermsVersion;
+  schedule: EquipmentLine[];
   addr: string;
   config: Config | null;
   nowMs: number;
+  standingConflict: boolean;
+  scheduleChanged: boolean;
 }) {
   const project = useChain<ProjectRecord | null>(`project.${m.project_id}`, (fresh) =>
     getProject(m.project_id, fresh),
@@ -261,8 +306,17 @@ function ActionArea({
     addr,
     config,
     nowMs,
+    standingConflict,
+    scheduleChanged,
   });
-  const canFile = acts.some((a) => a.id === "submit_image" && a.available);
+  const can = (id: string) => acts.some((a) => a.id === id && a.available);
+  const canFile = can("submit_image");
+  /* The installer's own readable items, oldest first, for either kind of round. */
+  const mine = (m.evidence[String(m.current_version)] ?? []).filter(
+    (it) => it.role === "INSTALLER" && it.kind !== "DECLARATION",
+  );
+  const since = filedSince(m).map((it) => it.item_id);
+  const caps = config?.max_named ?? { IMAGE: 4, TEXT: 4 };
 
   return (
     <section className="flex flex-col gap-8 border-t border-mist py-20">
@@ -274,7 +328,10 @@ function ActionArea({
           // moment a second revision existed.
           accept_version: [mid, m.pending_version ?? m.current_version],
           propose_version: [mid],
-          request_assessment: [mid, "[]"],
+          agree_substitution: [mid, true, ""],
+          decline_substitution: [mid, false],
+          withdraw_substitution: [mid],
+          decide_substitution: [mid],
           open_appeal: [mid],
           decide_appeal: [mid],
           lapse_appeal: [mid],
@@ -283,13 +340,114 @@ function ActionArea({
         }}
         heading="What you can do with this case"
       />
+      {can("request_cure") ? (
+        <PresentPanel milestoneId={mid} mode="request_cure" items={mine} since={since} caps={caps} />
+      ) : null}
+      {can("request_assessment") ? (
+        <PresentPanel
+          milestoneId={mid}
+          mode="request_assessment"
+          items={mine}
+          since={since}
+          caps={caps}
+        />
+      ) : null}
+      {can("propose_substitution") ? (
+        <SubstitutePanel
+          milestoneId={mid}
+          lines={schedule}
+          modelKeyMin={config?.model_key_min}
+          urlMax={config?.url_max}
+        />
+      ) : null}
       {canFile ? (
         <FilePanel
           milestoneId={mid}
-          lines={terms.equipment}
+          lines={schedule}
           requirements={terms.evidence_requirements}
         />
       ) : null}
+    </section>
+  );
+}
+
+/**
+ * Every substitute proposed on this case, newest first, each said as what
+ * happened to it and why. The page it rests on is named by the site it sits
+ * on; what the validators read off it is given in their own sentence.
+ */
+function Substitutions({ list, nowMs }: { list: Substitution[]; nowMs: number }) {
+  return (
+    <section className="border-t border-mist py-20">
+      <h2 className="display mb-10 text-[14px] uppercase tracking-[0.12em] text-slate">
+        Substitutes proposed
+      </h2>
+      <ul className="flex flex-col gap-12">
+        {[...list].reverse().map((s) => (
+          <li key={s.id} className="grid gap-6 lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)] lg:gap-16">
+            <div>
+              <p className="text-[24px] leading-[1.2] tracking-[-0.02em] text-graphite [font-family:var(--font-display)]">
+                {productName(s.substitute)}
+              </p>
+              <p className="type-caption mt-3">In place of {productName(s.replaces)}</p>
+              <p className="mt-4 text-[15px] text-graphite underline decoration-ember decoration-2 underline-offset-4">
+                {substitutionStatus(s.status)}
+              </p>
+              {s.status === "PROPOSED" ? (
+                <p className="type-caption mt-3">The owner may answer, closing {relative(s.respond_by, nowMs)}</p>
+              ) : null}
+            </div>
+            <div className="min-w-0">
+              <p className="max-w-[60ch] text-[17px] leading-[1.6] text-steel">
+                {substitutionSaid(s.status)}
+              </p>
+              <p className="mt-5 max-w-[60ch] text-[15px] leading-[1.6] text-steel">
+                The installer&apos;s reason: &ldquo;{prose(s.reason)}&rdquo;
+              </p>
+              {s.objection ? (
+                <p className="mt-3 max-w-[60ch] text-[15px] leading-[1.6] text-steel">
+                  The owner&apos;s objection: &ldquo;{prose(s.objection)}&rdquo;
+                </p>
+              ) : null}
+              {s.findings ? (
+                <div className="mt-6 border-t border-mist pt-6">
+                  <p className="max-w-[60ch] text-[15px] leading-[1.6] text-graphite">
+                    {verdictSaid(s.verdict)}
+                  </p>
+                  {s.findings.reasoning ? (
+                    <p className="mt-3 max-w-[60ch] text-[15px] leading-[1.6] text-steel">
+                      {prose(s.findings.reasoning)}
+                    </p>
+                  ) : null}
+                  <div className="mt-5 flex flex-wrap gap-3">
+                    {s.findings.names_model ? (
+                      <>
+                        <Tag muted>{publisher(s.findings.publisher)}</Tag>
+                        <Tag muted>{meets(s.findings.meets)}</Tag>
+                      </>
+                    ) : (
+                      <Tag muted>The page does not name the model</Tag>
+                    )}
+                    {s.findings.shortfalls.map((x) => (
+                      <Tag key={x} muted>{prose(x)}</Tag>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+              {siteOf(s.page) ? (
+                <a
+                  href={s.page}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="display mt-6 inline-block text-[15px] text-graphite underline decoration-ember decoration-2 underline-offset-[6px] hover:decoration-graphite"
+                >
+                  The product page on {siteOf(s.page)}
+                </a>
+              ) : null}
+            </div>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

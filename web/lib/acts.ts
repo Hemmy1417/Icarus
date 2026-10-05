@@ -10,7 +10,7 @@
  * live until the instant a window shuts is a button that lies.
  */
 import type {
-  Config, EvidenceItem, Milestone, MilestoneSummary, Project, Role,
+  Config, EvidenceItem, Milestone, MilestoneSummary, Project, Role, Substitution,
 } from "./types";
 
 export const MARGIN_MS = 60_000;
@@ -20,8 +20,20 @@ export type ActId =
   | "cancel_project" | "add_milestone"
   | "propose_version" | "accept_version"
   | "submit_image" | "submit_document" | "submit_declaration"
-  | "request_assessment" | "open_appeal" | "decide_appeal" | "lapse_appeal"
+  | "request_assessment" | "request_cure"
+  | "propose_substitution" | "agree_substitution" | "decline_substitution"
+  | "withdraw_substitution" | "decide_substitution"
+  | "open_appeal" | "decide_appeal" | "lapse_appeal"
   | "finalize" | "close_milestone" | "claim";
+
+/**
+ * The contract method each act signs. Two acts share one: the owner's yes
+ * and the owner's no are the same write with a different answer in it, and
+ * a person should be offered the two as the two different things they are.
+ */
+export function methodOf(id: ActId): string {
+  return id === "agree_substitution" || id === "decline_substitution" ? "answer_substitution" : id;
+}
 
 export interface Act {
   id: ActId;
@@ -124,6 +136,39 @@ export interface MilestoneActsInput {
   config: Config | null;
   /** The chain's clock from the read that produced this record. */
   nowMs: number;
+  /**
+   * Whether the standing decision found the evidence in conflict. Only the
+   * round's own record says so; a caller that has not read it leaves this
+   * out, and the cure is then offered as though it had found none.
+   */
+  standingConflict?: boolean;
+  /** Whether a substitute has come into force since the standing decision. */
+  scheduleChanged?: boolean;
+}
+
+/** The proposal still waiting on an answer or a decision, if there is one. */
+export function openSubstitution(m: Pick<Milestone, "substitutions">): Substitution | null {
+  return m.substitutions.find((s) => s.status === "PROPOSED" || s.status === "CONTESTED") ?? null;
+}
+
+/**
+ * When work on the signed terms stops being heard: the deadline, or the end
+ * of the cure period a decision that fell short opened, whichever is later.
+ * Mirrors the contract's _work_ends().
+ */
+export function workEndsMs(m: Pick<Milestone, "cure_until">, deadline: string): number {
+  const end = ms(deadline);
+  const cure = ms(m.cure_until);
+  return Number.isNaN(cure) ? end : Math.max(end, cure);
+}
+
+/** The installer's items filed since the standing decision, which a cure may rest on. */
+export function filedSince(m: Milestone): EvidenceItem[] {
+  const mark = m.standing?.item_mark ?? 0;
+  return (m.evidence[String(m.current_version)] ?? []).filter(
+    (it) => it.role === "INSTALLER" && it.kind !== "DECLARATION"
+      && Number(it.item_id.split("-")[1]) > mark,
+  );
 }
 
 export function milestoneActs({
@@ -132,12 +177,19 @@ export function milestoneActs({
   addr,
   config,
   nowMs,
+  standingConflict = false,
+  scheduleChanged = false,
 }: MilestoneActsInput): Act[] {
   const who = roleIn(p, addr);
   const acts: Act[] = [];
   const terms = m.versions.find((v) => v.version === m.current_version) ?? null;
   const deadlinePassed = !!terms && nowMs > ms(terms.deadline) - MARGIN_MS;
+  /* Past the deadline, work is still heard while a cure period runs. */
+  const workPassed = !!terms && nowMs > workEndsMs(m, terms.deadline) - MARGIN_MS;
   const standing = m.standing;
+  const open = openSubstitution(m);
+  const workOpen =
+    m.state === "AWAITING_EVIDENCE" || m.state === "REJECTED" || m.state === "UNDETERMINED";
 
   /*
    * Terms are asymmetric, and the contract is explicit about it: the owner
@@ -185,7 +237,7 @@ export function milestoneActs({
                 ? no("submit_image", "Accept the inspector role first.")
                 : m.state === "APPEALED"
                   ? ok("submit_image", "File a photograph the appeal will read, within its evidence period.")
-                  : deadlinePassed
+                  : workPassed
                     ? no("submit_image", "The deadline has passed, so nothing further can be filed.")
                     : ok("submit_image", "File a photograph; its bytes are held and hashed by the contract.");
     acts.push(filing);
@@ -222,10 +274,95 @@ export function milestoneActs({
             : m.state === "AWAITING_TERMS"
               ? no("request_assessment", "The terms are not signed yet.")
               : deadlinePassed
-                ? no("request_assessment", "The deadline has passed; this milestone can only be closed.")
+                ? no("request_assessment", "The deadline has passed, so a full assessment is no longer heard.")
+                : open
+                  ? no("request_assessment", "A proposed substitute is open. It is answered or withdrawn before the evidence is judged.")
+                  : used >= cap
+                    ? no("request_assessment", "These terms have had every assessment they allow.")
+                    : ok("request_assessment", "Ask a panel to read the evidence against the schedule."),
+    );
+
+    /*
+     * The cure round: what a decision that fell short leaves the installer
+     * able to put right. It is offered only where the contract would hear
+     * it, and each reason it is withheld is the contract's own.
+     */
+    if (m.state === "REJECTED" || m.state === "UNDETERMINED") {
+      acts.push(
+        standing?.kind === "APPEAL_LAPSED"
+          ? no("request_cure", "The last decision was never confirmed on appeal, so nothing in it can be carried forward.")
+          : standingConflict
+            ? no("request_cure", "The last decision found the evidence in conflict, so it settled nothing to carry forward.")
+            : workPassed
+              ? no("request_cure", "The time for putting this decision right has passed.")
+              : open
+                ? no("request_cure", "A proposed substitute is open. It is answered or withdrawn before the evidence is judged.")
                 : used >= cap
-                  ? no("request_assessment", "These terms have had every assessment they allow.")
-                  : ok("request_assessment", "Ask a panel to read the evidence against the schedule."),
+                  ? no("request_cure", "These terms have had every assessment they allow.")
+                  : !filedSince(m).length
+                    ? no("request_cure", "File what puts it right first. A cure rests on something filed since the decision.")
+                    : ok("request_cure", "Have a panel judge only what the last decision left open. What it found in place is kept."),
+      );
+    }
+
+    /* A substitute for one line of the schedule: the installer asks. */
+    const proposed = m.substitutions.filter((s) => s.version === m.current_version).length;
+    const allowance = config?.max_substitutions_per_version ?? Infinity;
+    acts.push(
+      !workOpen
+        ? no("propose_substitution", "A substitute is proposed while the work is open: on signed terms, with no acceptance standing and no appeal under way.")
+        : workPassed
+          ? no("propose_substitution", "The time for work on these terms has passed.")
+          : open
+            ? no("propose_substitution", "A proposal is already open on this milestone.")
+            : proposed >= allowance
+              ? no("propose_substitution", "These terms have had every substitution they allow.")
+              : !m.schedule.length
+                ? no("propose_substitution", "These terms name no equipment to substitute.")
+                : ok("propose_substitution", "Ask to fit a different product on one line, and name a page that documents it."),
+    );
+    if (open) {
+      acts.push(ok("withdraw_substitution", "Take your proposal back. The line stays as it is, and the evidence can be judged again."));
+    }
+  }
+
+  /* The owner answers a proposal, inside the project's window. */
+  if (who === "OWNER" && open?.status === "PROPOSED") {
+    const late = nowMs > ms(open.respond_by) - MARGIN_MS;
+    acts.push(
+      late
+        ? no("agree_substitution", "The time to answer has passed.")
+        : ok("agree_substitution", "Agree to it. The substitute becomes the product the evidence is judged against."),
+    );
+    acts.push(
+      late
+        ? no("decline_substitution", "The time to answer has passed.")
+        : ok(
+            "decline_substitution",
+            open.or_equivalent
+              ? "Object to it. The line was signed with or equivalent, so the validators decide whether it is one, and your objection is put before them."
+              : "Decline it. The line was signed for one product, so your no ends the matter.",
+          ),
+    );
+  }
+
+  /*
+   * Settling a proposal the parties did not settle between them is
+   * permissionless: nobody should have to wait on the other side's goodwill.
+   */
+  if (open) {
+    /*
+     * On a line signed with or equivalent the validators may be asked at
+     * once, whatever the owner has said: waiting would let silence run out
+     * the installer's time. On any other line only the owner's yes changes
+     * it, so there is nothing to decide until the owner's window has passed.
+     */
+    acts.push(
+      open.or_equivalent
+        ? ok("decide_substitution", "Have the validators each read the product page and decide whether it is an equivalent.")
+        : nowMs <= ms(open.respond_by)
+          ? no("decide_substitution", "This line was signed for one product, so only the owner's yes can change it. The owner may still answer.")
+          : ok("decide_substitution", "The owner did not answer and the line allows no equivalent. Close the proposal; the line stays as signed."),
     );
   }
 
@@ -234,6 +371,12 @@ export function milestoneActs({
    * the owner, a rejection by the installer. Offering it to the owner alone
    * left an installer with a wrongly rejected milestone no recourse at all,
    * which is the party the appeal exists to protect.
+   */
+  /*
+   * A decision about one schedule is not appealed against another: once a
+   * substitute has come into force since the decision, the way on is a cure
+   * round, whose own decision can be contested. The round's record says what
+   * it judged; a caller that has not read it leaves `scheduleChanged` out.
    */
   const contestedBy: Role | null =
     standing?.decision === "ACCEPTED" ? "OWNER"
@@ -250,7 +393,11 @@ export function milestoneActs({
           ? no("open_appeal", "There is no decision on this milestone to contest.")
           : standing.appealed
             ? no("open_appeal", "This decision has already been contested once.")
-            : windowOpen
+            : open
+              ? no("open_appeal", "A proposed substitute is open. It is answered or withdrawn before the decision is contested.")
+              : scheduleChanged
+                ? no("open_appeal", "A substitute has come into force since this decision, so it was about a different schedule. Ask for a cure round instead.")
+                : windowOpen
               ? ok(
                   "open_appeal",
                   standing.decision === "ACCEPTED"
@@ -330,7 +477,9 @@ export function milestoneActs({
               ? "The deadline has not passed."
               : standing?.appealable && standing.window_ends && nowMs <= ms(standing.window_ends)
                 ? "A decision can still be contested."
-                : null;
+                : nowMs <= workEndsMs(m, terms.deadline)
+                  ? "A decision that fell short can still be put right."
+                  : null;
   acts.push(
     closeBlocked
       ? no("close_milestone", closeBlocked)

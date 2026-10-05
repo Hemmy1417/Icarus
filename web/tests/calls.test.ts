@@ -17,7 +17,7 @@
 import { describe, expect, it } from "vitest";
 
 import schema from "@/lib/contract-schema.json";
-import type { ActId } from "@/lib/acts";
+import { methodOf, type ActId } from "@/lib/acts";
 import { RECORD_ADDRESS } from "@/lib/config";
 
 const writes = schema.writes as Record<
@@ -41,8 +41,13 @@ const COMPOSED: Record<ActId, { leading: number; fromPerson: number; value?: boo
   // the case sheet
   accept_version: { leading: 2, fromPerson: 0 },
   propose_version: { leading: 1, fromPerson: 1 },
-  request_assessment: { leading: 2, fromPerson: 0 },
   open_appeal: { leading: 1, fromPerson: 1 },
+  // the owner's answer to a proposed substitute: one write, offered as the
+  // two things it can say. A yes carries an empty objection; a no asks for one.
+  agree_substitution: { leading: 3, fromPerson: 0 },
+  decline_substitution: { leading: 2, fromPerson: 1 },
+  withdraw_substitution: { leading: 1, fromPerson: 0 },
+  decide_substitution: { leading: 1, fromPerson: 0 },
   decide_appeal: { leading: 1, fromPerson: 0 },
   lapse_appeal: { leading: 1, fromPerson: 0 },
   finalize: { leading: 1, fromPerson: 0 },
@@ -52,6 +57,13 @@ const COMPOSED: Record<ActId, { leading: number; fromPerson: number; value?: boo
   submit_image: { leading: 3, fromPerson: 0 },
   submit_document: { leading: 3, fromPerson: 0 },
   submit_declaration: { leading: 2, fromPerson: 0 },
+
+  // the panel that chooses what to present: the milestone and the chosen ids
+  request_assessment: { leading: 2, fromPerson: 0 },
+  request_cure: { leading: 2, fromPerson: 0 },
+
+  // the substitute panel: the milestone, the line, and the proposal as one object
+  propose_substitution: { leading: 3, fromPerson: 0 },
 
   // the claim bar
   claim: { leading: 0, fromPerson: 0 },
@@ -73,13 +85,13 @@ describe("the schema this is checked against", () => {
   });
 
   it("covers every write the contract has", () => {
-    expect(Object.keys(writes).length).toBe(19);
+    expect(Object.keys(writes).length).toBe(24);
   });
 });
 
 describe("every call composes the arguments its method takes", () => {
   it.each(Object.keys(ALL))("%s", (id) => {
-    const method = writes[id];
+    const method = writes[id in COMPOSED ? methodOf(id as ActId) : id];
     expect(method, `${id} is not a write on this contract`).toBeDefined();
     const composed = ALL[id]!;
     expect(
@@ -91,14 +103,16 @@ describe("every call composes the arguments its method takes", () => {
 
 describe("the contract's writes are all reachable", () => {
   it("offers every one of them somewhere", () => {
-    const offered = new Set(Object.keys(ALL));
+    const offered = new Set(
+      Object.keys(ALL).map((id) => (id in COMPOSED ? methodOf(id as ActId) : id)),
+    );
     const missing = Object.keys(writes).filter((m) => !offered.has(m));
     expect(missing, `no act offers: ${missing.join(", ")}`).toEqual([]);
   });
 
   it("sends value only where the contract is payable", () => {
     for (const [id, composed] of Object.entries(ALL)) {
-      const payable = writes[id]?.payable ?? false;
+      const payable = writes[id in COMPOSED ? methodOf(id as ActId) : id]?.payable ?? false;
       if (composed.value) {
         expect(payable, `${id} sends value but is not payable`).toBe(true);
       }

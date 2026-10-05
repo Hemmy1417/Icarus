@@ -41,6 +41,7 @@ interface Line {
   rating: string;
   quantity: string;
   identify: boolean;
+  orEquivalent: boolean;
 }
 
 const blank = (): Line => ({
@@ -50,6 +51,7 @@ const blank = (): Line => ({
   rating: "",
   quantity: "1",
   identify: true,
+  orEquivalent: false,
 });
 
 const field =
@@ -156,6 +158,7 @@ export default function Propose({ params }: { params: Promise<{ pid: string }> }
           rating: l.rating.trim(),
           quantity: Math.max(1, Number(l.quantity) || 1),
           identify: l.identify,
+          or_equivalent: l.orEquivalent,
         })),
         criteria: criteria.filter((c) => c.trim()).map((c) => ({ text: c.trim() })),
         evidence_requirements: [
@@ -316,6 +319,22 @@ export default function Propose({ params }: { params: Promise<{ pid: string }> }
                       This is the strictest line a schedule can carry, and the one a panel of
                       differing models agrees on least readily. Without it, a unit of the right
                       kind is enough.
+                    </span>
+                  </span>
+                </label>
+                <label className="flex cursor-pointer items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={l.orEquivalent}
+                    onChange={(e) => set(i, { orEquivalent: e.target.checked })}
+                    className="mt-1"
+                  />
+                  <span className="max-w-[52ch] text-[15px] leading-[1.5] text-steel">
+                    Or equivalent.{" "}
+                    <span className="type-caption">
+                      If the installer proposes another product for this line and you object or do
+                      not answer, validators read its product page and decide whether it is an
+                      equivalent. Without this, only your own yes changes the line.
                     </span>
                   </span>
                 </label>

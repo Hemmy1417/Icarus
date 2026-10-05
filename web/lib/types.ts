@@ -43,7 +43,21 @@ export type ItemKind = "IMAGE" | "DOCUMENT" | "DECLARATION";
 /** What an evidence requirement may ask for. A requirement never asks for a declaration. */
 export type RequirementKind = "IMAGE" | "DOCUMENT";
 
-export type RoundKind = "ASSESSMENT" | "APPEAL";
+export type RoundKind = "ASSESSMENT" | "CURE" | "APPEAL";
+
+/** Where a proposed substitute stands. Only AGREED and APPROVED change a line. */
+export type SubstitutionStatus =
+  | "PROPOSED"
+  | "CONTESTED"
+  | "AGREED"
+  | "APPROVED"
+  | "DECLINED"
+  | "REFUSED"
+  | "WITHDRAWN"
+  | "LAPSED"
+  | "VOID";
+
+export type SubstituteVerdict = "EQUIVALENT" | "NOT_EQUIVALENT" | "UNPROVEN";
 
 /** A piece of equipment the contract requires, as written in the terms. */
 export interface EquipmentLine {
@@ -55,6 +69,52 @@ export interface EquipmentLine {
   quantity: number;
   /** True when the line demands the nameplate be legible in a photograph. */
   identify: boolean;
+  /** Signed by both parties: an equivalent may stand in without the owner's yes. */
+  or_equivalent: boolean;
+  /** Present on a line whose product is a substitute in force. */
+  substitution?: string;
+}
+
+/** A product named for a line: what was signed, what is there now, what is proposed. */
+export interface Product {
+  manufacturer: string;
+  model: string;
+  rating: string;
+}
+
+/** What the validators found when they read the page a proposal names. */
+export interface SubstituteFindings {
+  page_chars: number;
+  page_sha256: string;
+  names_model: boolean;
+  publisher: string;
+  same_role: boolean;
+  meets: string;
+  shortfalls: string[];
+  reasoning: string;
+}
+
+/** A proposal to install a different product on one line of the schedule. */
+export interface Substitution {
+  id: string;
+  version: number;
+  line_id: string;
+  role: string;
+  signed: Product;
+  replaces: Product;
+  substitute: Product;
+  page: string;
+  reason: string;
+  or_equivalent: boolean;
+  status: SubstitutionStatus;
+  proposed_at: string;
+  respond_by: string;
+  objection: string;
+  answered_at: string | null;
+  decided_at: string | null;
+  verdict: SubstituteVerdict | null;
+  findings: SubstituteFindings | null;
+  void_reason: string;
 }
 
 export interface Criterion {
@@ -140,6 +200,9 @@ export interface MilestoneSummary {
   schedule_lines: number;
   standing: Standing | null;
   appeal: AppealState | null;
+  /** Until when a decision that fell short can still be put right. */
+  cure_until: string | null;
+  open_substitution: boolean;
 }
 
 export interface Project {
@@ -184,6 +247,11 @@ export interface Milestone {
   version_assessments: number;
   standing: Standing | null;
   appeal: AppealState | null;
+  /** Every proposal made on this milestone, in the order it was made. */
+  substitutions: Substitution[];
+  /** The schedule in force: the signed lines with substitutes put in place. */
+  schedule: EquipmentLine[];
+  cure_until: string | null;
   reserved_wei: string;
   created_at: string;
   closed_at: string | null;
@@ -241,6 +309,12 @@ export interface Round {
   notes: RoundNotes;
   evidence: RoundEvidence[];
   new_item_ids: string[];
+  /** The schedule as it stood when this round judged it. */
+  schedule: EquipmentLine[];
+  /** What a cure round kept from the decision it answers. */
+  carried: { from_round: number; lines: string[]; criteria: string[] } | null;
+  /** Every item this decision rests on, its own and those it carries from. */
+  chain: string[];
   reviewed_round: number | null;
   appeal_reason: string;
   requested_by: string;
@@ -268,6 +342,8 @@ export interface Stats {
   finalized: number;
   evidence_items: number;
   paid_wei: string;
+  substitutions: number;
+  cures: number;
 }
 
 export interface Balance {
@@ -290,6 +366,9 @@ export interface Config {
   max_milestones_per_project: number;
   max_versions_per_milestone: number;
   max_assessments_per_version: number;
+  max_substitutions_per_version: number;
+  model_key_min: number;
+  url_max: number;
   max_projects_per_page: number;
   max_deadline_days_ahead: number;
   min_appeal_window_seconds: number;
