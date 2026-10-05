@@ -163,7 +163,7 @@ const ISOLATOR = { role: "PROTECTION", manufacturer: "Kripal", model: "DC isolat
 const WALL_CRITERION = [{ text: "The inverter is mounted on a wall with its cabling connected "
                                 + "at the underside of the unit." }];
 
-function terms({ equipment, title, spec, payment = 2n * GEN }) {
+function terms({ equipment, title, spec, payment = 2n * GEN, images = 2 }) {
   return JSON.stringify({
     milestone_type: "INVERTER_INSTALLATION",
     title,
@@ -175,7 +175,7 @@ function terms({ equipment, title, spec, payment = 2n * GEN }) {
     criteria: WALL_CRITERION,
     evidence_requirements: [
       { text: "Photographs of the installed equipment", kind: "IMAGE",
-        from_role: "INSTALLER", min_count: 2 },
+        from_role: "INSTALLER", min_count: images },
     ],
     payment_wei: payment.toString(),
     deadline: new Date(Date.now() + 14 * 86400000).toISOString().replace(/\.\d+Z$/, "Z"),
@@ -292,11 +292,10 @@ check(cureRound.kind === "CURE" && cureRound.carried.from_round === first.round,
 check(cureRound.schedule[0].model === "MOD 4000TL3-X", "the round records the schedule it judged against");
 check(JSON.stringify(cureRound.chain) === JSON.stringify([front, plate, plateAgain]),
       "the record names every item the decision rests on, for an appeal to read");
-if (first.criteria.C1 === "MET") {
-  check(cureRound.carried.criteria.includes("C1"), "the criterion already met is carried, not judged again");
-} else {
-  say(`observation: the first round left C1 ${first.criteria.C1}, so the cure judged it as well`);
-}
+check(cureRound.carried.criteria.length === 0 && cureRound.criteria.C1 === "MET",
+      "the condition is judged again with the new unit in place, not carried from the old");
+check(cureRound.carried.lines.length === 0,
+      "the substituted line is open, so nothing on this one-line schedule is carried");
 
 await step("story.finalize_early", "STRANGER", "finalize", [mid], { refused: "the appeal window is still open" });
 m = await readJson("get_milestone", [mid]);
@@ -361,6 +360,32 @@ const yes = jsonFrom((await step("agreed.yes", "OWNER", "answer_substitution", [
 m = await readJson("get_milestone", [agreed.mid]);
 check(yes.status === "AGREED" && m.schedule[0].model === "MOD 4000TL3-X" && m.substitutions[0].verdict === null,
       "the owner's yes puts a substitute in force on any line, with no panel");
+
+// ── 4. A cure with nothing substituted: what was found in place is kept ──────
+
+const kept = await signedMilestone("kept", "Inverter installation, second unit (demonstration)", terms({
+  equipment: [{ ...SIGNED, ...FITTED, or_equivalent: false }], title: "String inverter installed and identifiable",
+  spec: "One three-phase string inverter on the plant room wall, its d.c. and a.c. connections "
+      + "made at the underside of the unit.", images: 1 }));
+// One photograph, with no plate in it: the wall can be judged, the model cannot.
+const wall = await image("kept.front", kept.mid, "growatt-inverter", "The string inverter on the plant room wall");
+const short = jsonFrom((await step("kept.assess", "INSTALLER", "request_assessment",
+                                   [kept.mid, JSON.stringify([wall])])).text);
+say(`kept.assess: ${short.decision} lines ${JSON.stringify(short.lines)} criteria ${JSON.stringify(short.criteria)}`);
+if (short.decision === "UNDETERMINED" && short.criteria.C1 === "MET" && short.lines.E1 !== "INSTALLED") {
+  const label = await image("kept.plate", kept.mid, "growatt-nameplate", "The rating plate on the unit", "NAMEPLATE");
+  const again = jsonFrom((await step("kept.cure", "INSTALLER", "request_cure",
+                                     [kept.mid, JSON.stringify([wall, label])])).text);
+  say(`kept.cure: ${again.decision} lines ${JSON.stringify(again.lines)} carried ${JSON.stringify(again.carried)}`);
+  check(again.carried.criteria.includes("C1") && !again.carried.lines.includes("E1"),
+        "a cure round keeps the condition the first panel found met and judges only the open line");
+  check(again.decision === "ACCEPTED",
+        "with the nameplate filed since, the open line is found installed and the milestone accepted");
+} else {
+  say(`observation: the first panel on this case found ${short.decision} with `
+    + `${JSON.stringify(short.lines)} ${JSON.stringify(short.criteria)}, which is not the shape `
+    + "this case was written to cure, so no claim is made from it");
+}
 
 const stats = await readJson("get_stats", []);
 say(`stats: ${JSON.stringify(stats)}`);

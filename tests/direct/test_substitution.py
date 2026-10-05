@@ -118,6 +118,29 @@ class TestProposing:
         propose(module, c, mid)
         assert sub(c, mid)["or_equivalent"] is False
 
+    @pytest.mark.parametrize("flag", ["false", "no", "true", 1, "0", [True]])
+    def test_only_a_plain_yes_in_the_terms_signs_a_line_or_equivalent(self, module, c, flag):
+        """This flag lets validators change a line over the owner's no. A
+        form that sends the word false must not switch it on."""
+        _, mid = active_milestone(module, c, equipment=schedule(E2={"or_equivalent": flag}))
+        assert milestone(c, mid)["versions"][0]["equipment"][1]["or_equivalent"] is False
+
+    def test_a_substitute_approved_after_the_work_has_ended_changes_nothing(self, module, c):
+        _, mid = or_equal(module, c)
+        set_now("2026-10-20T11:59:00Z")
+        propose(module, c, mid)
+        set_now("2026-10-20T12:09:01Z")
+        out = decide(module, c, mid)
+        assert out == {"milestone_id": mid, "substitution_id": "S1", "status": "LAPSED",
+                       "verdict": "EQUIVALENT"}
+        assert line(c, mid)["model"] == "VT-50K"
+        assert "after the time for work" in sub(c, mid)["void_reason"]
+
+    def test_a_substitute_approved_at_the_last_moment_of_the_work_is_in_force(self, module, c):
+        _, mid = contested(module, c)
+        set_now("2026-10-20T12:00:00Z")
+        assert decide(module, c, mid)["status"] == "APPROVED"
+
     def test_only_the_installer_proposes(self, module, c):
         _, mid = or_equal(module, c)
         for who in (OWNER, STRANGER):
@@ -350,6 +373,26 @@ class TestAnswering:
         as_(module, OWNER)
         c.answer_substitution(mid, False, "Not the certified unit.")
         with pytest.raises(err(module), match="no substitution awaits"):
+            c.answer_substitution(mid, False, "And another thing.")
+        assert sub(c, mid)["objection"] == "Not the certified unit."
+
+    def test_an_owner_who_objected_may_still_come_round(self, module, c):
+        _, mid = contested(module, c)
+        set_now("2026-09-20T09:30:00Z")
+        as_(module, OWNER)
+        assert json.loads(c.answer_substitution(mid, True, ""))["status"] == "AGREED"
+        s = sub(c, mid)
+        assert s["objection"] == "The design was certified with the Volterra unit."
+        assert line(c, mid)["model"] == "SV-50H" and s["verdict"] is None
+        as_(module, STRANGER)
+        with pytest.raises(err(module), match="no substitution is open"):
+            c.decide_substitution(mid)
+
+    def test_a_yes_after_objecting_still_comes_inside_the_window(self, module, c):
+        _, mid = contested(module, c)
+        set_now("2026-09-20T10:00:01Z")
+        as_(module, OWNER)
+        with pytest.raises(err(module), match="time to answer has passed"):
             c.answer_substitution(mid, True, "")
 
     def test_the_answer_comes_inside_the_window(self, module, c):
@@ -874,8 +917,9 @@ class TestInForce:
             basis={k: [a, b] for k in ("E1", "E2", "E3", "C1")}))
         assert out["decision"] == "ACCEPTED"
         prompt = prompts(kind="judge", role="leader")[0]["prompt"]
-        assert ('E2 inverter: the product named "Solvanta SV-50H, 50 kW" (a substitute in '
-                "force for this line); its nameplate must be legible") in prompt
+        assert ("E2 inverter: a substitute in force for this line, named by the installer as "
+                "<<<BEGIN NAME Solvanta SV-50H, 50 kW END NAME>>>; its nameplate must be "
+                "legible") in prompt
         assert "E1 module: Helion Solar HX-550M, 550 W, quantity 92; its nameplate" in prompt
         assert "VT-50K" not in prompt and "Volterra" not in prompt
         for p in prompts(kind="look"):

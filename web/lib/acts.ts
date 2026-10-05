@@ -276,7 +276,7 @@ export function milestoneActs({
               : deadlinePassed
                 ? no("request_assessment", "The deadline has passed, so a full assessment is no longer heard.")
                 : open
-                  ? no("request_assessment", "A proposed substitute is open. It is answered or withdrawn before the evidence is judged.")
+                  ? no("request_assessment", "A proposed substitute is open. It is settled or withdrawn before the evidence is judged.")
                   : used >= cap
                     ? no("request_assessment", "These terms have had every assessment they allow.")
                     : ok("request_assessment", "Ask a panel to read the evidence against the schedule."),
@@ -296,7 +296,7 @@ export function milestoneActs({
             : workPassed
               ? no("request_cure", "The time for putting this decision right has passed.")
               : open
-                ? no("request_cure", "A proposed substitute is open. It is answered or withdrawn before the evidence is judged.")
+                ? no("request_cure", "A proposed substitute is open. It is settled or withdrawn before the evidence is judged.")
                 : used >= cap
                   ? no("request_cure", "These terms have had every assessment they allow.")
                   : !filedSince(m).length
@@ -315,25 +315,34 @@ export function milestoneActs({
           ? no("propose_substitution", "The time for work on these terms has passed.")
           : open
             ? no("propose_substitution", "A proposal is already open on this milestone.")
-            : proposed >= allowance
-              ? no("propose_substitution", "These terms have had every substitution they allow.")
-              : !m.schedule.length
-                ? no("propose_substitution", "These terms name no equipment to substitute.")
-                : ok("propose_substitution", "Ask to fit a different product on one line, and name a page that documents it."),
+            : used >= cap
+              ? no("propose_substitution", "These terms have no round left to judge a substitute.")
+                : proposed >= allowance
+                ? no("propose_substitution", "These terms have had every substitution they allow.")
+                : !m.schedule.length
+                  ? no("propose_substitution", "These terms name no equipment to substitute.")
+                  : ok("propose_substitution", "Ask to fit a different product on one line, and name a page that documents it."),
     );
     if (open) {
       acts.push(ok("withdraw_substitution", "Take your proposal back. The line stays as it is, and the evidence can be judged again."));
     }
   }
 
-  /* The owner answers a proposal, inside the project's window. */
-  if (who === "OWNER" && open?.status === "PROPOSED") {
+  /*
+   * The owner answers a proposal, inside the project's window. An owner who
+   * objected may still come round to a yes while the question is open; a
+   * second no would add nothing, so it is not offered.
+   */
+  if (who === "OWNER" && open) {
     const late = nowMs > ms(open.respond_by) - MARGIN_MS;
     acts.push(
       late
         ? no("agree_substitution", "The time to answer has passed.")
         : ok("agree_substitution", "Agree to it. The substitute becomes the product the evidence is judged against."),
     );
+  }
+  if (who === "OWNER" && open?.status === "PROPOSED") {
+    const late = nowMs > ms(open.respond_by) - MARGIN_MS;
     acts.push(
       late
         ? no("decline_substitution", "The time to answer has passed.")
@@ -398,7 +407,7 @@ export function milestoneActs({
           : standing.appealed
             ? no("open_appeal", "This decision has already been contested once.")
             : open
-              ? no("open_appeal", "A proposed substitute is open. It is answered or withdrawn before the decision is contested.")
+              ? no("open_appeal", "A proposed substitute is open. It is settled or withdrawn before the decision is contested.")
               : scheduleChanged
                 ? no("open_appeal", "A substitute has come into force since this decision, so it was about a different schedule. Ask for a cure round instead.")
                 : windowOpen

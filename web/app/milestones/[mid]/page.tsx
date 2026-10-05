@@ -399,7 +399,7 @@ function Substitutions({ list, nowMs }: { list: Substitution[]; nowMs: number })
             </div>
             <div className="min-w-0">
               <p className="max-w-[60ch] text-[17px] leading-[1.6] text-steel">
-                {substitutionSaid(s.status)}
+                {substitutionSaid(s.status, !!s.void_reason)}
               </p>
               <p className="mt-5 max-w-[60ch] text-[15px] leading-[1.6] text-steel">
                 The installer&apos;s reason: &ldquo;{prose(s.reason)}&rdquo;

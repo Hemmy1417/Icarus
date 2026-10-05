@@ -173,6 +173,14 @@ describe("proposing a substitute", () => {
                "propose_substitution")?.available).toBe(true);
   });
 
+  it("is not offered when no round is left to judge the result", () => {
+    const a = act(actsFor(INSTALLER, rejected({ version_assessments: 5 })), "propose_substitution");
+    expect(a?.available).toBe(false);
+    expect(a?.reason).toMatch(/no round left to judge a substitute/);
+    expect(act(actsFor(INSTALLER, rejected({ version_assessments: 4 })), "propose_substitution")?.available)
+      .toBe(true);
+  });
+
   it("needs a schedule to substitute on", () => {
     const a = act(actsFor(INSTALLER, milestone({ schedule: [] })), "propose_substitution");
     expect(a?.available).toBe(false);
@@ -190,9 +198,17 @@ describe("answering a proposal", () => {
       expect(act(actsFor(who, open), "agree_substitution")).toBeUndefined();
       expect(act(actsFor(who, open), "decline_substitution")).toBeUndefined();
     }
-    const contested = milestone({ substitutions: [proposal({ status: "CONTESTED" })] });
-    expect(act(actsFor(OWNER, contested), "agree_substitution")).toBeUndefined();
     expect(act(actsFor(OWNER, milestone()), "agree_substitution")).toBeUndefined();
+    expect(act(actsFor(OWNER, milestone()), "decline_substitution")).toBeUndefined();
+  });
+
+  it("lets an owner who objected still agree, and offers no second objection", () => {
+    const contested = milestone({ substitutions: [proposal({ status: "CONTESTED" })] });
+    expect(act(actsFor(OWNER, contested), "agree_substitution")?.available).toBe(true);
+    expect(act(actsFor(OWNER, contested), "decline_substitution")).toBeUndefined();
+    expect(act(actsFor(INSTALLER, contested), "agree_substitution")).toBeUndefined();
+    const late = act(actsFor(OWNER, contested, NOW + 540_000 - MARGIN_MS + 1), "agree_substitution");
+    expect(late?.available).toBe(false);
   });
 
   it("closes a minute before the window does", () => {
@@ -449,6 +465,9 @@ describe("the words for it", () => {
       expect(eventKind(`SUBSTITUTION_${s}`), s).not.toMatch(/Substitution /);
     }
     expect(substitutionSaid("SOMETHING_ELSE")).toBe("");
+    expect(substitutionSaid("LAPSED")).toMatch(/did not answer in time/);
+    expect(substitutionSaid("LAPSED", true)).toMatch(/after the time for work/);
+    expect(substitutionSaid("AGREED", true)).toMatch(/The owner agreed/);
   });
 
   it("says why validators did or did not approve, and nothing for no verdict", () => {

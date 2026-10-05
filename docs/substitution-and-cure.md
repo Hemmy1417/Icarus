@@ -17,7 +17,7 @@ the reason the signed product cannot be fitted.
 
 | What happens | On a line signed for one product | On a line signed "or equivalent" |
 |---|---|---|
-| The owner agrees | The substitute is in force | The substitute is in force |
+| The owner agrees, even after objecting | The substitute is in force | The substitute is in force |
 | The owner says no | The proposal is declined and the line stands | The objection is recorded and the validators can be asked at once |
 | The owner says nothing | After the project's window the proposal lapses | After a short objection period the validators can be asked |
 | Anyone asks for a decision | Refused until the window has passed, then it lapses | The validators decide |
@@ -73,13 +73,14 @@ A substitute is always measured against the line as signed, including when
 an earlier substitute is already in force on it. The installer's stated
 rating is treated as a claim; the figures come from the page.
 
-What the installer types for a substitute is held to the shape of what it
-is. The model is up to forty letters and digits with at least one of each,
-and code checks the page for it. The maker is a name of up to four words.
-The rating is figures with their units. None of them has room for a
-sentence, because once a substitute is in force its name is printed in the
-schedule every later panel reads, and there it is shown in quotes as the
-name the installer gave.
+What the installer types for a substitute is held to the rough shape of
+what it is. The model is up to forty letters and digits with at least one of
+each, and code checks the page for it. The maker is a name of up to four
+words. The rating is figures with their units. Those shapes keep the three
+short and plain. They do not make them safe: a reviewer fitted a sentence
+into each. So wherever a model is shown them they sit inside a fence, as
+text a party wrote, in the proposal and in the schedule every later panel
+reads.
 
 Consensus binds two things: whether the substitute is approved, and whether
 the page was read at all. An approval stands only if the validator approves
@@ -87,6 +88,19 @@ on its own reading. A refusal stands only if the validator read the page as
 well, so a proposal is never closed on a page only one node says it saw.
 
 ### What a substitute changes
+
+A substitute comes into force only while a round can still judge it. One
+settled after the time for work on the terms has ended lapses instead: a
+line no panel will ever read is left as it was, and the standing decision
+stays one the installer can appeal.
+
+When a substitute comes into force over a decision that fell short and can
+be cured, the cure period runs at least one more window from that moment.
+Without that, an owner could sit on a proposal and agree in the last second:
+the appeal would be gone, because the decision was about another schedule,
+and the time to cure would be gone with it. That extension can happen at
+most three times on one version of the terms, and each time needs the
+owner's yes or the validators' approval.
 
 A substitute in force replaces the product a line names, for every later
 round on those terms. The line keeps its role, its quantity and whether its
@@ -102,7 +116,9 @@ can withdraw a proposal at any time to lift that.
 
 A full assessment that falls short opens a cure period: the project's window
 from the decision, or the rest of the time to the deadline if that is longer.
-In it the installer can file more and ask for a cure round.
+In it the installer can file more and ask for a cure round. No period opens
+when there is nothing a cure could do: the decision found the evidence in
+conflict, or it was the last round the terms allow.
 
 A cure round keeps every line the standing decision found installed and
 every criterion it found met, and judges only what was left open. It must
@@ -115,14 +131,15 @@ rest on at least one item filed after that decision.
 | Nothing is carried from a decision that found conflict, or rated any line contradicted | Findings resting on evidence at odds with itself are not settled |
 | Nothing is carried from an appeal that lapsed undecided | The decision it reviewed was never confirmed |
 | Cure rounds and assessments share one allowance of five per version | A cure is not a way to ask without limit |
-| A cure round never renews the cure period | The work is heard at most one window past its deadline by the installer's own acts |
+| A cure round never renews the cure period | Asking again is not a way to buy time. Only a substitute coming into force, or an appeal, moves the end of the work |
 
 A cured decision can be appealed like any other. An appeal judges every line
 again, on everything the chain of rounds read, so a line carried forward is
 never beyond the owner's reach.
 
 An appeal that takes an acceptance away from the installer opens a cure
-period too. An appeal the installer brought does not.
+period too, on the same conditions. An appeal the installer brought does
+not.
 
 ### What consensus now binds
 
@@ -147,7 +164,8 @@ doubt, and the round has to be asked again.
 
 A decision about one schedule is not appealed against another. If a
 substitute has come into force since the standing decision, an appeal is
-refused and the way on is a cure round. The difference matters: an appeal's
+refused and the way on is a cure round, for which there is always at least
+one window, or a new assessment while the deadline stands. The difference matters: an appeal's
 acceptance is final, and it would be the first time any panel had judged the
 new product. A cure round's acceptance can still be contested by the owner.
 
@@ -169,9 +187,8 @@ round does.
 - **They do not pin the page.** The record keeps a digest and a length of
   what the leader read, for a later reader to compare. The page itself can
   change afterwards.
-- **They do not extend the work for a late proposal.** A proposal made too
-  late for its decision and a following round to fit inside the work period
-  is the installer's risk.
+- **They do not rescue a late proposal.** A proposal settled after the work
+  period has ended lapses. Making it early enough is the installer's risk.
 - **They do not make a panel agree.** Stricter consensus means more rounds
   that record nothing. On this network that is measured, not assumed; see
   `docs/e2e-verification.md`.
@@ -185,4 +202,5 @@ break it, and again after each set of fixes.
 |---|---|---|
 | 1 | A cure carried findings only the leader had asserted, and paid on them | Consensus binds every favourable finding |
 | 2 | An appeal skipped owner evidence filed just before it opened, a hole made by a round-one fix | An appeal reads every owner and inspector item; the wait on the owner was removed rather than patched |
+| 4 | Nothing that moved money. A sentence still fitted a substitute's maker and rating; an owner's late yes left the installer with neither an appeal nor a cure | The names are fenced as party text wherever a model reads them; a substitute comes into force only while it can be heard, and then leaves a window to cure |
 | 3 | Nothing that moved money. A contradicted line rested on the leader alone; a substitute's maker and rating could carry a sentence into later prompts; the owner could be left unheard | Contradiction binds in consensus; names are held to their shapes and quoted; a short objection period |

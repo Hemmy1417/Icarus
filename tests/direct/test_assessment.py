@@ -214,6 +214,39 @@ class TestConsensus:
                                         {"C1": "MET"}, basis=b))
         assert any("E2" in line for line in prints() if "[DISAGREE]" in line)
 
+    def test_a_line_found_absent_by_the_leader_alone_rejects_nothing(self, module, c):
+        """Everything else the two nodes say is the same. Only the line the
+        rejection rests on differs, and that is enough."""
+        _, mid = active_milestone(module, c)
+        items = two_images(module, c, mid)
+        b = {k: [items[0], items[1]] for k in ("E1", "E2", "E3", "C1")}
+        with pytest.raises(err(module), match="validators did not agree"):
+            assess(module, c, mid, items,
+                   judge=judge_answer({"E1": "INSTALLED", "E2": "ABSENT", "E3": "INSTALLED"},
+                                      {"C1": "MET"}, basis=b),
+                   v_judge=judge_answer({"E1": "INSTALLED", "E2": "UNIDENTIFIED",
+                                         "E3": "INSTALLED"}, {"C1": "MET"}, basis=b))
+        assert any("line E2: the leader finds it absent, this node finds it unidentified" in line
+                   for line in prints() if "[DISAGREE]" in line)
+        assert milestone(c, mid)["rounds_count"] == 0
+
+    def test_a_rejection_is_reproduced_as_a_rejection(self, module, c):
+        """Both nodes find the same line absent. One of them also finds
+        another line contradicted where the other reports a conflict, which
+        is the same finding; but only one of the two derives a rejection,
+        and a rejection opens an appeal that doubt does not."""
+        _, mid = active_milestone(module, c)
+        items = two_images(module, c, mid)
+        b = {k: [items[0], items[1]] for k in ("E1", "E2", "E3", "C1")}
+        with pytest.raises(err(module), match="validators did not agree"):
+            assess(module, c, mid, items,
+                   judge=judge_answer({"E1": "CONTRADICTED", "E2": "ABSENT", "E3": "INSTALLED"},
+                                      {"C1": "MET"}, basis=b),
+                   v_judge=judge_answer({"E1": "NOT_SHOWN", "E2": "ABSENT", "E3": "INSTALLED"},
+                                        {"C1": "MET"}, conflicts=True, basis=b))
+        assert any("the leader rejects; this node finds undetermined" in line
+                   for line in prints() if "[DISAGREE]" in line)
+
     def test_a_leader_cannot_withhold_an_acceptance_a_validator_would_grant(self, module, c):
         _, mid = active_milestone(module, c)
         items = two_images(module, c, mid)

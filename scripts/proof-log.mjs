@@ -11,7 +11,7 @@
  *   node scripts/proof-log.mjs <address>
  */
 import { execSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 import { EXPLORER, rpc } from "./lib.mjs";
@@ -22,11 +22,24 @@ if (!ADDRESS) {
   process.exit(1);
 }
 
-const runPath = fileURLToPath(new URL(`../.data/proofs-${ADDRESS}.json`, import.meta.url));
 const outPath = fileURLToPath(new URL("../web/lib/proof-log.json", import.meta.url));
-const run = JSON.parse(readFileSync(runPath, "utf-8"));
 
-const ROUND_FNS = new Set(["request_assessment", "decide_appeal"]);
+// Every live run that decided rounds on this deployment: the adjudication
+// proofs, and the substitution and cure run. A run that was not made is
+// simply absent; the proofs are required.
+const run = { steps: {}, no_consensus: [] };
+for (const [name, required] of [["proofs", true], ["substitution-cure", false]]) {
+  const path = fileURLToPath(new URL(`../.data/${name}-${ADDRESS}.json`, import.meta.url));
+  if (!existsSync(path)) {
+    if (required) throw new Error(`no ${name} run recorded for ${ADDRESS}`);
+    continue;
+  }
+  const part = JSON.parse(readFileSync(path, "utf-8"));
+  Object.assign(run.steps, part.steps);
+  run.no_consensus.push(...(part.no_consensus ?? []));
+}
+
+const ROUND_FNS = new Set(["request_assessment", "request_cure", "decide_appeal"]);
 
 /** The milestone a round transaction was sent about, from its own calldata. */
 async function milestoneOf(hash) {

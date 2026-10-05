@@ -290,6 +290,16 @@ class TestWhoMayAskAndWhen:
         with pytest.raises(err(module), match="never confirmed on appeal"):
             c.request_cure(mid, json.dumps([fresh]))
 
+    def test_a_lapsed_appeal_leaves_no_cure_period_on_the_record(self, module, c):
+        _, mid, _ = fell_short(module, c)
+        assert milestone(c, mid)["cure_until"]
+        as_(module, INSTALLER)
+        c.open_appeal(mid, "The wall is the right wall.")
+        set_now("2026-09-23T10:00:01Z")
+        as_(module, STRANGER)
+        c.lapse_appeal(mid)
+        assert milestone(c, mid)["cure_until"] is None
+
     def test_a_rejection_upheld_on_appeal_can_still_be_cured(self, module, c):
         _, mid, first = fell_short(module, c)
         as_(module, INSTALLER)
@@ -523,7 +533,7 @@ class TestTheCurePeriod:
             {"E2": "INSTALLED"}, conflicts=True, basis={"E2": [fresh]}))
         assert milestone(c, mid)["cure_until"] is None
         as_(module, INSTALLER)
-        with pytest.raises(err(module), match="period for curing this decision has ended"):
+        with pytest.raises(err(module), match="found the evidence in conflict"):
             c.request_cure(mid, json.dumps([fresh]))
         as_(module, STRANGER)
         assert json.loads(c.close_milestone(mid))["state"] == "CLOSED"
@@ -719,7 +729,8 @@ class TestWithASubstitute:
         assert out["carried"] == {"from_round": 1, "lines": ["E1", "E3"], "criteria": []}, \
             "what was true of the old equipment is judged again with the new"
         prompt = prompts(kind="judge", role="leader")[0]["prompt"]
-        assert 'E2 inverter: the product named "Solvanta SV-50H, 50 kW"' in prompt
+        assert ("E2 inverter: a substitute in force for this line, named by the installer as "
+                "<<<BEGIN NAME Solvanta SV-50H, 50 kW END NAME>>>") in prompt
         assert "VT-50K" not in prompt
         record = rounds(c, mid, 2)
         assert record["schedule"][1]["model"] == "SV-50H"
@@ -739,7 +750,7 @@ class TestWithASubstitute:
         assert out["carried"] == {"from_round": 1, "lines": ["E1"], "criteria": []}, \
             "the mounting was found installed as Ridgeline; as Kestrel it is an open question"
         schedule = prompts(kind="judge", role="leader")[0]["prompt"].split("ACCEPTANCE", 1)[0]
-        assert 'E3 mounting: the product named "Kestrel KM-40 Flat"' in schedule and "E2 inverter" in schedule
+        assert "named by the installer as <<<BEGIN NAME Kestrel KM-40 Flat END NAME>>>" in schedule and "E2 inverter" in schedule
 
     def test_a_line_is_reopened_by_the_substitution_not_by_how_the_product_is_spelled(
             self, module, c):
@@ -799,4 +810,71 @@ class TestWithASubstitute:
         c.answer_substitution(mid, False, "We signed for the Volterra unit.")
         as_(module, INSTALLER)
         assert json.loads(c.open_appeal(mid, "The wall is the right wall."))["against"] == "REJECTED"
+
+    def test_a_late_yes_never_leaves_the_installer_with_nowhere_to_go(self, module, c):
+        """The owner sits on a proposal and agrees in the last second of the
+        cure period. The appeal is gone, because the decision was about
+        another schedule. So the yes itself opens a window to cure."""
+        set_now("2026-10-20T11:59:00Z")
+        _, mid, _ = fell_short(module, c)                    # deadline 12:00, cure until 12:59
+        assert milestone(c, mid)["cure_until"] == "2026-10-20T12:59:00Z"
+        set_now("2026-10-20T12:09:00Z")
+        as_(module, INSTALLER)
+        c.propose_substitution(mid, "E2", json.dumps(
+            {"manufacturer": "Solvanta", "model": "SV-50H", "rating": "50 kW", "page": self.PAGE,
+             "reason": "The specified unit is no longer made."}))
+        set_now("2026-10-20T12:58:59Z")
+        as_(module, OWNER)
+        assert json.loads(c.answer_substitution(mid, True, ""))["status"] == "AGREED"
+        assert milestone(c, mid)["cure_until"] == "2026-10-20T13:58:59Z"
+        as_(module, INSTALLER)
+        with pytest.raises(err(module), match="a substitute has come into force since"):
+            c.open_appeal(mid, "The unit on the wall is the one now agreed.")
+        set_now("2026-10-20T13:30:00Z")
+        fresh = nameplate(module, c, mid)
+        out = cure(module, c, mid, [fresh], judge_answer(
+            {"E2": "INSTALLED"}, {"C1": "MET"}, basis={"E2": [fresh], "C1": [fresh]}))
+        assert out["decision"] == "ACCEPTED"
+
+    def test_a_substitute_in_force_never_shortens_a_cure_period(self, module, c):
+        _, mid, _ = fell_short(module, c)                    # cure until the deadline, a month off
+        self.agreed(module, c, mid)
+        assert milestone(c, mid)["cure_until"] == "2026-10-20T12:00:00Z"
+
+    def test_a_substitute_settled_too_late_to_be_heard_changes_nothing(self, module, c):
+        """Agreed after the last moment any round could judge it. The line is
+        left alone, and so is the installer's appeal of the standing
+        decision, which was about the schedule that still stands."""
+        set_now("2026-10-20T11:59:00Z")
+        _, mid, first = fell_short(module, c)
+        set_now("2026-10-20T12:50:00Z")
+        fresh = nameplate(module, c, mid)
+        cure(module, c, mid, [fresh], judge_answer({"E2": "ABSENT"}, basis={"E2": [fresh]}))
+        set_now("2026-10-20T12:55:00Z")                      # cure period ends 12:59
+        as_(module, INSTALLER)
+        c.propose_substitution(mid, "E2", json.dumps(
+            {"manufacturer": "Solvanta", "model": "SV-50H", "rating": "50 kW", "page": self.PAGE,
+             "reason": "The specified unit is no longer made."}))
+        set_now("2026-10-20T13:30:00Z")
+        as_(module, OWNER)
+        out = json.loads(c.answer_substitution(mid, True, ""))
+        assert out["status"] == "LAPSED"
+        m = milestone(c, mid)
+        assert m["schedule"][1]["model"] == "VT-50K" and "substitution" not in m["schedule"][1]
+        assert "after the time for work" in m["substitutions"][0]["void_reason"]
+        assert m["cure_until"] == "2026-10-20T12:59:00Z"
+        as_(module, INSTALLER)
+        assert json.loads(c.open_appeal(mid, "The label reads VT-50K."))["against"] == "REJECTED"
+
+    def test_no_substitute_is_proposed_when_no_round_is_left_to_judge_it(self, module, c):
+        _, mid, first = fell_short(module, c)
+        for _ in range(4):
+            assess(module, c, mid, first, judge=judge_answer(
+                {"E1": "INSTALLED", "E2": "ABSENT", "E3": "INSTALLED"}, {"C1": "MET"},
+                basis={k: first for k in ALL}))
+        as_(module, INSTALLER)
+        with pytest.raises(err(module), match="no round left to judge a substitute"):
+            c.propose_substitution(mid, "E2", json.dumps(
+                {"manufacturer": "Solvanta", "model": "SV-50H", "rating": "50 kW",
+                 "page": self.PAGE, "reason": "Supply."}))
 

@@ -191,7 +191,7 @@ const EVENT: Record<string, string> = {
   SUBSTITUTION_APPROVED: "Validators approved the substitute",
   SUBSTITUTION_REFUSED: "Validators refused the substitute",
   SUBSTITUTION_WITHDRAWN: "Substitute withdrawn",
-  SUBSTITUTION_LAPSED: "Proposal lapsed unanswered",
+  SUBSTITUTION_LAPSED: "Proposal lapsed",
   SUBSTITUTION_VOID: "Open proposal set aside",
 };
 export const eventKind = (s: string) => label(EVENT, s);
@@ -421,7 +421,7 @@ const SUBSTITUTION_STATUS: Record<string, string> = {
   DECLINED: "Declined by the owner",
   REFUSED: "Refused by the validators",
   WITHDRAWN: "Withdrawn",
-  LAPSED: "Lapsed unanswered",
+  LAPSED: "Lapsed",
   VOID: "Set aside",
 };
 export const substitutionStatus = (s: string) => label(SUBSTITUTION_STATUS, s);
@@ -443,7 +443,17 @@ const SUBSTITUTION_SAID: Record<string, string> = {
     "The owner did not answer in time. The line was signed for one product and no other, and silence is not agreement, so the line is unchanged.",
   VOID: "The proposal was still open when the terms it was made under ended. The line is unchanged.",
 };
-export const substitutionSaid = (s: string) => SUBSTITUTION_SAID[String(s ?? "")] ?? "";
+/**
+ * A proposal also lapses when it is settled after the last moment any round
+ * could have judged it. The contract says so in the record, and that is a
+ * different story from an owner who never answered.
+ */
+export function substitutionSaid(s: string, settledTooLate = false): string {
+  if (s === "LAPSED" && settledTooLate) {
+    return "It was settled after the time for work on these terms had ended, when no panel could judge the new product any more. The line is unchanged.";
+  }
+  return SUBSTITUTION_SAID[String(s ?? "")] ?? "";
+}
 
 /** Why the validators did not approve, in the words of the rule that decided it. */
 const VERDICT_SAID: Record<string, string> = {

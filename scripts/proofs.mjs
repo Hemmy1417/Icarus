@@ -273,7 +273,7 @@ const WALL_CRITERION = [{ text: "The inverter is mounted on a wall with its cabl
 
 say(`proofs on ${ADDRESS}`);
 const cfg = await readJson("get_config", []);
-assert(cfg.ruleset === "icarus-rules-1", "unexpected ruleset");
+assert(cfg.ruleset === "icarus-rules-2", "unexpected ruleset");
 
 // 1. The flagship: the plate on the wall reads the model the contract named.
 const flagPid = await project("flagship", "Inverter installation, plant room (demonstration)");
