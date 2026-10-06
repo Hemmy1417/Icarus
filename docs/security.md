@@ -78,16 +78,21 @@ Applied to this build, with where each one is met.
   none, code checks only that the page loads, is public and names the model,
   and whether its publisher is the maker, a seller or nobody is each
   validator's judgment. See `docs/substitution-and-cure.md`.
-- **An image only some nodes can decode.** A file that is not built like a
-  PNG or a JFIF JPEG is refused when it is filed, and an image from the owner
-  or the inspector that a node cannot read is set aside by that node. Neither
-  makes two different decoders agree, and neither stops a model that was
-  given nothing it can see from describing something anyway: on the
-  deployment of record a node did exactly that with an undecodable file. A damaged image that half a panel
-  reads and half does not can still split it, and a split records nothing.
-  Nor is an image that opens, but draws answers that reach the contract in
-  the wrong shape, set aside: those nodes do not vote, and a party who can make
-  such an image can still cost a round its majority.
+- **What a node makes of an image.** A file is refused when it is filed
+  unless it is one a decoder opens: a PNG checked whole, a JPEG checked
+  through its tables, frame and scans. That closes the case met on an
+  earlier deployment, where a node described a picture that was not in an
+  undecodable file. It does not make a model truthful about a picture it can
+  see, and the compressed picture inside a JPEG is not read, so a file of
+  noise is filed and seen as noise. An image from the owner or the inspector
+  that a node says it cannot read is set aside by that node. An image that
+  opens but draws from a node, twice, an answer that never says whether it
+  was read, is not set aside: that node does not vote, and a party who can
+  make such an image can still cost a round its majority.
+- **Where a link leads.** A product page is fetched by the address the
+  installer gave. The runtime follows redirects and returns only the
+  destination, with nothing to say it did, so the contract cannot refuse
+  one. Measured, not assumed; see `docs/substitution-and-cure.md`.
 - **Workmanship and safety.** A photograph showing the right inverter on the
   right wall is not an electrical inspection.
 - **The network itself.** This runs on a test network whose validators, fee

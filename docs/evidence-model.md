@@ -64,7 +64,7 @@ judge from the content instead.
 |---|---|
 | The filer is a party, and the inspector has accepted the role | A stranger cannot put evidence on somebody else's record. |
 | The milestone is open for evidence, or an appeal's evidence period is running | Evidence cannot be added to a decision after the fact. |
-| The image is built like a PNG or a JFIF JPEG, and is at most 400,000 bytes | The runner's decoder reads nothing else. A PNG must carry its signature, its header chunk and its closing chunk; a JPEG its JFIF header, a frame, a scan and its closing marker. The contract cannot decode a picture, so a file that passes can still be damaged inside; a node that cannot read one from the owner or the inspector sets it aside. |
+| The image is a PNG or a JFIF JPEG a decoder opens, and is at most 400,000 bytes | The runner's decoder reads nothing else, and a file no decoder opens is evidence no panel could read. A PNG is checked whole: chunk checksums, a header that describes a real image, and pixel data that inflates to the size the header declares. A JPEG is checked through its tables, its frame and its scans, baseline or progressive, 8-bit. The compressed picture inside a JPEG is not read, so a file that passes opens but may show noise. |
 | A named equipment line or requirement exists in the terms in force | A filer cannot answer a line the contract does not have. |
 | The party is within its quota | One party cannot bury a panel under its own filings. |
 | An appeal admits only a small number of new items per party | An appeal is a re-judgment, not a second chance to file a fresh case. |

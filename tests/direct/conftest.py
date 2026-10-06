@@ -23,6 +23,7 @@
   like the runtime, so a refusal can never leave half a state behind.
 """
 
+import zlib
 import importlib.util
 import json
 import os
@@ -417,21 +418,73 @@ def network_accepts(value):
     _ACCEPTED.append(value)
 
 
-JFIF_TAIL = b"\xff\xc0\xff\xda\xff\xd9"       # a frame, a scan, the closing marker
-PNG_HEAD = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR"
-PNG_TAIL = b"\x00\x00\x00\x00IEND\xaeB`\x82"
+def seg(marker: int, body: bytes = b"") -> bytes:
+    """One JPEG segment: its marker, its length, its body."""
+    return bytes([0xff, marker]) + (len(body) + 2).to_bytes(2, "big") + body
+
+
+# The pieces of the smallest JPEG a decoder opens, by name, in file order.
+JPEG_PARTS = {
+    "soi": b"\xff\xd8",
+    "app0": seg(0xe0, b"JFIF\x00\x01\x01\x00\x00\x01\x00\x01\x00\x00"),
+    "note": b"",
+    "dqt": seg(0xdb, b"\x00" + b"\x01" * 64),
+    "sof": seg(0xc0, b"\x08\x00\x08\x00\x08\x01\x01\x11\x00"),
+    "dc": seg(0xc4, b"\x00\x01" + b"\x00" * 15 + b"\x00"),
+    "ac": seg(0xc4, b"\x10\x01" + b"\x00" * 15 + b"\x00"),
+    "sos": seg(0xda, b"\x01\x01\x00\x00\x3f\x00"),
+    "scan": b"\x00" * 8,
+    "end": b"\xff\xd9",
+}
+
+
+def jpeg(size=0, **over) -> bytes:
+    """A whole JPEG from its named pieces, any of them replaced or emptied,
+    its scan padded with zeros to the size asked for."""
+    parts = dict(JPEG_PARTS, **over)
+    short = size - sum(len(v) for v in parts.values())
+    parts["scan"] += b"\x00" * max(0, short)
+    return b"".join(parts.values())
 
 
 def jfif(tag=b"", size=4000):
-    """A JPEG built the way the contract requires one to be: a JFIF header,
-    a frame, a scan and a closing marker, padded to the size asked for."""
-    head = b"\xff\xd8\xff\xe0\x00\x10JFIF\x00" + tag
-    return head + b"\x00" * max(0, size - len(head) - len(JFIF_TAIL)) + JFIF_TAIL
+    """A JPEG a decoder opens, made distinct by a comment, at an exact size."""
+    return jpeg(size=size, note=seg(0xfe, tag) if tag else b"")
+
+
+def chunk(name: bytes, body: bytes = b"") -> bytes:
+    """One PNG chunk with its true checksum."""
+    return len(body).to_bytes(4, "big") + name + body \
+        + (zlib.crc32(name + body) & 0xffffffff).to_bytes(4, "big")
+
+
+def ihdr(width=2, height=2, bits=8, kind=0, interlace=0, compression=0, filtering=0) -> bytes:
+    return chunk(b"IHDR", width.to_bytes(4, "big") + height.to_bytes(4, "big")
+                 + bytes([bits, kind, compression, filtering, interlace]))
+
+
+# The pieces of the smallest PNG a decoder opens: two rows of two grey pixels.
+PNG_PARTS = {
+    "sig": b"\x89PNG\r\n\x1a\n",
+    "ihdr": ihdr(),
+    "plte": b"",
+    "note": b"",
+    "idat": chunk(b"IDAT", zlib.compress(b"\x00\x00\x00" * 2)),
+    "pad": b"",
+    "iend": chunk(b"IEND"),
+}
+
+
+def png_file(size=0, **over) -> bytes:
+    parts = dict(PNG_PARTS, **over)
+    short = size - sum(len(v) for v in parts.values()) - 12
+    if short >= 0:
+        parts["pad"] = chunk(b"zzPd", b"\x00" * short)
+    return b"".join(parts.values())
 
 
 def png(tag=b"", size=2000):
-    head = PNG_HEAD + tag
-    return head + b"\x00" * max(0, size - len(head) - len(PNG_TAIL)) + PNG_TAIL
+    return png_file(size=size, note=chunk(b"tEXt", b"Comment\x00" + tag) if tag else b"")
 
 
 def exif_jpeg(size=4000):

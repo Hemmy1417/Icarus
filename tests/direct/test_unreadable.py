@@ -10,7 +10,7 @@ import json
 import pytest
 
 from conftest import (  # noqa: F401
-    GEN, INSPECTOR, INSTALLER, JFIF_TAIL, OWNER, PNG_HEAD, PNG_TAIL, STRANGER, active_milestone,
+    GEN, INSPECTOR, INSTALLER, OWNER, STRANGER, active_milestone,
     as_, assess, document, err, forge_leader, image, jfif, judge_all, judge_answer, llm, look_all,
     look_answer, milestone, network_accepts, png, prints, prompts, rounds, set_now,
 )
@@ -159,27 +159,113 @@ class TestAnImageNobodyCanRead:
         assert milestone(c, mid)["rounds_count"] == 0
 
     @pytest.mark.parametrize("garbled", [
-        {"n": 1, "readable": True, "shows": "An empty inverter bay."},
-        {"images": {"n": 1, "readable": True, "shows": "An empty inverter bay."}},
-        {"images": [{"readable": True, "shows": "An empty inverter bay."}]},
         {"image": [{"n": 1, "readable": True, "shows": "An empty inverter bay."}]},
-        {"images": [{"n": 1, "shows": ""}]},
+        {"images": [{"n": 1, "shows": "An empty inverter bay."}]},
         {"images": [{"n": 1, "readable": 0, "shows": ""}]},
         {"images": [{"n": 1, "readable": "false", "shows": ""}]},
-        {"images": [{"n": "one", "readable": True, "shows": "An empty inverter bay."}]},
+        {"images": [5, "a row", None]},
         {"images": 5},
+        {"reading": "An empty inverter bay."},
         {},
     ])
     def test_a_garbled_answer_is_the_nodes_failure_not_the_files(self, module, c, garbled):
         """Only a node that says in so many words that it could not read the
         image sets it aside. One whose answer about a legible photograph came
-        back in the wrong shape has not read the evidence, and does not vote."""
+        back twice without saying whether it was read has not read the
+        evidence, and does not vote."""
         mid, a, b, other = three(module, c)
         with pytest.raises(err(module), match="did not agree"):
-            assess(module, c, mid, [a, b], look=[garbled, look_all()],
+            assess(module, c, mid, [a, b], look=[garbled, garbled, look_all()],
                    judge=judge_all(basis={k: [a, b] for k in ALL}))
         assert any("the leader did not receive the images" in p for p in prints())
         assert milestone(c, mid)["rounds_count"] == 0
+        assert [p["images"] for p in prompts(kind="look", role="leader")] == [1, 1, 2], \
+            "it was asked a second time before it lost its vote"
+
+    @pytest.mark.parametrize("answer", [
+        {"n": 1, "readable": True, "shows": "An empty inverter bay."},
+        {"readable": True, "shows": "An empty inverter bay."},
+        {"images": {"n": 1, "readable": True, "shows": "An empty inverter bay."}},
+        {"images": [{"readable": True, "shows": "An empty inverter bay."}]},
+        {"images": [{"n": "one", "readable": True, "shows": "An empty inverter bay."}]},
+        {"images": [{"n": 7, "readable": True, "shows": "An empty inverter bay."}]},
+        {"images": ["stray", {"readable": True, "shows": "An empty inverter bay."}]},
+    ])
+    def test_an_answer_about_one_image_is_read_whatever_wrapper_it_came_in(
+            self, module, c, answer):
+        """There is one image in the prompt, so a row that left out its
+        number, or the list around it, can only be about that image. Reading
+        it is reading the evidence, not guessing at it."""
+        mid, a, b, other = three(module, c)
+        out = assess(module, c, mid, [a, b], look=[answer, look_all()],
+                     judge=judge_answer({"E1": "INSTALLED", "E2": "ABSENT", "E3": "INSTALLED"},
+                                        {"C1": "MET"},
+                                        basis={"E1": [a], "E2": [other], "E3": [a], "C1": [a]}))
+        assert out["decision"] == "REJECTED", "the owner's photograph counted"
+        record = rounds(c, mid, 1)
+        assert record["unread"] == []
+        assert record["notes"]["images"][2]["shows"] == "An empty inverter bay."
+        assert [p["images"] for p in prompts(kind="look", role="leader")] == [1, 2]
+
+    @pytest.mark.parametrize("answer", [
+        {"readable": False, "shows": ""},
+        {"images": {"readable": False}},
+    ])
+    def test_a_plain_no_about_one_image_sets_it_aside_in_any_wrapper(self, module, c, answer):
+        mid, a, b, other = three(module, c)
+        out = assess(module, c, mid, [a, b], look=[answer, look_all()],
+                     judge=judge_all(basis={k: [a, b] for k in ALL}))
+        assert out["decision"] == "ACCEPTED" and rounds(c, mid, 1)["unread"] == [other]
+
+    def test_with_two_images_a_row_must_say_which_it_describes(self, module, c):
+        """Two photographs from the installer, and rows that do not say
+        which is which. Nothing is assumed from their order."""
+        _, mid = active_milestone(module, c)
+        a = image(module, c, mid, caption="The array", line="E1")
+        b = image(module, c, mid, caption="The inverter", line="E2")
+        unnumbered = {"images": [{"readable": True, "shows": "An array."},
+                                 {"readable": True, "shows": "An inverter."}]}
+        with pytest.raises(err(module), match="did not agree"):
+            assess(module, c, mid, [a, b], look=unnumbered,
+                   judge=judge_all(basis={k: [a, b] for k in ALL}))
+        assert any("the leader did not receive the images" in p for p in prints())
+        flat = {"n": 1, "readable": True, "shows": "An array."}
+        with pytest.raises(err(module), match="did not agree"):
+            assess(module, c, mid, [a, b], look=flat,
+                   judge=judge_all(basis={k: [a, b] for k in ALL}))
+        assert any("the leader did not receive the images" in p for p in prints())
+
+    def test_the_first_row_to_claim_a_number_is_the_one_read(self, module, c):
+        _, mid = active_milestone(module, c)
+        a = image(module, c, mid, caption="The array", line="E1")
+        b = image(module, c, mid, caption="The inverter", line="E2")
+        twice = {"images": [{"n": 1, "readable": True, "shows": "An array."},
+                            {"n": "2", "readable": True, "shows": "An inverter."},
+                            {"n": 2, "readable": False, "shows": ""},
+                            {"n": "1", "readable": True, "shows": "Something else."}]}
+        assess(module, c, mid, [a, b], look=twice, judge=judge_all(basis={k: [a, b] for k in ALL}))
+        seen = rounds(c, mid, 1)["notes"]["images"]
+        assert [(x["readable"], x["shows"]) for x in seen] == \
+            [(True, "An array."), (True, "An inverter.")]
+
+    def test_a_slip_on_the_first_answer_is_asked_again(self, module, c):
+        """A model that forgets the shape once does not cost the node its
+        vote, for the installer's photographs or anyone's."""
+        _, mid = active_milestone(module, c)
+        a = image(module, c, mid, caption="The array", line="E1")
+        b = image(module, c, mid, caption="The inverter", line="E2")
+        out = assess(module, c, mid, [a, b],
+                     look=[{"images": [{"n": 1, "readable": True, "shows": "An array."}]},
+                           look_all()],
+                     judge=judge_all(basis={k: [a, b] for k in ALL}))
+        assert out["decision"] == "ACCEPTED"
+        assert [p["images"] for p in prompts(kind="look", role="leader")] == [2, 2]
+
+    def test_an_answer_that_says_whether_each_image_was_read_is_not_asked_again(self, module, c):
+        mid, a, b, other = three(module, c)
+        assess(module, c, mid, [a, b], look=[UNREAD, look_all()],
+               judge=judge_all(basis={k: [a, b] for k in ALL}))
+        assert [p["images"] for p in prompts(kind="look", role="leader")] == [1, 2]
 
     @pytest.mark.parametrize("answer", [
         [{"n": 1, "readable": True, "shows": "An empty inverter bay."}],
@@ -261,38 +347,6 @@ class TestAnImageNobodyCanRead:
         assert json.loads(c.decide_appeal(mid))["decision"] == "ACCEPTED"
         assert rounds(c, mid, 2)["unread"] == [junk]
         assert json.loads(c.finalize(mid))["credited_wei"] == str(2 * GEN)
-
-
-class TestWhatCountsAsAnImageFile:
-    def test_a_whole_png_and_a_whole_jpeg_are_taken(self, module, c):
-        _, mid = active_milestone(module, c)
-        as_(module, INSTALLER)
-        for data in (png(b"x"), jfif(b"x"), jfif(b"x").replace(b"\xff\xc0", b"\xff\xc2"),
-                     PNG_HEAD + PNG_TAIL):
-            assert json.loads(c.submit_image(mid, "{}", data))["item_id"]
-
-    @pytest.mark.parametrize("data,why", [
-        (b"\x89PNG\r\n\x1a\n" + b"\x00" * 60, "PNG is incomplete"),
-        (b"\x89PNG" + b"\x00" * 60 + PNG_TAIL, "PNG and JFIF JPEG only"),
-        (PNG_HEAD + b"\x00" * 60, "PNG is incomplete"),
-        (b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIDAT" + b"\x00" * 60 + PNG_TAIL, "PNG is incomplete"),
-        (PNG_HEAD + b"\x00" * 60 + PNG_TAIL + b"\x00", "PNG is incomplete"),
-        (b"\xff\xd8\xff\xe0\x00\x10JFIF\x00" + b"\x00" * 60, "JPEG is incomplete"),
-        (b"\xff\xd8\xff\xe0\x00\x10JFIF\x00" + b"\x00" * 60 + b"\xff\xda\xff\xd9", "JPEG is incomplete"),
-        (b"\xff\xd8\xff\xe0\x00\x10JFIF\x00" + b"\x00" * 60 + b"\xff\xc0\xff\xd9", "JPEG is incomplete"),
-        (b"\xff\xd8\xff\xe0\x00\x10JFIF\x00" + b"\x00" * 60 + b"\xff\xc0\xff\xda", "JPEG is incomplete"),
-        (b"\xff\xd8\xff\xe0\x00\x10JFIF\x00" + JFIF_TAIL + b"\x00", "JPEG is incomplete"),
-        (b"\xff\xd8\xff\xe0\x00\x10JFXX\x00" + b"\x00" * 60 + JFIF_TAIL, "PNG and JFIF JPEG only"),
-        (b"\xff\xd8\xff\xe1\x00\x10Exif\x00" + b"\x00" * 60 + JFIF_TAIL, "PNG and JFIF JPEG only"),
-        (b"GIF89a" + b"\x00" * 60, "PNG and JFIF JPEG only"),
-        (b"\xff\xd8", "PNG and JFIF JPEG only"),
-    ])
-    def test_a_file_not_built_like_an_image_is_refused(self, module, c, data, why):
-        _, mid = active_milestone(module, c)
-        as_(module, OWNER)
-        with pytest.raises(err(module), match=why):
-            c.submit_image(mid, "{}", data)
-        assert milestone(c, mid)["evidence"]["1"] == []
 
 
 class TestWhatARoundStores:

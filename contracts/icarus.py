@@ -95,12 +95,13 @@ forward is never beyond the owner's reach.
 import hashlib
 import json
 import re
+import zlib
 from datetime import datetime, timedelta, timezone
 
 import genlayer as gl
 from genlayer.types import Address, u256
 
-RULESET_VERSION = "icarus-rules-3"
+RULESET_VERSION = "icarus-rules-4"
 
 
 class _PayableRefusal(Exception):
@@ -120,6 +121,7 @@ MAX_ASSESSMENTS_PER_VERSION = 5        # full assessments and cure rounds togeth
 MAX_SUBSTITUTIONS_PER_VERSION = 3
 MAX_TRUSTED_SOURCES = 8
 HOSTNAME_MAX = 253
+PNG_RAW_MAX = 64 * 1024 * 1024       # the most a PNG's pixel data may inflate to
 
 MIN_PAYMENT_WEI = 10**16                  # 0.01 GEN per milestone
 MIN_APPEAL_WINDOW_SECONDS = 600           # 10 minutes
@@ -274,23 +276,261 @@ def _num(item_id: str) -> int:
 
 
 def _image_problem(data: bytes) -> str:
-    """Why these bytes are not an image the runner's decoder reads, or "".
+    """Why these bytes are not an image a decoder opens, or "".
 
-    The contract cannot decode a picture, but it can refuse a file that is
-    not built like one: a PNG is its signature, a header chunk and a closing
-    chunk; a JPEG opens with a JFIF header, declares its frame and its scan,
-    and closes. A file that passes can still be damaged inside, and such a
-    file is set aside by the nodes that cannot read it."""
+    The contract cannot look at a picture, but it can read a file the way a
+    decoder does up to the point where pixels begin, and refuse one a
+    decoder would stop on. A PNG is checked whole: every chunk against its
+    checksum, and the pixel data inflated and measured against the size the
+    header declares. A JPEG is walked segment by segment: its tables, its
+    frame and each scan must be well formed and refer only to what the file
+    defines. What is left unchecked is the compressed picture inside a
+    JPEG's scans, which decoders read through even when it is noise."""
     if data[:8] == b"\x89PNG\r\n\x1a\n":
-        if data[8:16] != b"\x00\x00\x00\rIHDR" or data[-12:] != b"\x00\x00\x00\x00IEND\xaeB`\x82":
-            return "that PNG is incomplete: it lacks its header or its closing chunk"
-        return ""
+        why = _png_problem(data)
+        return f"that PNG is not one a decoder opens: {why}" if why else ""
     if data[:4] == b"\xff\xd8\xff\xe0" and data[6:11] == b"JFIF\x00":
-        if (b"\xff\xc0" not in data and b"\xff\xc2" not in data) or b"\xff\xda" not in data \
-                or data[-2:] != b"\xff\xd9":
-            return "that JPEG is incomplete: it lacks its frame, its scan or its closing marker"
-        return ""
+        why = _jpeg_problem(data)
+        return f"that JPEG is not one a decoder opens: {why}" if why else ""
     return "the runtime reads PNG and JFIF JPEG only; re-save the image and file it again"
+
+
+def _be(data: bytes, at: int, size: int) -> int:
+    return int.from_bytes(data[at:at + size], "big")
+
+
+# Bit depths a PNG may carry for each colour type, and samples per pixel.
+_PNG_KINDS = {0: ((1, 2, 4, 8, 16), 1), 2: ((8, 16), 3), 3: ((1, 2, 4, 8), 1),
+              4: ((8, 16), 2), 6: ((8, 16), 4)}
+# Adam7: where each pass starts and how far apart its pixels are.
+_PNG_PASSES = ((0, 0, 8, 8), (4, 0, 8, 8), (0, 4, 4, 8), (2, 0, 4, 4),
+               (0, 2, 2, 4), (1, 0, 2, 2), (0, 1, 1, 2))
+
+
+def _png_problem(data: bytes) -> str:
+    end, at, seen_data, closed_data, palette = len(data), 8, False, False, False
+    width = height = bits = samples = interlace = kind = 0
+    packed = []
+    first = True
+    while True:
+        if at + 12 > end:
+            return "it ends before its closing chunk"
+        size, name = _be(data, at, 4), data[at + 4:at + 8]
+        if at + 12 + size > end:
+            return "a chunk runs past the end of the file"
+        body = data[at + 8:at + 8 + size]
+        if zlib.crc32(name + body) & 0xffffffff != _be(data, at + 8 + size, 4):
+            return "a chunk fails its checksum"
+        if first != (name == b"IHDR"):
+            return "its header chunk is missing or out of place"
+        first = False
+        if name == b"IHDR":
+            if size != 13:
+                return "its header is the wrong size"
+            width, height, bits, kind = _be(body, 0, 4), _be(body, 4, 4), body[8], body[9]
+            interlace = body[12]
+            if not width or not height or kind not in _PNG_KINDS \
+                    or bits not in _PNG_KINDS[kind][0] or body[10] or body[11] \
+                    or interlace not in (0, 1):
+                return "its header describes no image a decoder knows"
+            samples = _PNG_KINDS[kind][1]
+        elif name == b"PLTE":
+            if seen_data or palette or not size or size % 3 or size > 768:
+                return "its palette is malformed or out of place"
+            palette = True
+        elif name == b"IDAT":
+            if closed_data:
+                return "its image data is split by another chunk"
+            seen_data = True
+            packed.append(body)
+        elif name == b"IEND":
+            if size or at + 12 != end:
+                return "it does not end at its closing chunk"
+            break
+        elif not name[:1].islower() or not name.isalpha():
+            return "it carries a chunk a decoder must understand and does not"
+        if seen_data and name != b"IDAT":
+            closed_data = True
+        at += 12 + size
+    if not seen_data or (kind == 3 and not palette):
+        return "it holds no image data" if not seen_data else "it has no palette"
+
+    # The rows the pixel data must inflate to: (how many, bytes in each).
+    def rows(w: int, h: int) -> tuple:
+        return (h, 1 + (w * samples * bits + 7) // 8)
+
+    if interlace:
+        plan = [rows((width - x0 + dx - 1) // dx, (height - y0 + dy - 1) // dy)
+                for x0, y0, dx, dy in _PNG_PASSES if width > x0 and height > y0]
+    else:
+        plan = [rows(width, height)]
+    if sum(n * size for n, size in plan) > PNG_RAW_MAX:
+        return "it has more pixels than a round reads"
+    stream, feed = zlib.decompressobj(), b"".join(packed)
+    step, left, need = 0, plan[0][0], 0
+    try:
+        while True:
+            out = stream.decompress(feed, 1 << 20)
+            i = 0
+            while i < len(out):
+                if not need:
+                    while not left:
+                        step += 1
+                        if step == len(plan):
+                            return "its image data is longer than its header says"
+                        left = plan[step][0]
+                    if out[i] > 4:
+                        return "a row of its image data names no filter"
+                    left, need = left - 1, plan[step][1]
+                take = min(need, len(out) - i)
+                i, need = i + take, need - take
+            feed = stream.unconsumed_tail
+            if stream.eof or not (out or feed):
+                break
+    except Exception:
+        return "its image data does not inflate"
+    if not stream.eof or stream.unused_data or need or left or step != len(plan) - 1:
+        return "its image data is not the size its header says"
+    return ""
+
+
+def _jpeg_problem(data: bytes) -> str:
+    end, at = len(data), 2
+    if data[-2:] != b"\xff\xd9":
+        return "it does not end at its closing marker"
+    quant, huff, parts, progressive, scans = set(), set(), {}, False, 0
+    while True:
+        if at + 2 > end or data[at] != 0xff:
+            return "a segment is missing where one must begin"
+        mark = data[at + 1]
+        if mark == 0xd9:
+            if at + 2 != end or not scans:
+                return "it closes before it holds a scan" if not scans \
+                    else "it carries data after its closing marker"
+            return ""
+        size = _be(data, at + 2, 2)
+        if size < 2 or at + 2 + size > end - 2:
+            return "a segment runs past the end of the file"
+        body = data[at + 4:at + 2 + size]
+        if mark == 0xdb:                                    # quantisation tables
+            i = 0
+            while i < len(body):
+                wide, ident = body[i] >> 4, body[i] & 15
+                if wide > 1 or ident > 3:
+                    return "a quantisation table is malformed"
+                i += 1 + 64 * (wide + 1)
+                quant.add(ident)
+            if i != len(body):
+                return "a quantisation table is malformed"
+        elif mark == 0xc4:                                  # Huffman tables
+            i = 0
+            while i + 17 <= len(body):
+                kind, ident = body[i] >> 4, body[i] & 15
+                count, code = sum(body[i + 1:i + 17]), 0
+                for length in range(1, 17):         # more codes than a length can hold
+                    code = (code + body[i + length]) << 1
+                    if code >= 2 << length:
+                        count = 257
+                # A value no 8-bit picture can hold: a decoder stops on it.
+                if kind > 1 or ident > 3 or count > 256 \
+                        or any(s & 15 > 10 if kind else s > 11
+                               for s in body[i + 17:i + 17 + count]):
+                    return "a Huffman table is malformed"
+                i += 17 + count
+                huff.add((kind, ident))
+            if i != len(body):
+                return "a Huffman table is malformed"
+        elif mark in (0xc0, 0xc1, 0xc2):                    # the frame
+            if parts or len(body) < 6:
+                return "it declares its frame twice or not at all"
+            count = body[5]
+            if body[0] != 8 or not _be(body, 1, 2) or not _be(body, 3, 2) \
+                    or count not in (1, 3, 4) or len(body) != 6 + 3 * count:
+                return "its frame describes no image a decoder knows"
+            for k in range(count):
+                ident, sampling, table = body[6 + 3 * k:9 + 3 * k]
+                if not 1 <= sampling >> 4 <= 4 or not 1 <= sampling & 15 <= 4 or table > 3 \
+                        or ident in parts:
+                    return "its frame describes no image a decoder knows"
+                parts[ident] = table
+            progressive = mark == 0xc2
+        elif mark == 0xdd:                                  # restart interval
+            if size != 4:
+                return "its restart interval is malformed"
+        elif mark == 0xda:                                  # a scan
+            if not parts or not body:
+                return "a scan comes before its frame"
+            count = body[0]
+            if not 1 <= count <= len(parts) or len(body) != 4 + 2 * count:
+                return "a scan is malformed"
+            first, last = body[1 + 2 * count], body[2 + 2 * count]
+            high, low = body[3 + 2 * count] >> 4, body[3 + 2 * count] & 15
+            if first > last or last > 63 or low > 13 or high not in (0, low + 1) \
+                    or (not progressive and (first, last, high, low) != (0, 63, 0, 0)):
+                return "a scan is malformed"
+            for k in range(count):
+                ident, tables = body[1 + 2 * k], body[2 + 2 * k]
+                if ident not in parts or parts[ident] not in quant:
+                    return "a scan uses a table the file never defines"
+                refining = progressive and body[3 + 2 * count] >> 4
+                if not refining or first:
+                    need = [(0, tables >> 4)] if not first else []
+                    need += [(1, tables & 15)] if last else []
+                    if any(table not in huff for table in need):
+                        return "a scan uses a table the file never defines"
+            # The compressed picture: run to the next marker that is one.
+            at += 2 + size
+            while True:
+                at = data.find(b"\xff", at)
+                if at < 0 or at + 1 >= end:
+                    return "a scan runs past the end of the file"
+                if data[at + 1] == 0 or 0xd0 <= data[at + 1] <= 0xd7:
+                    at += 2
+                elif data[at + 1] == 0xff:
+                    at += 1
+                else:
+                    break
+            scans += 1
+            continue
+        elif not (0xe0 <= mark <= 0xef or mark == 0xfe):    # not application data or a comment
+            return "it uses a kind of JPEG a decoder may not read"
+        at += 2 + size
+
+
+def _readings(out, count: int) -> dict:
+    """The answer to one image-reading prompt, as one row for each image
+    number it speaks to.
+
+    The shape asked for is a list of numbered rows under "images". A row is
+    also read when it is the answer itself, or sits under "images" with no
+    list around it. An answer about a single image is read without its
+    number too: there is only one image it can be about, so nothing is
+    guessed. With two images a row must say which one it describes, and the
+    first to say so is taken."""
+    if not isinstance(out, dict):
+        return {}
+    rows = out.get("images")
+    if isinstance(rows, dict):
+        rows = [rows]
+    if not isinstance(rows, list):
+        rows = [out] if "readable" in out or "shows" in out else []
+    found = {}
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        if count == 1:
+            found.setdefault(1, row)
+            continue
+        for n in range(1, count + 1):
+            if row.get("n") in (n, str(n)):
+                found.setdefault(n, row)
+    return found
+
+
+def _answers_all(out, count: int) -> bool:
+    """Whether an answer says, for every image, that it was read or was not."""
+    rows = _readings(out, count)
+    return all(isinstance(rows.get(n, {}).get("readable"), bool) for n in range(1, count + 1))
 
 
 def _bucket(kind: str) -> str:
@@ -2157,12 +2397,16 @@ class Icarus(gl.contract.Contract):
         reading is a lost vote and rounds fail for want of sighted nodes.
         One retry costs a prompt and recovers most of them.
 
+        An answer that does not say, for every image, whether it was read is
+        asked for once more as well: most are a model's slip, and a slip
+        costs a node its vote.
+
         The two ways of failing are kept apart. A prompt the runtime raised
         on, twice, is taken as a prompt that failed on what it carried,
         whatever made the runtime raise. An answer the runtime handed back
         that could not be read as an object is the node's own failure, and
         is never mistaken for the first."""
-        failed = 0
+        failed, last = 0, {}
         for _ in range(2):
             try:
                 raw = gl.nondet.exec_prompt(prompt, response_format="json", images=images)
@@ -2170,10 +2414,12 @@ class Icarus(gl.contract.Contract):
                 failed += 1
                 continue
             try:
-                return _llm_object(raw, "the image reading"), False
+                last = _llm_object(raw, "the image reading")
             except Exception:
                 continue
-        return {}, failed == 2
+            if _answers_all(last, len(images)):
+                break
+        return last, failed == 2
 
     def _look_all(self, ctx: dict) -> tuple:
         """Look at what the installer presents two at a time, the runtime's
@@ -2195,13 +2441,9 @@ class Icarus(gl.contract.Contract):
         read, received = {}, True
         for pair in batches:
             out, refused = self._ask_about(self._look_prompt(pair), [data for _, data in pair])
-            rows = out.get("images") if isinstance(out.get("images"), list) else []
+            rows = _readings(out, len(pair))
             for n, (it, _) in enumerate(pair, start=1):
-                row = {}
-                for candidate in rows:
-                    if isinstance(candidate, dict) and candidate.get("n") in (n, str(n)):
-                        row = candidate
-                        break
+                row = rows.get(n, {})
                 # Fail closed. A node counts as a reader only when it says so
                 # itself: an answer that omits the flag, or that describes the
                 # evidence without claiming to have seen it, is not a sighted

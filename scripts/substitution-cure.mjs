@@ -1,8 +1,8 @@
 /**
  * Live run of the two rules added in icarus-rules-2: a substitute for one
- * line of the schedule, and the cure round; and of what icarus-rules-3
- * narrowed: the sites the parties name as sources, and a file no node can
- * read. Every claim is an assertion; an observation that is not asserted is
+ * line of the schedule, and the cure round; and of what icarus-rules-3 and
+ * icarus-rules-4 narrowed: the sites the parties name as sources, and files
+ * no node can read. Every claim is an assertion; an observation that is not asserted is
  * logged as an observation.
  *
  *   node scripts/substitution-cure.mjs 0x…        run every case in order (resumable)
@@ -238,7 +238,7 @@ async function contestAndDecide(key, mid, objection) {
 
 say(`substitution and cure on ${ADDRESS}`);
 const cfg = await readJson("get_config", []);
-check(cfg.ruleset === "icarus-rules-3", "the deployment runs icarus-rules-3");
+check(cfg.ruleset === "icarus-rules-4", "the deployment runs icarus-rules-4");
 
 // ── 1. The whole story ───────────────────────────────────────────────────────
 
@@ -458,18 +458,35 @@ check(onSite.s.status === "APPROVED" && onSite.s.verdict === "EQUIVALENT"
 
 // ── 7. A file no node can read ───────────────────────────────────────────────
 //
-// The owner files something built like a JPEG with nothing a decoder can use
-// inside it. Before rules 3 a node that could not read it could not vote, on
-// any round of this milestone. The claim made here is the one the contract
-// makes: the round is decided. What each node did with the file is logged as
-// an observation, because it differs by node: one says it could not read it
-// and sets it aside, another describes a picture that is not there.
+// Two files from the owner, neither of them a photograph. The first has the
+// outline of a JPEG and nothing a decoder can follow inside it: since rules 4
+// the contract reads a file as far as a decoder does before pixels begin, and
+// refuses it when it is filed. The second is whole in every part the contract
+// can check and carries noise where the picture should be. It is filed, and
+// the claim made about it is the one the contract makes: the round is
+// decided. What each node did with it is logged as an observation.
 
-function unreadableJpeg() {
+function outlineOnly() {
   const head = [0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01, 0x01,
                 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00];
   const body = Array.from({ length: 3000 }, (_, i) => (i * 37 + 11) % 251);
   return new Uint8Array([...head, 0xff, 0xc0, ...body, 0xff, 0xda, ...body, 0xff, 0xd9]);
+}
+
+function wholeButNoise() {
+  const seg = (marker, body) => [0xff, marker, (body.length + 2) >> 8, (body.length + 2) & 255, ...body];
+  const table = (kind) => [kind, 0, 2, ...Array(14).fill(0), 0, 1];      // two codes of two bits
+  const noise = Array.from({ length: 3000 }, (_, i) => (i * 37 + 11) % 251);
+  return new Uint8Array([
+    0xff, 0xd8,
+    ...seg(0xe0, [0x4a, 0x46, 0x49, 0x46, 0x00, 0x01, 0x01, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00]),
+    ...seg(0xdb, [0, ...Array(64).fill(16)]),
+    ...seg(0xc0, [8, 0, 64, 0, 64, 1, 1, 0x11, 0]),            // 64 by 64, one grey component
+    ...seg(0xc4, table(0x00)), ...seg(0xc4, table(0x10)),
+    ...seg(0xda, [1, 1, 0x00, 0, 63, 0]),
+    ...noise,
+    0xff, 0xd9,
+  ]);
 }
 
 const blocked = await signedMilestone("blocked", "Inverter installation, a file nobody can open (demonstration)", terms({
@@ -483,12 +500,17 @@ await step("blocked.not_an_image", "OWNER", "submit_image",
                                  claimed_capture: "October 2026", claimed_location: "Demonstration site",
                                           origin: "PHOTO" }),
             new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 1, 2, 3, 4, 5, 6])],
-           { refused: "that JPEG is incomplete" });
+           { refused: "that JPEG is not one a decoder opens" });
+await step("blocked.outline", "OWNER", "submit_image",
+           [blocked.mid, JSON.stringify({ requirement_id: "", equipment_id: "E1", caption: "Our own photograph",
+                                          claimed_capture: "October 2026", claimed_location: "Demonstration site",
+                                          origin: "PHOTO" }), outlineOnly()],
+           { refused: "that JPEG is not one a decoder opens" });
 const junk = jsonFrom((await step("blocked.junk", "OWNER", "submit_image",
   [blocked.mid, JSON.stringify({ requirement_id: "", equipment_id: "E1", caption: "Our own photograph",
                                  claimed_capture: "October 2026", claimed_location: "Demonstration site",
-                                 origin: "PHOTO" }), unreadableJpeg()])).text)?.item_id;
-check(Boolean(junk), "a file with the outline of a JPEG and nothing readable inside it can still be filed");
+                                 origin: "PHOTO" }), wholeButNoise()])).text)?.item_id;
+check(Boolean(junk), "a file whole in every part the contract can check, with noise for a picture, can still be filed");
 const decided = jsonFrom((await step("blocked.assess", "INSTALLER", "request_assessment",
                                      [blocked.mid, JSON.stringify([bFront, bPlate])])).text);
 say(`blocked.assess: ${decided.decision} lines ${JSON.stringify(decided.lines)} criteria ${JSON.stringify(decided.criteria)}`);
@@ -496,7 +518,7 @@ const bRound = await readJson("get_round", [blocked.mid, decided.round]);
 say(`observation: the leader set aside ${JSON.stringify(bRound.unread)}; `
   + `evidence ${JSON.stringify(bRound.evidence.map((e) => [e.item_id, e.role, e.read]))}`);
 check(bRound.evidence.some((e) => e.item_id === junk),
-      "a round is decided with the owner's unreadable file among its evidence, where it used to stall");
+      "a round is decided with the owner's file of noise among its evidence");
 check(!bRound.unread.includes(bFront) && !bRound.unread.includes(bPlate),
       "the installer's photographs are never recorded as set aside");
 const leaned = [...Object.values(bRound.notes.basis), ...Object.values(bRound.notes.criteria_basis)]

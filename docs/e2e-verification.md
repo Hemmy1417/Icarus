@@ -106,7 +106,7 @@ fresh panel on the appeal upheld the acceptance. The log is
 node scripts/substitution-cure.mjs <address>
 ```
 
-The two rules added in `icarus-rules-2` and what `icarus-rules-3` narrowed, set out in
+The two rules added in `icarus-rules-2` and what `icarus-rules-3` and `icarus-rules-4` narrowed, set out in
 [substitution-and-cure.md](substitution-and-cure.md). 41 checks over
 63 transactions on the deployment of record, every panel reaching a
 majority on its first asking. The log is `docs/substitution-cure-run.txt`.
@@ -130,7 +130,8 @@ majority on its first asking. The log is `docs/substitution-cure-run.txt`.
 | Terms naming one site as a source; pages on another maker's site, on a code host and on a look-alike domain | Each refused in code, and no proposal is recorded. |
 | The fitted unit on the named site, with the owner objecting | Approved; the record shows the page as on a signed source, and the publisher as the parties' choice. |
 | A file with the bare outline of a JPEG, cut short | Refused when filed. |
-| A file with the whole outline of a JPEG and nothing a decoder can use inside, filed by the owner | Filed, and the round is decided. What the leading node did with the file is logged as an observation, not claimed: on this run it described a picture that is not there and cited it for nothing; on a rehearsal it set the file aside. |
+| A file with the whole outline of a JPEG and nothing a decoder can follow inside | Refused when filed. On the rules 3 deployment this file was taken, and a node described a picture that was not in it. |
+| A file whole in every part the contract can check, with noise where the picture should be, filed by the owner | Filed, and the round is decided. What the leading node made of it is logged as an observation, not claimed. |
 
 The page used for the approval is a real seller's catalogue page for the unit
 in the photographs. The self-published page is `fixtures/pages/` in this

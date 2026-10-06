@@ -99,8 +99,10 @@ The terms can name the sites both parties accept as sources for a product.
 On a line signed "or equivalent" a substitute's page anywhere else is then
 refused in code, and who published the page is nobody's judgment. And an
 image the owner or the inspector files that a node cannot read is set aside
-by that node, so a file nobody can open cannot keep a round from being
-decided. What the installer presents must still reach a node for it to vote.
+by that node, so it cannot keep a round from being decided. What the
+installer presents must still reach a node for it to vote. A file is refused
+when it is filed unless it is one a decoder opens: a PNG is checked whole,
+and a JPEG through its tables, its frame and its scans.
 
 | State | Who moves it | If nobody acts |
 |---|---|---|
@@ -197,7 +199,8 @@ reached a majority on its first asking.
 | A decision in doubt, nothing substituted | the wall is shown but not the plate; then the plate is filed | the cure keeps the condition already met and judges only the open line: `ACCEPTED` |
 | Terms that name one site as a source | pages on another maker's site, a code host and a look-alike domain | each refused in code, and no proposal is recorded |
 | The fitted unit, on the named site | the owner objects; validators each fetch the page | approved, with the publisher recorded as the parties' choice |
-| A file no decoder can open | the owner files the outline of a JPEG with nothing usable inside | the round is decided, where one such file used to stop every round |
+| A file no decoder can open | the owner files the outline of a JPEG with nothing a decoder can follow inside | refused when it is filed |
+| A file of noise | whole in every part the contract can check, with noise where the picture should be | filed, and the round is decided |
 
 Refusals proved live: a stranger cannot file evidence or ask for an assessment, the installer
 cannot contest their own acceptance, a milestone cannot be finalized inside its window, and a

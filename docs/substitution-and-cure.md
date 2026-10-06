@@ -1,7 +1,8 @@
 # Substitution and cure
 
-Two rules added in `icarus-rules-2`, and narrowed in `icarus-rules-3` as set
-out under "What changed in rules 3". Both exist because of what happens on a
+Two rules added in `icarus-rules-2`, and narrowed in `icarus-rules-3` and
+`icarus-rules-4` as set out under "What changed in rules 3" and "What changed
+in rules 4". Both exist because of what happens on a
 real job after the terms are signed: the product on the schedule turns out
 not to be the one that arrives, and a first assessment falls short for a
 reason that can be put right.
@@ -189,7 +190,8 @@ round does.
   domain is stopped by the validators or not at all.
 - **They do not follow where a link leads.** The address shown to the model is
   the one the installer gave. A redirect from a reputable host to somebody
-  else's content is not detected in code. That holds for a named site too:
+  else's content is not detected in code, and cannot be: the runtime follows
+  it and hands back only the destination. That holds for a named site too:
   the parties who name one are trusting where its links lead, and trusting
   that the site itself decides what appears on it. Naming a site where
   anybody can post a page names everybody.
@@ -201,9 +203,10 @@ round does.
   most of the panel fails on it at once.
 - **They do not stop every image that can cost a round its panel.** The
   stall that is closed is the file no decoder opens. An image that opens,
-  from the owner or the inspector, and that draws from enough nodes an
-  answer they cannot give in the asked shape, still leaves those nodes
-  unable to vote, and without a sighted majority nothing is recorded. The
+  from the owner or the inspector, and that draws from enough nodes, twice
+  each, an answer that never says whether the image was read, still leaves
+  those nodes unable to vote, and without a sighted majority nothing is
+  recorded. The
   installer cannot leave such an image out. The ways out are the ones there
   were: ask again, and in the end the deadline or the appeal's lapse.
 - **A cure does not reopen a line because of what a node set aside.** A line
@@ -264,6 +267,49 @@ refused when it is filed, whoever files it.
 What a round stores was tightened with it. The leader's account beside the
 findings is rebuilt by the contract rather than stored as it came, and a
 result the network hands back is checked again before it is recorded.
+
+## What changed in rules 4
+
+Three limits were left standing after rules 3. Two were narrowed. The third
+was measured and cannot be closed in code.
+
+**A file a decoder opens.** Rules 3 checked that a file had the outline of an
+image. On the deployment of record a node then described a picture that was
+not in a file with that outline. The contract now reads a file as far as a
+decoder does before pixels begin. A PNG is checked whole: every chunk against
+its checksum, the header for a depth and colour type that exist, and the
+pixel data inflated and measured row by row against the size the header
+declares, up to 64 MB. A JPEG is walked segment by segment: its quantisation
+and Huffman tables must be well formed, its frame must describe an 8-bit
+image of one, three or four components, and each scan must refer only to
+components and tables the file defines. A file that fails is refused when it
+is filed, whoever files it.
+
+Measured against a real decoder on six thousand corrupted copies of real
+photographs: none that the contract took was refused by the decoder. What it
+does not read is the compressed picture inside a JPEG's scans, which a
+decoder reads through even when it is noise. So a file that passes opens,
+and a node that looks at noise sees noise. Whether a model then describes it
+truthfully is the limit `docs/security.md` has always stated, and no check
+on the file reaches it.
+
+**An answer about one image.** An image from the owner or the inspector is
+read in a prompt of its own. Under rules 3 an answer about it in a slightly
+wrong shape left the node unable to vote. The answer is now read for what it
+says: a row that left out its number, or the list around it, can only be
+about the one image in the prompt. And an answer that does not say, for
+every image, whether it was read is asked for once more before it costs the
+node its vote. With two images in a prompt a row must still say which one it
+describes. An answer that fails twice still blinds the node: the alternative
+is to set a legible photograph aside, which review round one of rules 3
+found and closed.
+
+**Redirects.** Measured on the network with a throwaway contract: a fetch of
+an address that redirects comes back with status 200 and the destination's
+content, and nothing in the response names where it came from. The contract
+already refuses any status but 200, so if the runtime returned the redirect
+it would be refused; it does not. This limit stands, and it is the
+runtime's to lift.
 
 ## How it was reviewed
 

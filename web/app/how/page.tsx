@@ -46,7 +46,8 @@ const LIMITS: string[] = [
   "An appeal nobody decides within three days lapses, and the milestone is undetermined. An acceptance that was contested and never confirmed does not pay.",
   "This judges evidence, not workmanship. A photograph of the right inverter on the right wall is not an electrical inspection.",
   "Where the terms name no site as a source, who published a product page is each validator's judgment. Code checks that the page loads, sits on a public site and names the model. It cannot tell the maker's site from a convincing copy of it.",
-  "An image the owner or the inspector files that a node cannot read is set aside by that node, so it cannot hold a decision up. An image only some nodes can read can still split a panel, and a split records nothing.",
+  "A file is refused when it is filed unless it is one a decoder opens, and an image the owner or the inspector files that a node says it cannot read is set aside by that node. Neither makes a model truthful about what it sees, and an image that draws a muddled answer from most of a panel twice still costs that round its panel.",
+  "A product page is fetched by the address the installer gave. The network follows a redirect without saying so, and the contract cannot see that it did.",
   "Agreeing every finding costs rounds. A line one node reads as installed and another as not identified now records nothing, and has to be asked again.",
 ];
 
