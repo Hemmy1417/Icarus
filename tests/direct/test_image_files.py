@@ -376,7 +376,7 @@ class TestAPngADecoderOpens:
         # a name that is empty, with a second zero further on that is not its end
         (png_file(note=chunk(b"iCCP", b"\x00\x01A\x00\x00" + zlib.compress(b"p"))), "does not unpack"),
         (png_file(note=chunk(b"zTXt", b"\x00omment\x00\x00" + zlib.compress(b"p"))), "does not unpack"),
-        (png_file(note=chunk(b"iTXt", b"\x00\x01\x00\x00\x00plain")), "does not unpack"),
+        (png_file(note=chunk(b"iTXt", b"\x00\x00\x00\x00\x00plain")), "does not unpack"),
         # no name at all: an empty one, then a stream with no zero byte to end a name on
         (png_file(note=chunk(b"iCCP", b"\x00" + NO_ZEROS)), "does not unpack"),
         (png_file(note=chunk(b"iTXt", b"keyword with no end")), "does not unpack"),
