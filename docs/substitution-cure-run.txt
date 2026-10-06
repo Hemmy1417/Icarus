@@ -1,246 +1,322 @@
 ICARUS substitution and cure, against the deployment of record
-contract  0x5Ea657820B3355E310BAf2f71282D518cD398cfc
+contract  0xb476eeF34fe8800E546D140DA3412846DD0A1755
 chain     61997, GenLayer Studio Next
-explorer  https://explorer-studio-dev.genlayer.com/address/0x5Ea657820B3355E310BAf2f71282D518cD398cfc
-source    contracts/icarus.py, sha256 ccfc1c1e8c00bd75d38f75a435517e3c8b05fb35d65f2be1706b234e96d396db
+explorer  https://explorer-studio-dev.genlayer.com/address/0xb476eeF34fe8800E546D140DA3412846DD0A1755
+source    contracts/icarus.py, sha256 4801f35b9e4d1f1891eb9805025b47e7072cdce519c591c5a1ddc618ae9a5b3e
 
 Every line below is a signed transaction or a check made on its result. The run is
 resumable: each write is remembered by name. A check that fails stops the run; an
 observation that is not a claim is printed as an observation.
 
-[17:42:04] substitution and cure on 0x5Ea657820B3355E310BAf2f71282D518cD398cfc
-[17:42:06]   ok: the deployment runs icarus-rules-2
-[17:42:08] story.create: OWNER create_project 0x41b2fe056898ccbb72d1200e99fc30aec2ba9d9db123671efdbd7e1be9d7d171
-[17:42:40] story.create: FINALIZED MAJORITY_AGREE leader=SUCCESS in 31 s
-[17:42:42] story.milestone: OWNER add_milestone 0x6f9bbfec0b8a5202c25263326d26a9f1382b50a9187e08c56edf8064dc62edd0
-[17:43:21] story.milestone: FINALIZED MAJORITY_AGREE leader=SUCCESS in 39 s
-[17:43:24] story.sign: INSTALLER accept_project 0x53c2d0e928817d54eadaf9c7e07ce2dda5728cc1506e3c269dc3782bdb9d01e9
-[17:43:59] story.sign: FINALIZED MAJORITY_AGREE leader=SUCCESS in 35 s
-[17:44:11] story.front: INSTALLER submit_image 0xa9cbeb1d4271d9d103d0d812026003e8446162a8f59d774a283176b4d9a88ba4
-[17:44:48] story.front: FINALIZED MAJORITY_AGREE leader=SUCCESS in 37 s
-[17:44:55] story.plate: INSTALLER submit_image 0x9bbbcfc04c5c11a0391f7bc80498ddf0fb906eb9beaeaff61ce48a460e46f954
-[17:45:37] story.plate: FINALIZED MAJORITY_AGREE leader=SUCCESS in 42 s
-[17:45:40] story.assess: INSTALLER request_assessment 0x5b4babd4ab3914f17b967f7331dd3fe746e21d7c51d8cf4b6022f239bdd3a173
+This log is two sittings. The first ended on its last check, which claimed that the leading
+node had set the owner's unreadable file aside. It had not: it described a picture that
+is not in the file. The contract promises that the round is decided, not what one node
+does with such a file, so the script now claims the first and logs the second. The
+failed line is left in, and the lines after it are the second sitting.
+
+[00:31:53] substitution and cure on 0xb476eeF34fe8800E546D140DA3412846DD0A1755
+[00:31:55]   ok: the deployment runs icarus-rules-3
+[00:31:57] story.create: OWNER create_project 0xd2a3ef3fb8e54c25391cbd7cd29dfe3f53bc5245cf6b63784b291780cf3721e0
+[00:32:38] story.create: FINALIZED MAJORITY_AGREE leader=SUCCESS in 41 s
+[00:32:40] story.milestone: OWNER add_milestone 0x460ec74a36696c3928e0eeaf301d07689c07bcf3eee4c0283b12c1707927d46b
+[00:33:15] story.milestone: FINALIZED MAJORITY_AGREE leader=SUCCESS in 35 s
+[00:33:16] story.sign: INSTALLER accept_project 0xad4ba9e22683d02c07c14fc8739a179f67126a966788a1722ae39e93b5cf71bd
+[00:33:56] story.sign: FINALIZED MAJORITY_AGREE leader=SUCCESS in 39 s
+[00:34:03] story.front: INSTALLER submit_image 0x179b4acbbe56a9cccb94c21842d71bfe15cbf9724afa414b91b238a9c82e70aa
+[00:34:45] story.front: FINALIZED MAJORITY_AGREE leader=SUCCESS in 43 s
+[00:34:49] story.plate: INSTALLER submit_image 0xe1730e96d8dca8b572599e088aeb21d9eabe85114ed060b99f6d26226fe393fc
+[00:35:27] story.plate: FINALIZED MAJORITY_AGREE leader=SUCCESS in 37 s
+[00:35:29] story.assess: INSTALLER request_assessment 0xa90b154a7a0467e7198c75cca4fb828f210039fe61f3673105e8b62449c13eba
   … story.assess ACCEPTED
-[17:47:06] story.assess: FINALIZED MAJORITY_AGREE leader=SUCCESS in 86 s
-receipt 0x5b4babd4ab3914f17b967f7331dd3fe746e21d7c51d8cf4b6022f239bdd3a173 status=FINALIZED result=MAJORITY_AGREE rotations=1
- rotation 1: Accepted
-  leader/leader vote=? model=policy:dev-grok exec=SUCCESS
-     [ROUND] leader {"images_received": true, "lines": {"E1": "ABSENT"}, "criteria": {"C1": "MET"}, "conflicts": false} why: ev-000001 shows a wall-mounted Growatt inverter with underside cabling, satisfying C1 and confirming installation of a string inverter. ev-000002 clearly reads the nameplate as MOD 4000TL3-X (4 kW), which differs from the required E1 model MOD 3000TL3-X (3 kW), so the scheduled item is absent. The t
-  leader/validator vote=agree model=policy:dev-grok exec=SUCCESS
-  validator/validator vote=agree model=openai/gpt-5.4 exec=SUCCESS
-  validator/validator vote=disagree model=google/gemini-3-flash-preview exec=SUCCESS
-     [DISAGREE] this validator did not receive the images
-  validator/validator vote=agree model=policy:dev-deepseek exec=SUCCESS
-  validator/validator vote=idle model=policy:dev-gpt-5-4 exec=ERROR
-[17:47:07] story.assess: REJECTED lines {"E1":"ABSENT"} criteria {"C1":"MET"}
-[17:47:07]   ok: a unit that is not the model the terms name is not accepted as that line
-[17:47:07]   ok: a decision that fell short opens a cure period
-[17:47:10] story.cure_on_nothing_new: INSTALLER request_cure 0xf086a9bb89db506a2d376dcc2e9a923565972b3f2543bf4d84e9d15604c5fc88
-[17:47:48] story.cure_on_nothing_new: FINALIZED MAJORITY_AGREE leader=ERROR in 39 s
-[17:47:48]   ok: story.cure_on_nothing_new is refused: "filed since the decision"
-[17:47:50] story.stranger_proposes: STRANGER propose_substitution 0x9bfb481ae6c795818d5a64fc138f851ef9fb032e3dd0e1437e29800350dc71eb
-[17:48:23] story.stranger_proposes: FINALIZED MAJORITY_AGREE leader=ERROR in 33 s
-[17:48:23]   ok: story.stranger_proposes is refused: "only the installer proposes a substitute"
-[17:48:25] story.wrong_page.propose: INSTALLER propose_substitution 0x258f4a62f1a8ff3851c860864bf82d78ee7944f46da42a23276be2f7024ca1b4
-[17:49:05] story.wrong_page.propose: FINALIZED MAJORITY_AGREE leader=SUCCESS in 40 s
-[17:49:07] story.wrong_page.objection: OWNER answer_substitution 0xa88aa28640e7b1f12465815df4696d6830f3c06dc48cc9765b2afbd0f3af397c
-[17:49:40] story.wrong_page.objection: FINALIZED MAJORITY_AGREE leader=SUCCESS in 33 s
-[17:49:42] story.wrong_page.decide: STRANGER decide_substitution 0x42eba13c6065549a04bb5781918322be91c2b529fca822ab463e9d98b515491d
-  … story.wrong_page.decide ACCEPTED
-[17:50:56] story.wrong_page.decide: FINALIZED MAJORITY_AGREE leader=SUCCESS in 73 s
-receipt 0x42eba13c6065549a04bb5781918322be91c2b529fca822ab463e9d98b515491d status=FINALIZED result=MAJORITY_AGREE rotations=1
- rotation 1: Accepted
-  leader/leader vote=? model=policy:dev-gemini exec=SUCCESS
-     [SUBSTITUTE] leader UNPROVEN {"page_chars": 9803, "names_model": false, "publisher": "UNKNOWN", "same_role": false, "meets": "UNCLEAR"} why: The page does not name the proposed model.
-  leader/validator vote=idle model=policy:dev-gemini exec=ERROR
-  validator/validator vote=agree model=policy:dev-gpt-5-4 exec=SUCCESS
-  validator/validator vote=agree model=policy:dev-deepseek exec=SUCCESS
-  validator/validator vote=idle model=policy:dev-sonnet exec=ERROR
-  validator/validator vote=agree model=policy:dev-sonnet exec=SUCCESS
-[17:50:58] story.wrong_page: REFUSED UNPROVEN  {"documents_model":false,"meets":"UNCLEAR","names_model":false,"page_chars":9803,"page_sha256":"45405ace50ca508a2577bf46cf98e4d54eb276cdff918029a3431187585a234c","publisher":"UNKNOWN","same_role":false,"shortfalls":[]}
-[17:50:58] story.wrong_page: why: The page does not name the proposed model.
-[17:50:58]   ok: a page that never names the proposed model proves nothing, and code says so
-[17:50:58]   ok: a refused substitute changes no line
-[17:51:00] story.propose: INSTALLER propose_substitution 0x11351fc26fe26ec6a17caa00497225410cbf6975fad5d76b444f165124adfaa2
-[17:51:39] story.propose: FINALIZED MAJORITY_AGREE leader=SUCCESS in 39 s
-[17:51:39]   ok: the proposal is recorded
-[17:51:42] story.assess_while_open: INSTALLER request_assessment 0xaca14043ca4c735ac5545a18a6dfb57e63170a90c06744427976246d2ad08667
-[17:52:19] story.assess_while_open: FINALIZED MAJORITY_AGREE leader=ERROR in 37 s
-[17:52:19]   ok: story.assess_while_open is refused: "a substitution is open on this milestone"
-[17:52:21] story.objection: OWNER answer_substitution 0x8a184c19f4a007ebfa5753d32a86cd47108ad791e78e6a1aebdbf7a4027c8d50
-[17:52:59] story.objection: FINALIZED MAJORITY_AGREE leader=SUCCESS in 38 s
-[17:53:01] story.decide: STRANGER decide_substitution 0x2ad574dc3d04963c50d0351bd296481e304789d06cac1b3804dbfd66595e312c
-  … story.decide ACCEPTED
-[17:54:01] story.decide: FINALIZED MAJORITY_AGREE leader=SUCCESS in 60 s
-receipt 0x2ad574dc3d04963c50d0351bd296481e304789d06cac1b3804dbfd66595e312c status=FINALIZED result=MAJORITY_AGREE rotations=1
- rotation 1: Accepted
-  leader/leader vote=? model=policy:dev-sonnet exec=SUCCESS
-     [SUBSTITUTE] leader EQUIVALENT {"page_chars": 2367, "names_model": true, "publisher": "DISTRIBUTOR", "same_role": true, "meets": "YES"} why: The page at sun.store documents exactly the MOD 4000TL3-X, which is the proposed substitute model. Sun.store is an established solar equipment distributor with its own catalogue, not the manufacturer Growatt. The page confirms it is a three-phase on-grid string inverter, matchin
-  leader/validator vote=agree model=policy:dev-sonnet exec=SUCCESS
-  validator/validator vote=idle model=policy:dev-deepseek exec=ERROR
-  validator/validator vote=agree model=google/gemini-3-flash-preview exec=SUCCESS
-  validator/validator vote=idle model=policy:dev-gpt-5-4 exec=ERROR
-  validator/validator vote=agree model=policy:dev-grok exec=SUCCESS
-[17:54:02] story: APPROVED EQUIVALENT  {"documents_model":true,"meets":"YES","names_model":true,"page_chars":2367,"page_sha256":"0c6f5038b19bd15aa8ac68bf763f395f7b7afa8f4cfd11cb03a434e811c055e1","publisher":"DISTRIBUTOR","same_role":true,"shortfalls":[]}
-[17:54:02] story: why: The page at sun.store documents exactly the MOD 4000TL3-X, which is the proposed substitute model. Sun.store is an established solar equipment distributor with its own catalogue, not the manufacturer Growatt. The page confirms it is a three-phase on-grid string inverter, matching the role specified in the signed line. The signed line requires at least 3 kW output; the page states 4 kW inverter power, which meets or exceeds that threshold. The terms require a three-phase string inverter of at least 3 kW, and the page confirms 3 phases and 4 kW, so all stated ratings are met or exceeded.
-[17:54:02]   ok: validators who each read the page approve a substitute of the same role and a higher rating
-[17:54:02]   ok: the approval rests on a page that names the model and has an answerable publisher
-[17:54:02]   ok: the approved substitute is the line every later round judges against
-[17:54:02]   ok: the signed terms are not rewritten
-[17:54:19] story.plate_again: INSTALLER submit_image 0x39b97e6faf7135389a1a4fee140be638ae8e5948ba2738668916d33f75baa040
-[17:54:55] story.plate_again: FINALIZED MAJORITY_AGREE leader=SUCCESS in 36 s
-[17:54:57] story.cure: INSTALLER request_cure 0xf114cbcd4ed93e473c5c91c9d94433036b9db22a7e08e277de70b4c6d19826f8
-  … story.cure ACCEPTED
-[17:56:19] story.cure: FINALIZED MAJORITY_AGREE leader=SUCCESS in 82 s
-receipt 0xf114cbcd4ed93e473c5c91c9d94433036b9db22a7e08e277de70b4c6d19826f8 status=FINALIZED result=MAJORITY_AGREE rotations=1
- rotation 1: Accepted
-  leader/leader vote=? model=openai/gpt-5.4 exec=SUCCESS
-     [ROUND] leader {"images_received": true, "lines": {"E1": "INSTALLED"}, "criteria": {"C1": "MET"}, "conflicts": false} why: The images show a wall-mounted Growatt inverter installed indoors, with cables/conduits entering at the bottom of the unit. The side-view image includes a readable rating label stating Growatt and model MOD 4000TL3-X, which matches the substituted equipment named in the schedule and satisfies the
-  leader/validator vote=agree model=openai/gpt-5.4 exec=SUCCESS
-  validator/validator vote=agree model=anthropic/claude-sonnet-4.6 exec=SUCCESS
-  validator/validator vote=idle model=policy:dev-deepseek exec=ERROR
-  validator/validator vote=disagree model=policy:dev-mistral exec=SUCCESS
-     [DISAGREE] this validator did not receive the images
-  validator/validator vote=agree model=policy:dev-gemini exec=SUCCESS
-[17:56:20] story.cure: ACCEPTED lines {"E1":"INSTALLED"} carried {"from_round":1,"lines":[],"criteria":[]}
-[17:56:20]   ok: the cure round finds the substituted line installed and the milestone is accepted
-[17:56:21]   ok: the round is recorded as a cure of the decision it answers
-[17:56:21]   ok: the round records the schedule it judged against
-[17:56:21]   ok: the record names every item the decision rests on, for an appeal to read
-[17:56:21]   ok: the condition is judged again with the new unit in place, not carried from the old
-[17:56:21]   ok: the substituted line is open, so nothing on this one-line schedule is carried
-[17:56:24] story.finalize_early: STRANGER finalize 0x39ad9b8b9183222e082d4f5c7c03f16f79ca7f05598dba01c214f3554412cd4e
-[17:57:04] story.finalize_early: FINALIZED MAJORITY_AGREE leader=ERROR in 40 s
-[17:57:04]   ok: story.finalize_early is refused: "the appeal window is still open"
-[17:57:05] waiting for the cured acceptance's appeal window (482 s)
-[17:58:05] waiting for the cured acceptance's appeal window (422 s)
-[17:59:05] waiting for the cured acceptance's appeal window (362 s)
-[18:00:05] waiting for the cured acceptance's appeal window (302 s)
-[18:01:05] waiting for the cured acceptance's appeal window (242 s)
-[18:02:05] waiting for the cured acceptance's appeal window (182 s)
-[18:03:05] waiting for the cured acceptance's appeal window (122 s)
-[18:04:05] waiting for the cured acceptance's appeal window (62 s)
-[18:05:05] waiting for the cured acceptance's appeal window (2 s)
-[18:05:11] story.finalize: STRANGER finalize 0x55e6d43bb220712c2b99ffb28c777f7081d3f4b11186ffd2cef8334437f92d1d
-[18:05:51] story.finalize: FINALIZED MAJORITY_AGREE leader=SUCCESS in 39 s
-[18:05:56] story.claim: INSTALLER claim 0x013f881d3019d98dd01da4bd64bfade566150b17ff99fd6a7b426600a70cb6cb
-[18:06:30] story.claim: FINALIZED MAJORITY_AGREE leader=SUCCESS in 33 s
-[18:06:30] story.claim: the installer's balance moved by 1999873695249999177 atto
-[18:06:30]   ok: the installer is paid the milestone, whole
-[18:06:32] refusals.create: OWNER create_project 0x0510662c87d66d8b07c3a6c40941d2c4e54c1276c00ca00c3a671a6a93e876b3
-[18:07:11] refusals.create: FINALIZED MAJORITY_AGREE leader=SUCCESS in 39 s
-[18:07:13] refusals.milestone: OWNER add_milestone 0x598a95bc801ec5355c3cb1339b5e10a5919cb5d52ca006144ae8965e82cdae18
-[18:07:50] refusals.milestone: FINALIZED MAJORITY_AGREE leader=SUCCESS in 37 s
-[18:07:52] refusals.sign: INSTALLER accept_project 0xc96ceeaf68916f5e269478a8866b481b52764d69e58258e124a7b4776b7006b8
-[18:08:27] refusals.sign: FINALIZED MAJORITY_AGREE leader=SUCCESS in 35 s
-[18:08:29] refusals.plain.propose: INSTALLER propose_substitution 0xb97564a16b921138f9cf1df74ca5b64ce21693e2099d8cb5880e675a3cd3c4b5
-[18:09:08] refusals.plain.propose: FINALIZED MAJORITY_AGREE leader=SUCCESS in 38 s
-[18:09:10] refusals.plain.no: OWNER answer_substitution 0xfd0931457cbdd66a6abdd3fdda90f8f86d4eaa148d18070d0f8409f17b398308
-[18:09:50] refusals.plain.no: FINALIZED MAJORITY_AGREE leader=SUCCESS in 39 s
-[18:09:50]   ok: on a line signed without or-equivalent the owner's no ends the matter; no panel sits
-[18:09:53] refusals.smaller.propose: INSTALLER propose_substitution 0xd0b38e9b44d1f1bf197736b4e836062fa967d0a068693869d4af928db4089136
-[18:10:32] refusals.smaller.propose: FINALIZED MAJORITY_AGREE leader=SUCCESS in 39 s
-[18:10:34] refusals.smaller.objection: OWNER answer_substitution 0xe5c33da10360fd194d1794fc09d657de64a27f0605daf64c132d11cf1cdf6e9c
-[18:11:13] refusals.smaller.objection: FINALIZED MAJORITY_AGREE leader=SUCCESS in 39 s
-[18:11:18] refusals.smaller.decide: STRANGER decide_substitution 0xcadcfc9dbbe61d58108748dd25324fa6304841abf3a21ec41f84683362aade3b
-  … refusals.smaller.decide ACCEPTED
-[18:12:33] refusals.smaller.decide: FINALIZED MAJORITY_AGREE leader=SUCCESS in 75 s
-receipt 0xcadcfc9dbbe61d58108748dd25324fa6304841abf3a21ec41f84683362aade3b status=FINALIZED result=MAJORITY_AGREE rotations=1
+[00:36:55] story.assess: FINALIZED MAJORITY_AGREE leader=SUCCESS in 86 s
+receipt 0xa90b154a7a0467e7198c75cca4fb828f210039fe61f3673105e8b62449c13eba status=FINALIZED result=MAJORITY_AGREE rotations=1
  rotation 1: Accepted
   leader/leader vote=? model=policy:dev-deepseek exec=SUCCESS
-     [SUBSTITUTE] leader NOT_EQUIVALENT {"page_chars": 2367, "names_model": true, "publisher": "DISTRIBUTOR", "same_role": true, "meets": "NO"} why: The page describes a Growatt MOD 4000TL3-X, which exactly matches the proposed model. The publisher is a commercial seller (sun.store), making it a DISTRIBUTOR. The page shows it is a three-phase string inverter, matching the role in the signed line. The signed line requires
+     [ROUND] leader {"images_received": true, "lines": {"E1": "ABSENT"}, "criteria": {"C1": "UNCLEAR"}, "conflicts": false} why: The milestone requires a Growatt MOD 3000TL3-X inverter to be installed with a legible nameplate. The evidence shows two images: ev-000001 claims to show the inverter on the wall but actually shows a solar panel, not an inverter, so it does not support the requirement. ev-000002 shows a nameplat
   leader/validator vote=idle model=policy:dev-deepseek exec=ERROR
+  validator/validator vote=idle model=policy:dev-sonnet exec=ERROR
+  validator/validator vote=agree model=anthropic/claude-sonnet-4.6 exec=SUCCESS
+  validator/validator vote=agree model=openai/gpt-5.4 exec=SUCCESS
   validator/validator vote=agree model=policy:dev-gpt-5-4 exec=SUCCESS
-  validator/validator vote=idle model=policy:dev-gemini exec=ERROR
-  validator/validator vote=agree model=google/gemini-3-flash-preview exec=SUCCESS
-  validator/validator vote=agree model=policy:dev-sonnet exec=SUCCESS
-[18:12:34] refusals.smaller: REFUSED NOT_EQUIVALENT  {"documents_model":true,"meets":"NO","names_model":true,"page_chars":2367,"page_sha256":"0c6f5038b19bd15aa8ac68bf763f395f7b7afa8f4cfd11cb03a434e811c055e1","publisher":"DISTRIBUTOR","same_role":true,"shortfalls":["Maximum AC power is 4.4 kW, not 10 kW."]}
-[18:12:34] refusals.smaller: why: The page describes a Growatt MOD 4000TL3-X, which exactly matches the proposed model. The publisher is a commercial seller (sun.store), making it a DISTRIBUTOR. The page shows it is a three-phase string inverter, matching the role in the signed line. The signed line requires a 10 kW inverter, but the page lists 'Maximum AC Power (kW)' as 4.4 kW, falling short of the required rating.
-[18:12:34]   ok: a substitute whose own page shows a lower rating than the line is refused, whatever rating the installer states for it
-[18:12:34] observation: the panel's label for the smaller unit was NOT_EQUIVALENT
-[18:12:34]   ok: the line is unchanged
-[18:12:36] refusals.self.propose: INSTALLER propose_substitution 0xa596b22e43e86117a57f0a2e422ee6b90cf50dbd9e6048436734801f438bb39a
-[18:13:10] refusals.self.propose: FINALIZED MAJORITY_AGREE leader=SUCCESS in 34 s
-[18:13:12] refusals.self.objection: OWNER answer_substitution 0x739783af73c08c1e6e645d409d4d33391dfa746f28e9c73f5bea15301d1bb7e5
-[18:13:49] refusals.self.objection: FINALIZED MAJORITY_AGREE leader=SUCCESS in 37 s
-[18:13:51] refusals.self.decide: STRANGER decide_substitution 0x081c6e9207fafdcfe8f5b1e000f2567c69d9b845145cd8a8be3aba20810f47ea
-  … refusals.self.decide ACCEPTED
-[18:14:52] refusals.self.decide: FINALIZED MAJORITY_AGREE leader=SUCCESS in 61 s
-receipt 0x081c6e9207fafdcfe8f5b1e000f2567c69d9b845145cd8a8be3aba20810f47ea status=FINALIZED result=MAJORITY_AGREE rotations=1
+[00:36:56] story.assess: REJECTED lines {"E1":"ABSENT"} criteria {"C1":"UNCLEAR"}
+[00:36:56]   ok: a unit that is not the model the terms name is not accepted as that line
+[00:36:58]   ok: a decision that fell short opens a cure period
+[00:36:59] story.cure_on_nothing_new: INSTALLER request_cure 0x724fcd215322fab41a2e611d1190813686f5e7fa015a29353a335f9f394f73cf
+[00:37:34] story.cure_on_nothing_new: FINALIZED MAJORITY_AGREE leader=ERROR in 35 s
+[00:37:34]   ok: story.cure_on_nothing_new is refused: "filed since the decision"
+[00:37:36] story.stranger_proposes: STRANGER propose_substitution 0x7a7b7393896a8e43dd9d72ac22743e2f8fdd52ec709d277643372d9fc5788e92
+[00:38:13] story.stranger_proposes: FINALIZED MAJORITY_AGREE leader=ERROR in 37 s
+[00:38:13]   ok: story.stranger_proposes is refused: "only the installer proposes a substitute"
+[00:38:15] story.wrong_page.propose: INSTALLER propose_substitution 0x8aff76c463673059dad6c04767dcd7149a1453e0e173c0e0ff43265949cf5452
+[00:38:58] story.wrong_page.propose: FINALIZED MAJORITY_AGREE leader=SUCCESS in 43 s
+[00:39:00] story.wrong_page.objection: OWNER answer_substitution 0xcc9d901eeb7138af5cf5f255a7b7b7cb0d11e4b2deb4857ecea9b9b176d45f42
+[00:39:37] story.wrong_page.objection: FINALIZED MAJORITY_AGREE leader=SUCCESS in 37 s
+[00:39:40] story.wrong_page.decide: STRANGER decide_substitution 0xc540033dcc30cad836e77a733df8f5955c352733964e44a33af93ff3943b5ae1
+[00:40:21] story.wrong_page.decide: FINALIZED MAJORITY_AGREE leader=SUCCESS in 41 s
+receipt 0xc540033dcc30cad836e77a733df8f5955c352733964e44a33af93ff3943b5ae1 status=FINALIZED result=MAJORITY_AGREE rotations=1
  rotation 1: Accepted
-  leader/leader vote=? model=policy:dev-gpt-oss exec=SUCCESS
-     [SUBSTITUTE] leader UNPROVEN {"page_chars": 1360, "names_model": true, "publisher": "UNKNOWN", "same_role": true, "meets": "YES"} why: The page provides a dedicated technical datasheet for the Northgate Power NG-10K3 Titan, matching the exact model name proposed. It specifies a three-phase string inverter with a rated AC output of 10 kW, which satisfies the contract's requirement of a 10 kW three‑phase inverter. The
-  leader/validator vote=idle model=policy:dev-gpt-oss exec=ERROR
-  validator/validator vote=idle model=google/gemini-3-flash-preview exec=ERROR
+  leader/leader vote=? model=policy:dev-sonnet exec=SUCCESS
+     [SUBSTITUTE] leader UNPROVEN {"page_chars": 9803, "names_model": false, "publisher": "UNKNOWN", "same_role": false, "meets": "UNCLEAR"} why: The page does not name the proposed model.
+  leader/validator vote=idle model=policy:dev-sonnet exec=ERROR
+  validator/validator vote=agree model=openai/gpt-5.4 exec=SUCCESS
+  validator/validator vote=idle model=policy:dev-mistral exec=ERROR
+  validator/validator vote=agree model=anthropic/claude-sonnet-4.6 exec=SUCCESS
   validator/validator vote=agree model=policy:dev-deepseek exec=SUCCESS
-  validator/validator vote=agree model=policy:dev-gpt-5-4 exec=SUCCESS
-  validator/validator vote=agree model=policy:dev-grok exec=SUCCESS
-[18:14:54] refusals.self: REFUSED UNPROVEN  {"documents_model":true,"meets":"YES","names_model":true,"page_chars":1360,"page_sha256":"70e106c8efd5c727045d287607ea516082c85f89d87be7bb8947ae1a1a7f060e","publisher":"UNKNOWN","same_role":true,"shortfalls":[]}
-[18:14:54] refusals.self: why: The page provides a dedicated technical datasheet for the Northgate Power NG-10K3 Titan, matching the exact model name proposed. It specifies a three-phase string inverter with a rated AC output of 10 kW, which satisfies the contract's requirement of a 10 kW three‑phase inverter. The publisher is a GitHub raw file from a personal repository, not a manufacturer, distributor, or official registry. All required characteristics are present and meet or exceed the signed line, with no shortfalls.
-[18:14:54]   ok: a page that says everything a datasheet says, published by nobody answerable, approves nothing
-[18:14:54] observation: publisher UNKNOWN, verdict UNPROVEN
-[18:14:54]   ok: the line is unchanged
-[18:14:59] refusals.fourth: INSTALLER propose_substitution 0x1fdd778f1a08222b413a904f128a2cba440043779db544bc05ea2e846739b827
-[18:15:34] refusals.fourth: FINALIZED MAJORITY_AGREE leader=ERROR in 35 s
-[18:15:34]   ok: refusals.fourth is refused: "the 3 substitutions they allow"
-[18:15:37] agreed.create: OWNER create_project 0xdfe41f4b72f8f25a92c3315b0f96e7d73afb4ac50c90c8db491d6dc650ca04a3
-[18:16:14] agreed.create: FINALIZED MAJORITY_AGREE leader=SUCCESS in 37 s
-[18:16:16] agreed.milestone: OWNER add_milestone 0xac7ce70175c449afac6001937cd075aecbc1dc76f55c1631de01446e22fadec1
-[18:16:51] agreed.milestone: FINALIZED MAJORITY_AGREE leader=SUCCESS in 36 s
-[18:16:53] agreed.sign: INSTALLER accept_project 0xc77585ea3fb3d5821727adac5219e4a047e9d1612817cb2f8f99c0f3da7bc46e
-[18:17:32] agreed.sign: FINALIZED MAJORITY_AGREE leader=SUCCESS in 38 s
-[18:17:34] agreed.propose: INSTALLER propose_substitution 0x88a516377bde8d2bcd9e64b57d2749f92339b17fcc98e2e4d89775f128962869
-[18:18:11] agreed.propose: FINALIZED MAJORITY_AGREE leader=SUCCESS in 37 s
-[18:18:13] agreed.yes: OWNER answer_substitution 0xd7e8ca1d2f12b692cefb877d77b6fe1f2002cb659e1f9a7eccb3ba7cc077bae0
-[18:18:52] agreed.yes: FINALIZED MAJORITY_AGREE leader=SUCCESS in 39 s
-[18:18:53]   ok: the owner's yes puts a substitute in force on any line, with no panel
-[18:18:55] kept.create: OWNER create_project 0x0dd738f886b28a8cfa19f9e8a321a76f020a5bc4e83ece428f515bcf6f97d529
-[18:19:32] kept.create: FINALIZED MAJORITY_AGREE leader=SUCCESS in 37 s
-[18:19:34] kept.milestone: OWNER add_milestone 0x902178110f93ec80bff0184d9bf5ebe19dffcb7fac9abec88455443dad864e8b
-[18:20:11] kept.milestone: FINALIZED MAJORITY_AGREE leader=SUCCESS in 37 s
-[18:20:14] kept.sign: INSTALLER accept_project 0xb425c7d4706c7ccd227465e6675d70a2bbfdf0dbde1988af2ca7ad56180e4feb
-[18:20:54] kept.sign: FINALIZED MAJORITY_AGREE leader=SUCCESS in 40 s
-[18:21:19] kept.front: INSTALLER submit_image 0x7d1ba5a9d22925a8d67e447e2e6ae4c06568c6c9b1078b6783fa64b578857237
-[18:21:59] kept.front: FINALIZED MAJORITY_AGREE leader=SUCCESS in 40 s
-[18:22:01] kept.assess: INSTALLER request_assessment 0xc286dec7ad175c7feb0db72233b95cbe13d540c1a4d2f5bd7061f1f7e81ed61c
-  … kept.assess ACCEPTED
-[18:23:12] kept.assess: FINALIZED MAJORITY_AGREE leader=SUCCESS in 70 s
-receipt 0xc286dec7ad175c7feb0db72233b95cbe13d540c1a4d2f5bd7061f1f7e81ed61c status=FINALIZED result=MAJORITY_AGREE rotations=1
+[00:40:23] story.wrong_page: REFUSED UNPROVEN  {"documents_model":false,"meets":"UNCLEAR","names_model":false,"page_chars":9803,"page_sha256":"45405ace50ca508a2577bf46cf98e4d54eb276cdff918029a3431187585a234c","publisher":"UNKNOWN","same_role":false,"shortfalls":[]}
+[00:40:23] story.wrong_page: why: The page does not name the proposed model.
+[00:40:23]   ok: a page that never names the proposed model proves nothing, and code says so
+[00:40:23]   ok: a refused substitute changes no line
+[00:40:25] story.propose: INSTALLER propose_substitution 0x57b622a4a79617702b42160e24bbe56ca0020e9103bad62b168f871e208b02ec
+[00:41:02] story.propose: FINALIZED MAJORITY_AGREE leader=SUCCESS in 37 s
+[00:41:02]   ok: the proposal is recorded
+[00:41:04] story.assess_while_open: INSTALLER request_assessment 0x6e14f967e8e82c8747b6c10d4cc00d014316a365b79dc9cb87a3f354dd625dc4
+[00:41:39] story.assess_while_open: FINALIZED MAJORITY_AGREE leader=ERROR in 35 s
+[00:41:39]   ok: story.assess_while_open is refused: "a substitution is open on this milestone"
+[00:41:41] story.objection: OWNER answer_substitution 0x650f19468507f6a28c536c244823d259ed7be3606b9123e82daf381dec3dcbf7
+[00:42:17] story.objection: FINALIZED MAJORITY_AGREE leader=SUCCESS in 36 s
+[00:42:19] story.decide: STRANGER decide_substitution 0xb5221b040ea20726981cbf6edddb6a725c510b2472c1156d10e71d9c45d8480f
+[00:43:04] story.decide: FINALIZED MAJORITY_AGREE leader=SUCCESS in 45 s
+receipt 0xb5221b040ea20726981cbf6edddb6a725c510b2472c1156d10e71d9c45d8480f status=FINALIZED result=MAJORITY_AGREE rotations=1
  rotation 1: Accepted
-  leader/leader vote=? model=openai/gpt-5.4 exec=SUCCESS
-     [ROUND] leader {"images_received": true, "lines": {"E1": "UNIDENTIFIED"}, "criteria": {"C1": "MET"}, "conflicts": false} why: The image ev-000004 clearly shows a wall-mounted Growatt inverter installed indoors, with cabling entering at the underside, so it supports the installation and criterion C1. However, the schedule requires the specific model Growatt MOD 4000TL3-X and says the nameplate must be legible in the e
-  leader/validator vote=agree model=openai/gpt-5.4 exec=SUCCESS
-  validator/validator vote=disagree model=policy:dev-deepseek exec=SUCCESS
-     [DISAGREE] this node sees a conflict the leader does not report; mine={"E1": "ABSENT"} {"C1": "UNCLEAR"} conflicts=True why: The evidence shows an inverter is installed, but it is not the specified Growatt model and is not mounted as required. The image depicts a gray enclosure on a post, not a wall-mounted unit with underside connections. The filer's caption is contradicted by the visual evidence.
-  validator/validator vote=agree model=policy:dev-gpt-5-4 exec=SUCCESS
-  validator/validator vote=idle model=policy:dev-gpt-oss exec=ERROR
-  validator/validator vote=agree model=google/gemini-3-flash-preview exec=SUCCESS
-[18:23:12] kept.assess: UNDETERMINED lines {"E1":"UNIDENTIFIED"} criteria {"C1":"MET"}
-[18:23:32] kept.plate: INSTALLER submit_image 0xb104f4fea7d2413a2ac2d48e39b25404953264e8fd40cf1ff6f3fef8cb793b58
-[18:24:11] kept.plate: FINALIZED MAJORITY_AGREE leader=SUCCESS in 38 s
-[18:24:13] kept.cure: INSTALLER request_cure 0x463bbeb47fbe77ee4bd7c151a59fab9a30fbe6e64553057afeb452c5056e7ab0
-  … kept.cure COMMITTING
-[18:25:43] kept.cure: FINALIZED MAJORITY_AGREE leader=SUCCESS in 90 s
-receipt 0x463bbeb47fbe77ee4bd7c151a59fab9a30fbe6e64553057afeb452c5056e7ab0 status=FINALIZED result=MAJORITY_AGREE rotations=1
+  leader/leader vote=? model=google/gemini-3-flash-preview exec=SUCCESS
+     [SUBSTITUTE] leader EQUIVALENT {"page_chars": 2367, "names_model": true, "publisher": "DISTRIBUTOR", "same_role": true, "meets": "YES"} why: The page explicitly documents the Growatt MOD 4000TL3-X, confirming its specifications as a three-phase on-grid inverter. The publisher, sun.store, is an established solar equipment marketplace and distributor. The substitute meets or exceeds the required 3 kW output, providing
+  leader/validator vote=idle model=google/gemini-3-flash-preview exec=ERROR
+  validator/validator vote=idle model=policy:dev-sonnet exec=ERROR
+  validator/validator vote=agree model=policy:dev-gemini exec=SUCCESS
+  validator/validator vote=agree model=policy:dev-gemini exec=SUCCESS
+  validator/validator vote=agree model=policy:dev-sonnet exec=SUCCESS
+[00:43:05] story: APPROVED EQUIVALENT  {"documents_model":true,"meets":"YES","names_model":true,"page_chars":2367,"page_sha256":"0c6f5038b19bd15aa8ac68bf763f395f7b7afa8f4cfd11cb03a434e811c055e1","publisher":"DISTRIBUTOR","same_role":true,"shortfalls":[]}
+[00:43:05] story: why: The page explicitly documents the Growatt MOD 4000TL3-X, confirming its specifications as a three-phase on-grid inverter. The publisher, sun.store, is an established solar equipment marketplace and distributor. The substitute meets or exceeds the required 3 kW output, providing a nominal 4 kW, and matches the phase and type requirements specified in the terms.
+[00:43:05]   ok: validators who each read the page approve a substitute of the same role and a higher rating
+[00:43:05]   ok: the approval rests on a page that names the model and has an answerable publisher
+[00:43:05]   ok: the approved substitute is the line every later round judges against
+[00:43:05]   ok: the signed terms are not rewritten
+[00:43:09] story.plate_again: INSTALLER submit_image 0x6d8721fca658098be4f0a16be7ad84cc60ca711fdf3ef9c723630e5c36cf6d45
+[00:43:50] story.plate_again: FINALIZED MAJORITY_AGREE leader=SUCCESS in 41 s
+[00:43:52] story.cure: INSTALLER request_cure 0xae1175560f475284833fdf8c850b6edbba61fd0ec0291e0ce8be5504f11eda36
+  … story.cure ACCEPTED
+[00:45:07] story.cure: FINALIZED MAJORITY_AGREE leader=SUCCESS in 75 s
+receipt 0xae1175560f475284833fdf8c850b6edbba61fd0ec0291e0ce8be5504f11eda36 status=FINALIZED result=MAJORITY_AGREE rotations=1
  rotation 1: Accepted
   leader/leader vote=? model=policy:dev-gpt-5-4 exec=SUCCESS
-     [ROUND] leader {"images_received": true, "lines": {"E1": "INSTALLED"}, "criteria": {}, "conflicts": false} why: The cure evidence needs to establish the scheduled inverter line E1, specifically that the installed inverter is identifiable by a legible nameplate as the specified Growatt MOD 4000TL3-X. Image ev-000004 shows a Growatt inverter installed on the wall, but its visible text does not identify the exac
+     [ROUND] leader {"images_received": true, "lines": {"E1": "INSTALLED"}, "criteria": {"C1": "MET"}, "conflicts": false} why: The images show a wall-mounted Growatt string inverter installed on the site. The nameplate is legible in ev-000003 and identifies the unit as Growatt MOD 4000TL3-X, which matches the substituted equipment named in the schedule. The installation details visible in ev-000001 show cabling connected
   leader/validator vote=agree model=policy:dev-gpt-5-4 exec=SUCCESS
-  validator/validator vote=idle model=policy:dev-gpt-oss exec=ERROR
+  validator/validator vote=disagree model=policy:dev-gpt-oss exec=SUCCESS
+     [DISAGREE] this validator did not receive the images
+  validator/validator vote=agree model=policy:dev-gpt-5-4 exec=SUCCESS
+  validator/validator vote=agree model=policy:dev-gemini exec=SUCCESS
+  validator/validator vote=idle model=policy:dev-deepseek exec=ERROR
+[00:45:07] story.cure: ACCEPTED lines {"E1":"INSTALLED"} carried {"from_round":1,"lines":[],"criteria":[]}
+[00:45:07]   ok: the cure round finds the substituted line installed and the milestone is accepted
+[00:45:08]   ok: the round is recorded as a cure of the decision it answers
+[00:45:08]   ok: the round records the schedule it judged against
+[00:45:08]   ok: the record names every item the decision rests on, for an appeal to read
+[00:45:08]   ok: the condition is judged again with the new unit in place, not carried from the old
+[00:45:08]   ok: the substituted line is open, so nothing on this one-line schedule is carried
+[00:45:10] story.finalize_early: STRANGER finalize 0xf5ddd66b6cf79940af058c20d6ece8dfe08861388dec7f17aefa57377d00a544
+[00:45:45] story.finalize_early: FINALIZED MAJORITY_AGREE leader=ERROR in 35 s
+[00:45:45]   ok: story.finalize_early is refused: "the appeal window is still open"
+[00:45:46] waiting for the cured acceptance's appeal window (496 s)
+[00:46:46] waiting for the cured acceptance's appeal window (436 s)
+[00:47:46] waiting for the cured acceptance's appeal window (376 s)
+[00:48:46] waiting for the cured acceptance's appeal window (316 s)
+[00:49:46] waiting for the cured acceptance's appeal window (256 s)
+[00:50:46] waiting for the cured acceptance's appeal window (196 s)
+[00:51:46] waiting for the cured acceptance's appeal window (136 s)
+[00:52:46] waiting for the cured acceptance's appeal window (76 s)
+[00:53:46] waiting for the cured acceptance's appeal window (16 s)
+[00:54:05] story.finalize: STRANGER finalize 0x9eb9ab4829d47878d7fad649d7e4599749a1391c33e303f8c5e5533630aced68
+[00:54:42] story.finalize: FINALIZED MAJORITY_AGREE leader=SUCCESS in 37 s
+[00:54:47] story.claim: INSTALLER claim 0x2ea6a6acb1e1b6c8f389b0d865e02791ea2c2355ca429a7e565f6560cf6edadd
+[00:55:23] story.claim: FINALIZED MAJORITY_AGREE leader=SUCCESS in 36 s
+[00:55:23] story.claim: the installer's balance moved by 1999873695249999177 atto
+[00:55:23]   ok: the installer is paid the milestone, whole
+[00:55:25] refusals.create: OWNER create_project 0x396390b0e7bf6c11b21536ac4a25faae603e7c1686e913bf6c4e601c6236aef4
+[00:56:05] refusals.create: FINALIZED MAJORITY_AGREE leader=SUCCESS in 40 s
+[00:56:07] refusals.milestone: OWNER add_milestone 0xf38fdcebc67a9639e3c861308de9830d86842036e0bf6016604d9a1de6ec825b
+[00:56:47] refusals.milestone: FINALIZED MAJORITY_AGREE leader=SUCCESS in 40 s
+[00:56:49] refusals.sign: INSTALLER accept_project 0x9d86d101902674f1c6dfb5aad68f51894c49ac7c9e258b4d86d84feeeeb40c70
+[00:57:28] refusals.sign: FINALIZED MAJORITY_AGREE leader=SUCCESS in 40 s
+[00:57:30] refusals.plain.propose: INSTALLER propose_substitution 0x54057205b3999e2673f542646a0d6e267f61780951a76585ffc5c59e5b5273da
+[00:58:10] refusals.plain.propose: FINALIZED MAJORITY_AGREE leader=SUCCESS in 40 s
+[00:58:12] refusals.plain.no: OWNER answer_substitution 0x9ab28eabb69a42bd8bc06e053986cea3b0054808b627acb99100d49acf3cd44c
+[00:58:52] refusals.plain.no: FINALIZED MAJORITY_AGREE leader=SUCCESS in 39 s
+[00:58:52]   ok: on a line signed without or-equivalent the owner's no ends the matter; no panel sits
+[00:58:53] refusals.smaller.propose: INSTALLER propose_substitution 0x64c055b80f119af894c5abc225f1bc58e5ea66aca4a68954e19dc93df3c6e86e
+[00:59:29] refusals.smaller.propose: FINALIZED MAJORITY_AGREE leader=SUCCESS in 36 s
+[00:59:31] refusals.smaller.objection: OWNER answer_substitution 0xae589c1eb28c202e23aea4d3e5f9852ab4a4b240360169824a4639345fab8ba5
+[01:00:12] refusals.smaller.objection: FINALIZED MAJORITY_AGREE leader=SUCCESS in 40 s
+[01:00:13] refusals.smaller.decide: STRANGER decide_substitution 0x70e2a30801c63c20fc78a562fc3e3cbeec4ead4b015c6994e20c98f35a3b45cf
+  … refusals.smaller.decide ACCEPTED
+[01:01:07] refusals.smaller.decide: FINALIZED MAJORITY_AGREE leader=SUCCESS in 54 s
+receipt 0x70e2a30801c63c20fc78a562fc3e3cbeec4ead4b015c6994e20c98f35a3b45cf status=FINALIZED result=MAJORITY_AGREE rotations=1
+ rotation 1: Accepted
+  leader/leader vote=? model=policy:dev-gemini exec=SUCCESS
+     [SUBSTITUTE] leader NOT_EQUIVALENT {"page_chars": 2367, "names_model": true, "publisher": "DISTRIBUTOR", "same_role": true, "meets": "NO"} why: The page specifically documents the Growatt MOD 4000TL3-X, which is the proposed substitute. However, the technical specifications on the page list its AC power as 4 kW (maximum 4.4 kW), which is significantly lower than the 10 kW requirement specified in the signed contract
+  leader/validator vote=agree model=policy:dev-gemini exec=SUCCESS
+  validator/validator vote=idle model=policy:dev-sonnet exec=ERROR
+  validator/validator vote=idle model=policy:dev-mistral exec=ERROR
   validator/validator vote=agree model=policy:dev-gemini exec=SUCCESS
   validator/validator vote=agree model=openai/gpt-5.4 exec=SUCCESS
+[01:01:09] refusals.smaller: REFUSED NOT_EQUIVALENT  {"documents_model":true,"meets":"NO","names_model":true,"page_chars":2367,"page_sha256":"0c6f5038b19bd15aa8ac68bf763f395f7b7afa8f4cfd11cb03a434e811c055e1","publisher":"DISTRIBUTOR","same_role":true,"shortfalls":["Output power of 4 kW is less than the required 10 kW"]}
+[01:01:09] refusals.smaller: why: The page specifically documents the Growatt MOD 4000TL3-X, which is the proposed substitute. However, the technical specifications on the page list its AC power as 4 kW (maximum 4.4 kW), which is significantly lower than the 10 kW requirement specified in the signed contract and the terms.
+[01:01:09]   ok: a substitute whose own page shows a lower rating than the line is refused, whatever rating the installer states for it
+[01:01:09] observation: the panel's label for the smaller unit was NOT_EQUIVALENT
+[01:01:09]   ok: the line is unchanged
+[01:01:11] refusals.self.propose: INSTALLER propose_substitution 0x3cf069fe9b9ba54b5c6603d4986a822a01a8c28246f6dc5107b2f1b03a50840b
+[01:01:52] refusals.self.propose: FINALIZED MAJORITY_AGREE leader=SUCCESS in 41 s
+[01:01:54] refusals.self.objection: OWNER answer_substitution 0x1fc9a62a16dc669ca0068b5bb06ba1dbbb0bf3ba1dfd1b8e251880b728faa72a
+[01:02:30] refusals.self.objection: FINALIZED MAJORITY_AGREE leader=SUCCESS in 35 s
+[01:02:32] refusals.self.decide: STRANGER decide_substitution 0x537b735035ac77a6c779d262e48a22fd99c1d76d3698e364331b58cf0b54b6cb
+  … refusals.self.decide ACCEPTED
+[01:03:27] refusals.self.decide: FINALIZED MAJORITY_AGREE leader=SUCCESS in 55 s
+receipt 0x537b735035ac77a6c779d262e48a22fd99c1d76d3698e364331b58cf0b54b6cb status=FINALIZED result=MAJORITY_AGREE rotations=1
+ rotation 1: Accepted
+  leader/leader vote=? model=openai/gpt-5.4 exec=SUCCESS
+     [SUBSTITUTE] leader UNPROVEN {"page_chars": 1360, "names_model": true, "publisher": "UNKNOWN", "same_role": true, "meets": "YES"} why: The page explicitly documents the proposed model as "NORTHGATE POWER NG-10K3 TITAN" and describes it as a three-phase string inverter. However, the address is a raw GitHub fixture file and the page itself says no company called Northgate Power publishes it and no such product is offer
+  leader/validator vote=idle model=openai/gpt-5.4 exec=ERROR
+  validator/validator vote=agree model=policy:dev-gpt-5-4 exec=SUCCESS
+  validator/validator vote=agree model=policy:dev-mistral exec=SUCCESS
+  validator/validator vote=idle model=anthropic/claude-sonnet-4.6 exec=ERROR
+  validator/validator vote=agree model=policy:dev-gpt-5-4 exec=SUCCESS
+[01:03:28] refusals.self: REFUSED UNPROVEN  {"documents_model":true,"meets":"YES","names_model":true,"page_chars":1360,"page_sha256":"70e106c8efd5c727045d287607ea516082c85f89d87be7bb8947ae1a1a7f060e","publisher":"UNKNOWN","same_role":true,"shortfalls":[]}
+[01:03:28] refusals.self: why: The page explicitly documents the proposed model as "NORTHGATE POWER NG-10K3 TITAN" and describes it as a three-phase string inverter. However, the address is a raw GitHub fixture file and the page itself says no company called Northgate Power publishes it and no such product is offered for sale, so the publisher is not the manufacturer or any authoritative seller/register. On the stated product characteristics, the page shows a 10 kW three-phase string inverter, matching the signed line's type and output rating and the terms' requirement for one three-phase string inverter of 10 kW output.
+[01:03:28]   ok: a page that says everything a datasheet says, published by nobody answerable, approves nothing
+[01:03:28] observation: publisher UNKNOWN, verdict UNPROVEN
+[01:03:28]   ok, in an earlier sitting: the line is unchanged
+[01:03:30] refusals.fourth: INSTALLER propose_substitution 0x09fcbfb32c166778e6969f15271ecdeb7abbb654d735b3ff8fdc594fe995c7e1
+[01:04:10] refusals.fourth: FINALIZED MAJORITY_AGREE leader=ERROR in 40 s
+[01:04:10]   ok: refusals.fourth is refused: "the 3 substitutions they allow"
+[01:04:12] agreed.create: OWNER create_project 0x66d28946b57a311e3d874f546a5b16637bee3ea60cde1fd036f5ffc0f6b7fc20
+[01:04:51] agreed.create: FINALIZED MAJORITY_AGREE leader=SUCCESS in 39 s
+[01:04:53] agreed.milestone: OWNER add_milestone 0xa746b9742259d4781e20e30fd91ddb3ee78ebc4d96e1b0e6a44346e42a766df5
+[01:05:28] agreed.milestone: FINALIZED MAJORITY_AGREE leader=SUCCESS in 35 s
+[01:05:30] agreed.sign: INSTALLER accept_project 0x84370876031ca7b94fe54bb0791c02981b700d84c15b1c00ccdec3acbb869de7
+[01:06:10] agreed.sign: FINALIZED MAJORITY_AGREE leader=SUCCESS in 40 s
+[01:06:13] agreed.propose: INSTALLER propose_substitution 0x2b3cb3cc8737c769ab0292fb09619e4def2182a2c7d295b0248df78551f3b13a
+[01:06:52] agreed.propose: FINALIZED MAJORITY_AGREE leader=SUCCESS in 39 s
+[01:06:54] agreed.yes: OWNER answer_substitution 0x86e8802794f79b6e720637fbb372f32a2d30b2b05dda1d3d8d19406c89ef4d9e
+[01:07:33] agreed.yes: FINALIZED MAJORITY_AGREE leader=SUCCESS in 39 s
+[01:07:34]   ok: the owner's yes puts a substitute in force on any line, with no panel
+[01:07:36] kept.create: OWNER create_project 0x5515783574050744c6acafb1c0f8968ba901b26f7c08ad3a8e3253c91c15b71f
+[01:08:16] kept.create: FINALIZED MAJORITY_AGREE leader=SUCCESS in 41 s
+[01:08:18] kept.milestone: OWNER add_milestone 0x415cfed926b78b83d5297d3be457d2d2c190a38e5e350c34c4e7b163604dd3a5
+[01:08:57] kept.milestone: FINALIZED MAJORITY_AGREE leader=SUCCESS in 39 s
+[01:08:59] kept.sign: INSTALLER accept_project 0x42960591dc327cd3b64020fc8d7ff3430c71c20e18d2f363b9f64d674ff5e3ee
+[01:09:36] kept.sign: FINALIZED MAJORITY_AGREE leader=SUCCESS in 37 s
+[01:09:47] kept.front: INSTALLER submit_image 0x8097855c49b30afbb6312e7fd5709656f5ebac99960582026f97af98a52bcbf9
+[01:10:29] kept.front: FINALIZED MAJORITY_AGREE leader=SUCCESS in 42 s
+[01:10:31] kept.assess: INSTALLER request_assessment 0xbed3cfeb41ed7a24741a071f83b3472a619a578cc4b2f27dbce03eec327d4402
+  … kept.assess ACCEPTED
+[01:11:33] kept.assess: FINALIZED MAJORITY_AGREE leader=SUCCESS in 62 s
+receipt 0xbed3cfeb41ed7a24741a071f83b3472a619a578cc4b2f27dbce03eec327d4402 status=FINALIZED result=MAJORITY_AGREE rotations=1
+ rotation 1: Accepted
+  leader/leader vote=? model=policy:dev-grok exec=SUCCESS
+     [ROUND] leader {"images_received": true, "lines": {"E1": "UNIDENTIFIED"}, "criteria": {"C1": "MET"}, "conflicts": false} why: The single image ev-000004 shows a wall-mounted Growatt inverter with bottom cabling, satisfying C1. However, the visible labels confirm only the Growatt brand and Hungarian service text; the required model MOD 4000TL3-X and 4 kW rating are never legible, so E1 cannot be marked INSTALLED. No o
+  leader/validator vote=idle model=policy:dev-grok exec=ERROR
+  validator/validator vote=agree model=openai/gpt-5.4 exec=SUCCESS
   validator/validator vote=idle model=policy:dev-deepseek exec=ERROR
-[18:25:43] kept.cure: ACCEPTED lines {"E1":"INSTALLED"} carried {"from_round":1,"lines":[],"criteria":["C1"]}
-[18:25:43]   ok: a cure round keeps the condition the first panel found met and judges only the open line
-[18:25:43]   ok: with the nameplate filed since, the open line is found installed and the milestone accepted
-[18:25:44] stats: {"cures":2,"evidence_items":5,"finalized":1,"milestones":4,"paid_wei":"2000000000000000000","projects":4,"rounds":4,"substitutions":6}
-[18:25:44] DONE: 29 checks, 44 transactions, 0 panels without a majority
-[21:06:59] resumed for one further case, added after the run above had finished:
-[21:06:59] agreed.again.propose: INSTALLER propose_substitution 0x7bd3107ece53da86f284f40508794c56360994b5f31bba3506d30ee6be8ad8ab
-[21:07:35] agreed.again.propose: FINALIZED MAJORITY_AGREE leader=SUCCESS in 36 s
-[21:07:37] agreed.again.withdraw: INSTALLER withdraw_substitution 0x065d1244b536ccfcbc7f3b8bffe14facd5cda4d8d12735fe3898042d6bc5b89a
-[21:08:18] agreed.again.withdraw: FINALIZED MAJORITY_AGREE leader=SUCCESS in 40 s
-[21:08:19]   ok: the installer takes an open proposal back and the line stays as it was
-[21:08:20] stats: {"cures":2,"evidence_items":19,"finalized":3,"milestones":13,"paid_wei":"6000000000000000000","projects":13,"rounds":13,"substitutions":7}
-[21:08:20] DONE: 30 checks, 46 transactions, 0 panels without a majority
+  validator/validator vote=agree model=policy:dev-gemini exec=SUCCESS
+  validator/validator vote=agree model=google/gemini-3-flash-preview exec=SUCCESS
+[01:11:34] kept.assess: UNDETERMINED lines {"E1":"UNIDENTIFIED"} criteria {"C1":"MET"}
+[01:11:38] kept.plate: INSTALLER submit_image 0x66138c8263a7a73189a91ac919d95d0343c4cf93853872460ca9a973d7e2e0ba
+[01:12:19] kept.plate: FINALIZED MAJORITY_AGREE leader=SUCCESS in 41 s
+[01:12:21] kept.cure: INSTALLER request_cure 0x16af8c5bcdfc0f8a7337e9f4ac43a0d6f3c8e00c0d34621cced7583085419c46
+  … kept.cure REVEALING
+[01:13:43] kept.cure: FINALIZED MAJORITY_AGREE leader=SUCCESS in 82 s
+receipt 0x16af8c5bcdfc0f8a7337e9f4ac43a0d6f3c8e00c0d34621cced7583085419c46 status=FINALIZED result=MAJORITY_AGREE rotations=1
+ rotation 1: Accepted
+  leader/leader vote=? model=openai/gpt-5.4 exec=SUCCESS
+     [ROUND] leader {"images_received": true, "lines": {"E1": "INSTALLED"}, "criteria": {}, "conflicts": false} why: The cure round only requires rating the schedule line E1; the previously settled finding about wall mounting and underside cabling is not to be re-rated. Image ev-000004 shows a Growatt inverter installed on the interior wall, but its model is not legible there. Image ev-000005 shows the inverter's
+  leader/validator vote=agree model=openai/gpt-5.4 exec=SUCCESS
+  validator/validator vote=disagree model=policy:dev-deepseek exec=SUCCESS
+     [DISAGREE] the leader accepts; this node finds rejected; mine={"E1": "ABSENT"} {} conflicts=False why: The evidence does not show the specified Growatt inverter installed. Image ev-000004 shows an electrical box but no legible nameplate. Image ev-000005 shows a nameplate for a SunPower solar module, not the required inverter. Since a label identifies a different product in the claimed position, the l
+  validator/validator vote=agree model=openai/gpt-5.4 exec=SUCCESS
+  validator/validator vote=agree model=policy:dev-gemini exec=SUCCESS
+  validator/validator vote=disagree model=policy:dev-sonnet exec=SUCCESS
+     [DISAGREE] this validator did not receive the images
+[01:13:44] kept.cure: ACCEPTED lines {"E1":"INSTALLED"} carried {"from_round":1,"lines":[],"criteria":["C1"]}
+[01:13:44]   ok: a cure round keeps the condition the first panel found met and judges only the open line
+[01:13:44]   ok: with the nameplate filed since, the open line is found installed and the milestone accepted
+[01:13:45] agreed.again.propose: INSTALLER propose_substitution 0xdeac33c1fe685ad36566708aff7968ec5e4fb4807dac655a15f7e3c87562e9c5
+[01:14:24] agreed.again.propose: FINALIZED MAJORITY_AGREE leader=SUCCESS in 39 s
+[01:14:27] agreed.again.withdraw: INSTALLER withdraw_substitution 0x32e34e2a33bb68640bfe39e179e6d7fff605580c3d84f1169c5985df37273471
+[01:15:07] agreed.again.withdraw: FINALIZED MAJORITY_AGREE leader=SUCCESS in 40 s
+[01:15:08]   ok: the installer takes an open proposal back and the line stays as it was
+[01:15:12] named.create: OWNER create_project 0x6c4818a3609030b213c3e9e113d882ad43543b2fa94492022f570c9ebd301536
+[01:15:52] named.create: FINALIZED MAJORITY_AGREE leader=SUCCESS in 41 s
+[01:15:54] named.milestone: OWNER add_milestone 0x09bca777e2e47731a12acf293b02cec8ec45d3e394318f047055f59c5e295ee7
+[01:16:30] named.milestone: FINALIZED MAJORITY_AGREE leader=SUCCESS in 36 s
+[01:16:32] named.sign: INSTALLER accept_project 0x7ee33bfc185a42d8b3df073c772ce8ee1b797c16915f9878f11ce049681db220
+[01:17:07] named.sign: FINALIZED MAJORITY_AGREE leader=SUCCESS in 35 s
+[01:17:08]   ok: the signed terms carry the sites the parties named
+[01:17:10] named.elsewhere: INSTALLER propose_substitution 0x4f23efd923f3ad5d0b04c6a0b771870dbcdddc6ff4194a84b6ef0558f7a3207f
+[01:17:45] named.elsewhere: FINALIZED MAJORITY_AGREE leader=ERROR in 35 s
+[01:17:45]   ok: named.elsewhere is refused: "must sit on one of the sites these terms name as sources: sun.store"
+[01:17:48] named.self_published: INSTALLER propose_substitution 0x34acfa3d927e2f651c640e37094872defad2e204a778516c3c5a362ab32af8fd
+[01:18:28] named.self_published: FINALIZED MAJORITY_AGREE leader=ERROR in 40 s
+[01:18:28]   ok: named.self_published is refused: "must sit on one of the sites these terms name as sources: sun.store"
+[01:18:30] named.lookalike: INSTALLER propose_substitution 0x1d08cf0e2e7242a5f6da73cf75ee58023cfb03f460d363d665b5ff921f4c4c2a
+[01:19:05] named.lookalike: FINALIZED MAJORITY_AGREE leader=ERROR in 35 s
+[01:19:05]   ok: named.lookalike is refused: "must sit on one of the sites these terms name as sources: sun.store"
+[01:19:06]   ok: a page off the named sites leaves no proposal on the record
+[01:19:08] named.propose: INSTALLER propose_substitution 0x66b3be1a9fd1ba16eeb2e51f986d646f3a1e3db4a859203703ecd9ea072b005d
+[01:19:45] named.propose: FINALIZED MAJORITY_AGREE leader=SUCCESS in 37 s
+[01:19:47] named.objection: OWNER answer_substitution 0xd937aa5116677f182cfca4aafa049c65de4c8ff60af599827fb433822667288e
+[01:20:22] named.objection: FINALIZED MAJORITY_AGREE leader=SUCCESS in 36 s
+[01:20:24] named.decide: STRANGER decide_substitution 0xb8666658f0e41ff7974511fd9355e3848ecb53ce79fa52b132fd6868a770d01c
+  … named.decide ACCEPTED
+[01:21:28] named.decide: FINALIZED MAJORITY_AGREE leader=SUCCESS in 64 s
+receipt 0xb8666658f0e41ff7974511fd9355e3848ecb53ce79fa52b132fd6868a770d01c status=FINALIZED result=MAJORITY_AGREE rotations=1
+ rotation 1: Accepted
+  leader/leader vote=? model=policy:dev-deepseek exec=SUCCESS
+     [SUBSTITUTE] leader EQUIVALENT {"page_chars": 2367, "names_model": true, "publisher": "DISTRIBUTOR", "same_role": true, "meets": "YES"} why: The page documents the exact model 'MOD 4000TL3-X', matching the proposal. The publisher is a commercial marketplace selling the product, making it a DISTRIBUTOR. The product is a three-phase string inverter, which matches the role specified in the signed line. The signed line r
+  leader/validator vote=agree model=policy:dev-deepseek exec=SUCCESS
+  validator/validator vote=idle model=anthropic/claude-sonnet-4.6 exec=ERROR
+  validator/validator vote=agree model=policy:dev-gpt-5-4 exec=SUCCESS
+  validator/validator vote=idle model=policy:dev-gemini exec=ERROR
+  validator/validator vote=agree model=policy:dev-gpt-5-4 exec=SUCCESS
+[01:21:29] named: APPROVED EQUIVALENT  {"documents_model":true,"meets":"YES","names_model":true,"page_chars":2367,"page_sha256":"0c6f5038b19bd15aa8ac68bf763f395f7b7afa8f4cfd11cb03a434e811c055e1","publisher":"SIGNED","same_role":true,"shortfalls":[]}
+[01:21:29] named: why: The page documents the exact model 'MOD 4000TL3-X', matching the proposal. The publisher is a commercial marketplace selling the product, making it a DISTRIBUTOR. The product is a three-phase string inverter, which matches the role specified in the signed line. The signed line requires a 3 kW inverter; the page shows a nominal AC power of 4 kW and maximum AC power of 4.4 kW, exceeding 3 kW, so it meets the output requirement. No other ratings or characteristics from the signed line or terms are missing or short.
+[01:21:29]   ok: for a page on a named site the record shows the parties' choice, not a node's opinion of the publisher
+[01:21:29]   ok: a page on a named site that documents the model at a higher rating is approved
+[01:21:32] blocked.create: OWNER create_project 0x3849e3926acd0c8ee03fbc06f230c7286d024b65efd4b7c56c92ed4c3042c957
+[01:22:08] blocked.create: FINALIZED MAJORITY_AGREE leader=SUCCESS in 36 s
+[01:22:10] blocked.milestone: OWNER add_milestone 0xe6fc9ea2796521092869a73c60cb0829aceed34871f6433a3a11fdbb895c25be
+[01:22:49] blocked.milestone: FINALIZED MAJORITY_AGREE leader=SUCCESS in 39 s
+[01:22:50] blocked.sign: INSTALLER accept_project 0x464c797da15d027726b63156b48042bef5c9d5d354bcae09f952de823d11793c
+[01:23:30] blocked.sign: FINALIZED MAJORITY_AGREE leader=SUCCESS in 40 s
+[01:23:34] blocked.front: INSTALLER submit_image 0xfe4b4905d423fe8d356ab7865ba0eda252dd870d5c26e21e7aa8f60890419e43
+[01:24:17] blocked.front: FINALIZED MAJORITY_AGREE leader=SUCCESS in 43 s
+[01:24:23] blocked.plate: INSTALLER submit_image 0xc4a3f4d240d6487b5f0ebefc9e9789a1cf995f208b13fe124677574683fd2b85
+[01:24:59] blocked.plate: FINALIZED MAJORITY_AGREE leader=SUCCESS in 36 s
+[01:25:00] blocked.not_an_image: OWNER submit_image 0x45947829f42f4e44022032b030727c5e8acc2a859976726521b650d9f6db1e91
+[01:25:39] blocked.not_an_image: FINALIZED MAJORITY_AGREE leader=ERROR in 38 s
+[01:25:39]   ok: blocked.not_an_image is refused: "that JPEG is incomplete"
+[01:25:43] blocked.junk: OWNER submit_image 0x25419b81f1fa7fbeb684c8526aacb86327a0f5d70fff171dd8ae42b37df85a0d
+[01:26:18] blocked.junk: FINALIZED MAJORITY_AGREE leader=SUCCESS in 35 s
+[01:26:18]   ok: a file with the outline of a JPEG and nothing readable inside it can still be filed
+[01:26:21] blocked.assess: INSTALLER request_assessment 0x5f0e2adf49abcf62947bf6effd9d4b2fba9504cbceb9ea0a2facb47298691800
+  … blocked.assess COMMITTING
+  … blocked.assess ACCEPTED
+[01:28:32] blocked.assess: FINALIZED MAJORITY_AGREE leader=SUCCESS in 131 s
+receipt 0x5f0e2adf49abcf62947bf6effd9d4b2fba9504cbceb9ea0a2facb47298691800 status=FINALIZED result=MAJORITY_AGREE rotations=1
+ rotation 1: Accepted
+  leader/leader vote=? model=anthropic/claude-sonnet-4.6 exec=SUCCESS
+     [ROUND] leader {"images_received": true, "lines": {"E1": "INSTALLED"}, "criteria": {"C1": "MET"}, "conflicts": false} why: ev-000006 shows a Growatt inverter mounted on a white interior wall with DC cables routed below the unit, but no model number is visible on the front face. ev-000007 shows the right-hand side panel of the same unit with a clearly legible rating plate reading 'Model name: MOD 4000TL3-X', confirmin
+  leader/validator vote=agree model=anthropic/claude-sonnet-4.6 exec=SUCCESS
+  validator/validator vote=disagree model=policy:dev-gpt-oss exec=SUCCESS
+     [DISAGREE] this validator did not receive the images
+  validator/validator vote=agree model=policy:dev-gpt-5-4 exec=SUCCESS
+  validator/validator vote=disagree model=policy:dev-sonnet exec=SUCCESS
+     [DISAGREE] this validator did not receive the images
+  validator/validator vote=agree model=openai/gpt-5.4 exec=SUCCESS
+[01:28:32] blocked.assess: ACCEPTED lines {"E1":"INSTALLED"} criteria {"C1":"MET"}
+[01:28:33] observation: the leader set aside []; evidence [["ev-000006","INSTALLER",true],["ev-000007","INSTALLER",true],["ev-000008","OWNER",true]]
+[01:28:33]   ok: a round is decided with the owner's unreadable file among its evidence, where it used to stall
+[01:28:33] CHECK FAILED: the record shows the file was set aside and the installer's photographs were read
+[01:31:53]   ok, in an earlier sitting: a round is decided with the owner's unreadable file among its evidence, where it used to stall
+[01:31:53]   ok: the installer's photographs are never recorded as set aside
+[01:31:53] observation: the leader did not set the file aside; its findings do not cite it; what it said the file shows: "A photograph of electrical components inside a gray metal enclosure. Visible are two electrical meters or monitors with digital displays, a row of black circuit breakers or switches below them, and a tangle of multicolored wires."
+[01:31:54] stats: {"cures":2,"evidence_items":8,"finalized":1,"milestones":6,"paid_wei":"2000000000000000000","projects":6,"rounds":5,"substitutions":8}
+[01:31:54] DONE: 41 checks, 63 transactions, 0 panels without a majority

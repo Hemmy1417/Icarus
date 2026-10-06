@@ -248,10 +248,17 @@ nothing that node finds may rest on it, and the round is decided on the
 rest. A node whose answer about such an image comes back in the wrong shape,
 or as no object at all, has failed itself, and does not vote.
 
-Run on the network against a file with the outline of a JPEG and nothing a
-decoder can use inside it, filed by the owner: the round was decided, and
-its record shows that file set aside and the installer's photographs read.
-See `docs/substitution-cure-run.txt`. A file that is not built like an image is also
+Run on the network twice against a file with the outline of a JPEG and
+nothing a decoder can use inside it, filed by the owner. Both rounds were
+decided, which is what the rule is for. What the leading node did with the
+file differed. On a disposable deployment it set the file aside. On the
+deployment of record it did not: it described a cabinet of meters and
+breakers that is not in the file, and cited that description for nothing.
+That is the limit `docs/security.md` already states for a node handed the
+wrong photograph, met in a new place: a model given nothing it can see will
+sometimes describe something anyway. Such a description can ground a finding
+on that node, and a finding still needs a majority that reaches it. See
+`docs/substitution-cure-run.txt`. A file that is not built like an image is also
 refused when it is filed, whoever files it.
 
 What a round stores was tightened with it. The leader's account beside the
@@ -276,6 +283,21 @@ break it, and again after each set of fixes.
 Rounds three to five each found less than the one before, and each fix after
 round two removed a rule or a special case rather than adding one. The small
 changes made after round six were tested and swept, and not reviewed again.
+
+Rules 3 was reviewed the same way, three times, before its deployment.
+
+| Round | Worst finding | What changed |
+|---|---|---|
+| 1 | Nothing that moved money. An answer in the wrong shape set a legible photograph aside; a named site covered every address under it, forums included | An image is set aside only on a plain statement that it could not be read, or a prompt the runtime refuses twice; a name covers its own host and its www |
+| 2 | Nothing that moved money. An answer that was no object at all still passed for a refused prompt; the docs did not say an image that opens can still cost a round its panel | The runtime's refusal and an unusable answer are told apart; the limit is stated |
+| 3 | Clean: nothing serious or medium. Four small points | A validator reads sight exactly as the contract does; other parties' images are asked first; the stored account says nothing about an image set aside |
+
+The small changes made after round three were tested and swept, and not
+reviewed again. One thing no review could settle from the code was how the
+network treats a file no decoder opens, so it was run: on a disposable
+deployment first, and again on the deployment of record. The two runs did
+not agree on what a node does with such a file, only that the round is
+decided, and the note above says so.
 
 One thing the installer has to mind: a cure rests on something filed since
 the decision, and each party may file only so much against one version of

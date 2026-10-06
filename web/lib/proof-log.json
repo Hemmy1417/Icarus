@@ -1,19 +1,20 @@
 {
-  "address": "0x5Ea657820B3355E310BAf2f71282D518cD398cfc",
-  "source_commit": "1c0e5b0",
-  "finished_at": "2026-10-05T21:08:45.305Z",
+  "address": "0xb476eeF34fe8800E546D140DA3412846DD0A1755",
+  "source_commit": "8ebaf6c",
+  "finished_at": "2026-10-06T02:58:12.097Z",
   "rounds": {
-    "ms-00005/1": "0xa04ca3397ccb09d85478322f1e79881a34e7f86812a9067d3e2a67bd1eb581d6",
-    "ms-00006/1": "0x1987a2c6c686f68e726d1740f90ac990a699cc42f83af972965d81556c764acf",
-    "ms-00007/1": "0x96ec5ec79468ad5f7cad7a800ad9111a84e33c8401724f16736939dfae89ceb4",
-    "ms-00008/1": "0x18d9c8c88603e285ce44e49def325c80a8f6b0447257b421bb9c4bfd0d1f76d5",
-    "ms-00009/1": "0xa124ec3ce7c5adeeb98b7a085a734ed7f9cd7aa6c55ba5c7611efb6d23ffa944",
-    "ms-00010/1": "0xfe262a267146900cb230be1d5df46b9f041ac6482a8698ead1f9a50875cb95fd",
-    "ms-00006/2": "0x93d7a822ff441f831b6713acc8417b12295a2fb075d966c033c04dd95a4a28a7",
-    "ms-00001/1": "0x5b4babd4ab3914f17b967f7331dd3fe746e21d7c51d8cf4b6022f239bdd3a173",
-    "ms-00001/2": "0xf114cbcd4ed93e473c5c91c9d94433036b9db22a7e08e277de70b4c6d19826f8",
-    "ms-00004/1": "0xc286dec7ad175c7feb0db72233b95cbe13d540c1a4d2f5bd7061f1f7e81ed61c",
-    "ms-00004/2": "0x463bbeb47fbe77ee4bd7c151a59fab9a30fbe6e64553057afeb452c5056e7ab0"
+    "ms-00007/1": "0xa990e76508a5d2394118f7bad4ec2fafa3e72795137594218ed60c45ad51b168",
+    "ms-00008/1": "0x4f3619cf579225da60047d477cc558492866971263b66546ffafa5413469801e",
+    "ms-00009/1": "0xafdca596641c5fddb4015a6016963cbac00e9fe0faf53ea91b61734a2452a6b7",
+    "ms-00010/1": "0x1b87869e2dd87600cc0f32c9b227981ceedbb8fc3bbb7228fbadbc57daecd154",
+    "ms-00011/1": "0x07922b60461a43fd5530252136a4d59fd9a348f367938df8704610ce0b5a2d02",
+    "ms-00012/1": "0xb6b25d3a9b8d861aafd00eb3d175ac8ee89b9aa2a403cef1fc64f7f75a32c1b7",
+    "ms-00008/2": "0x00e97c17125abf33b15aaa8bfaf1ffef5a1835f2c1e730c70804c7ab542f44d3",
+    "ms-00001/1": "0xa90b154a7a0467e7198c75cca4fb828f210039fe61f3673105e8b62449c13eba",
+    "ms-00001/2": "0xae1175560f475284833fdf8c850b6edbba61fd0ec0291e0ce8be5504f11eda36",
+    "ms-00004/1": "0xbed3cfeb41ed7a24741a071f83b3472a619a578cc4b2f27dbce03eec327d4402",
+    "ms-00004/2": "0x16af8c5bcdfc0f8a7337e9f4ac43a0d6f3c8e00c0d34621cced7583085419c46",
+    "ms-00006/1": "0x5f0e2adf49abcf62947bf6effd9d4b2fba9504cbceb9ea0a2facb47298691800"
   },
   "proofs": [
     {
@@ -25,8 +26,8 @@
         "E1": "ABSENT"
       },
       "seconds": 86,
-      "hash": "0x5b4babd4ab3914f17b967f7331dd3fe746e21d7c51d8cf4b6022f239bdd3a173",
-      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x5b4babd4ab3914f17b967f7331dd3fe746e21d7c51d8cf4b6022f239bdd3a173"
+      "hash": "0xa90b154a7a0467e7198c75cca4fb828f210039fe61f3673105e8b62449c13eba",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0xa90b154a7a0467e7198c75cca4fb828f210039fe61f3673105e8b62449c13eba"
     },
     {
       "step": "story.cure",
@@ -36,9 +37,9 @@
       "lines": {
         "E1": "INSTALLED"
       },
-      "seconds": 82,
-      "hash": "0xf114cbcd4ed93e473c5c91c9d94433036b9db22a7e08e277de70b4c6d19826f8",
-      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0xf114cbcd4ed93e473c5c91c9d94433036b9db22a7e08e277de70b4c6d19826f8"
+      "seconds": 75,
+      "hash": "0xae1175560f475284833fdf8c850b6edbba61fd0ec0291e0ce8be5504f11eda36",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0xae1175560f475284833fdf8c850b6edbba61fd0ec0291e0ce8be5504f11eda36"
     },
     {
       "step": "kept.assess",
@@ -48,9 +49,9 @@
       "lines": {
         "E1": "UNIDENTIFIED"
       },
-      "seconds": 70,
-      "hash": "0xc286dec7ad175c7feb0db72233b95cbe13d540c1a4d2f5bd7061f1f7e81ed61c",
-      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0xc286dec7ad175c7feb0db72233b95cbe13d540c1a4d2f5bd7061f1f7e81ed61c"
+      "seconds": 62,
+      "hash": "0xbed3cfeb41ed7a24741a071f83b3472a619a578cc4b2f27dbce03eec327d4402",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0xbed3cfeb41ed7a24741a071f83b3472a619a578cc4b2f27dbce03eec327d4402"
     },
     {
       "step": "kept.cure",
@@ -60,84 +61,96 @@
       "lines": {
         "E1": "INSTALLED"
       },
-      "seconds": 90,
-      "hash": "0x463bbeb47fbe77ee4bd7c151a59fab9a30fbe6e64553057afeb452c5056e7ab0",
-      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x463bbeb47fbe77ee4bd7c151a59fab9a30fbe6e64553057afeb452c5056e7ab0"
+      "seconds": 82,
+      "hash": "0x16af8c5bcdfc0f8a7337e9f4ac43a0d6f3c8e00c0d34621cced7583085419c46",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x16af8c5bcdfc0f8a7337e9f4ac43a0d6f3c8e00c0d34621cced7583085419c46"
+    },
+    {
+      "step": "blocked.assess",
+      "milestone_id": "ms-00006",
+      "round": 1,
+      "decision": "ACCEPTED",
+      "lines": {
+        "E1": "INSTALLED"
+      },
+      "seconds": 131,
+      "hash": "0x5f0e2adf49abcf62947bf6effd9d4b2fba9504cbceb9ea0a2facb47298691800",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x5f0e2adf49abcf62947bf6effd9d4b2fba9504cbceb9ea0a2facb47298691800"
     },
     {
       "step": "flagship.assess",
-      "milestone_id": "ms-00005",
+      "milestone_id": "ms-00007",
       "round": 1,
       "decision": "ACCEPTED",
       "lines": {
         "E1": "INSTALLED"
       },
-      "seconds": 286,
-      "hash": "0xa04ca3397ccb09d85478322f1e79881a34e7f86812a9067d3e2a67bd1eb581d6",
-      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0xa04ca3397ccb09d85478322f1e79881a34e7f86812a9067d3e2a67bd1eb581d6"
+      "seconds": 86,
+      "hash": "0xa990e76508a5d2394118f7bad4ec2fafa3e72795137594218ed60c45ad51b168",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0xa990e76508a5d2394118f7bad4ec2fafa3e72795137594218ed60c45ad51b168"
     },
     {
       "step": "appealcase.assess",
-      "milestone_id": "ms-00006",
+      "milestone_id": "ms-00008",
       "round": 1,
       "decision": "ACCEPTED",
       "lines": {
         "E1": "INSTALLED"
       },
-      "seconds": 74,
-      "hash": "0x1987a2c6c686f68e726d1740f90ac990a699cc42f83af972965d81556c764acf",
-      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x1987a2c6c686f68e726d1740f90ac990a699cc42f83af972965d81556c764acf"
+      "seconds": 161,
+      "hash": "0x4f3619cf579225da60047d477cc558492866971263b66546ffafa5413469801e",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x4f3619cf579225da60047d477cc558492866971263b66546ffafa5413469801e"
     },
     {
       "step": "appeal.decide",
-      "milestone_id": "ms-00006",
+      "milestone_id": "ms-00008",
       "round": 2,
       "decision": "ACCEPTED",
       "lines": null,
-      "seconds": 160,
-      "hash": "0x93d7a822ff441f831b6713acc8417b12295a2fb075d966c033c04dd95a4a28a7",
-      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x93d7a822ff441f831b6713acc8417b12295a2fb075d966c033c04dd95a4a28a7"
+      "seconds": 84,
+      "hash": "0x00e97c17125abf33b15aaa8bfaf1ffef5a1835f2c1e730c70804c7ab542f44d3",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x00e97c17125abf33b15aaa8bfaf1ffef5a1835f2c1e730c70804c7ab542f44d3"
     },
     {
       "step": "paper.assess",
-      "milestone_id": "ms-00007",
+      "milestone_id": "ms-00009",
       "round": 1,
       "decision": "UNDETERMINED",
       "lines": {
         "E1": "UNIDENTIFIED"
       },
-      "seconds": 69,
-      "hash": "0x96ec5ec79468ad5f7cad7a800ad9111a84e33c8401724f16736939dfae89ceb4",
-      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x96ec5ec79468ad5f7cad7a800ad9111a84e33c8401724f16736939dfae89ceb4"
+      "seconds": 73,
+      "hash": "0xafdca596641c5fddb4015a6016963cbac00e9fe0faf53ea91b61734a2452a6b7",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0xafdca596641c5fddb4015a6016963cbac00e9fe0faf53ea91b61734a2452a6b7"
     },
     {
       "step": "mismatch.assess",
-      "milestone_id": "ms-00008",
+      "milestone_id": "ms-00010",
       "round": 1,
       "decision": "REJECTED",
       "lines": {
         "E1": "ABSENT"
       },
-      "seconds": 4851,
-      "hash": "0x18d9c8c88603e285ce44e49def325c80a8f6b0447257b421bb9c4bfd0d1f76d5",
-      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x18d9c8c88603e285ce44e49def325c80a8f6b0447257b421bb9c4bfd0d1f76d5"
+      "seconds": 65,
+      "hash": "0x1b87869e2dd87600cc0f32c9b227981ceedbb8fc3bbb7228fbadbc57daecd154",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x1b87869e2dd87600cc0f32c9b227981ceedbb8fc3bbb7228fbadbc57daecd154"
     },
     {
       "step": "battery.assess",
-      "milestone_id": "ms-00009",
+      "milestone_id": "ms-00011",
       "round": 1,
       "decision": "UNDETERMINED",
       "lines": {
         "E1": "INSTALLED",
         "E2": "NOT_SHOWN"
       },
-      "seconds": 101,
-      "hash": "0xa124ec3ce7c5adeeb98b7a085a734ed7f9cd7aa6c55ba5c7611efb6d23ffa944",
-      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0xa124ec3ce7c5adeeb98b7a085a734ed7f9cd7aa6c55ba5c7611efb6d23ffa944"
+      "seconds": 154,
+      "hash": "0x07922b60461a43fd5530252136a4d59fd9a348f367938df8704610ce0b5a2d02",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x07922b60461a43fd5530252136a4d59fd9a348f367938df8704610ce0b5a2d02"
     },
     {
       "step": "offgrid.assess",
-      "milestone_id": "ms-00010",
+      "milestone_id": "ms-00012",
       "round": 1,
       "decision": "ACCEPTED",
       "lines": {
@@ -145,17 +158,10 @@
         "E2": "INSTALLED",
         "E3": "INSTALLED"
       },
-      "seconds": 67,
-      "hash": "0xfe262a267146900cb230be1d5df46b9f041ac6482a8698ead1f9a50875cb95fd",
-      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0xfe262a267146900cb230be1d5df46b9f041ac6482a8698ead1f9a50875cb95fd"
+      "seconds": 95,
+      "hash": "0xb6b25d3a9b8d861aafd00eb3d175ac8ee89b9aa2a403cef1fc64f7f75a32c1b7",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0xb6b25d3a9b8d861aafd00eb3d175ac8ee89b9aa2a403cef1fc64f7f75a32c1b7"
     }
   ],
-  "no_consensus": [
-    {
-      "step": "appealcase.assess",
-      "hash": "0x814874d0d05a753a201dcd68c69f2ac95b14adb0b56e2ae159fc639339b054f2",
-      "at": "2026-10-05T18:41:27.738Z",
-      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x814874d0d05a753a201dcd68c69f2ac95b14adb0b56e2ae159fc639339b054f2"
-    }
-  ]
+  "no_consensus": []
 }

@@ -81,7 +81,9 @@ Applied to this build, with where each one is met.
 - **An image only some nodes can decode.** A file that is not built like a
   PNG or a JFIF JPEG is refused when it is filed, and an image from the owner
   or the inspector that a node cannot read is set aside by that node. Neither
-  makes two different decoders agree. A damaged image that half a panel
+  makes two different decoders agree, and neither stops a model that was
+  given nothing it can see from describing something anyway: on the
+  deployment of record a node did exactly that with an undecodable file. A damaged image that half a panel
   reads and half does not can still split it, and a split records nothing.
   Nor is an image that opens, but draws answers that reach the contract in
   the wrong shape, set aside: those nodes do not vote, and a party who can make

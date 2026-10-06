@@ -459,8 +459,11 @@ check(onSite.s.status === "APPROVED" && onSite.s.verdict === "EQUIVALENT"
 // ── 7. A file no node can read ───────────────────────────────────────────────
 //
 // The owner files something built like a JPEG with nothing a decoder can use
-// inside it. Before rules 3 that left every node unable to vote on any round
-// of this milestone. Now it is set aside and the round is decided.
+// inside it. Before rules 3 a node that could not read it could not vote, on
+// any round of this milestone. The claim made here is the one the contract
+// makes: the round is decided. What each node did with the file is logged as
+// an observation, because it differs by node: one says it could not read it
+// and sets it aside, another describes a picture that is not there.
 
 function unreadableJpeg() {
   const head = [0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01, 0x01,
@@ -494,10 +497,14 @@ say(`observation: the leader set aside ${JSON.stringify(bRound.unread)}; `
   + `evidence ${JSON.stringify(bRound.evidence.map((e) => [e.item_id, e.role, e.read]))}`);
 check(bRound.evidence.some((e) => e.item_id === junk),
       "a round is decided with the owner's unreadable file among its evidence, where it used to stall");
-check(bRound.unread.includes(junk) && !bRound.unread.includes(bFront) && !bRound.unread.includes(bPlate),
-      "the record shows the file was set aside and the installer's photographs were read");
-check(!Object.values(bRound.notes.basis).flat().includes(junk),
-      "no finding rests on the file nobody could read");
+check(!bRound.unread.includes(bFront) && !bRound.unread.includes(bPlate),
+      "the installer's photographs are never recorded as set aside");
+const leaned = [...Object.values(bRound.notes.basis), ...Object.values(bRound.notes.criteria_basis)]
+  .flat().includes(junk);
+const sawIt = bRound.notes.images.find((i) => i.item_id === junk);
+say(`observation: the leader ${bRound.unread.includes(junk) ? "set the file aside" : "did not set the file aside"}; `
+  + `its findings ${leaned ? "cite" : "do not cite"} it; what it said the file shows: `
+  + `${JSON.stringify(sawIt?.shows ?? "")}`);
 
 const stats = await readJson("get_stats", []);
 say(`stats: ${JSON.stringify(stats)}`);

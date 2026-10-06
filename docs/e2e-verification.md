@@ -14,7 +14,7 @@ where they differed, which is impossible against a live panel.
 .venv/Scripts/python -m pytest tests/direct -q
 ```
 
-499 tests. They cover the state machine, who may do what and when, quotas and
+613 tests. They cover the state machine, who may do what and when, quotas and
 caps, the grounding floors in both directions, the derivation table, every
 condition under which a validator disagrees, prompt fencing, and the
 randomized walk in `test_invariants.py` that drives arbitrary legal sequences
@@ -31,9 +31,9 @@ A passing suite proves the tests run, not that they would notice a change.
 .venv/Scripts/python tests/mutation/mutate.py
 ```
 
-203 mutants. Each one removes or inverts a rule that matters, and the sweep
+261 mutants. Each one removes or inverts a rule that matters, and the sweep
 requires the suite to **fail** for every one, plus a control run on the
-unmodified contract that must pass. At the deployment of record: 203 of 203
+unmodified contract that must pass. At the deployment of record: 261 of 261
 killed, control passes. The sweep runs in CI on every push; a survivor is
 named on the run's own page.
 
@@ -54,7 +54,7 @@ node scripts/proof-log.mjs <address>
 ```
 
 Every step is a signed transaction on Studio Next.
-The deployment of record is `0x5Ea657820B3355E310BAf2f71282D518cD398cfc`. The run is resumable: each write is remembered by name, so a segment
+The deployment of record is `0xb476eeF34fe8800E546D140DA3412846DD0A1755`. The run is resumable: each write is remembered by name, so a segment
 that stops resumes at the step that had not landed rather than repeating the
 ones that had.
 
@@ -93,16 +93,12 @@ window, nor contested after it. Evidence cannot be filed against a decision
 that already stands. Each of these is a real transaction whose refusal text is
 checked, not a local assertion.
 
-### On the deployment of record, 5 October 2026
+### On the deployment of record, 6 October 2026
 
-Six cases and the appeal, all with the outcome the table above requires. One
-round reached no majority and was asked again; it is named at the foot of
-`docs/proof-run.txt`. The run's last check failed once for a reason that was
-the script's and not the contract's: it read the installer's wallet in the
-second the claim became final, before the transfer a claim emits had landed.
-The wallet held the payment when read a moment later. The script now reads
-until the wallet moves, the failed line is left in the log, and the run was
-resumed to its end.
+Six cases and the appeal, all with the outcome the table above requires, in
+one sitting. Every round reached a majority on its first asking, and the
+fresh panel on the appeal upheld the acceptance. The log is
+`docs/proof-run.txt`.
 
 ## 3b. Substitution and cure, live
 
@@ -110,9 +106,9 @@ resumed to its end.
 node scripts/substitution-cure.mjs <address>
 ```
 
-The two rules added in `icarus-rules-2`, set out in
-[substitution-and-cure.md](substitution-and-cure.md). 30 checks over
-46 transactions on the deployment of record, every panel reaching a
+The two rules added in `icarus-rules-2` and what `icarus-rules-3` narrowed, set out in
+[substitution-and-cure.md](substitution-and-cure.md). 41 checks over
+63 transactions on the deployment of record, every panel reaching a
 majority on its first asking. The log is `docs/substitution-cure-run.txt`.
 
 | Case | What must happen |
@@ -131,19 +127,32 @@ majority on its first asking. The log is `docs/substitution-cure-run.txt`.
 | A yes | In force at once; no panel sits. |
 | A decision left in doubt with nothing substituted | The cure keeps the condition the first panel found met, judges only the open line, and accepts. |
 | A proposal taken back | Withdrawn, and the line stays as it was. |
+| Terms naming one site as a source; pages on another maker's site, on a code host and on a look-alike domain | Each refused in code, and no proposal is recorded. |
+| The fitted unit on the named site, with the owner objecting | Approved; the record shows the page as on a signed source, and the publisher as the parties' choice. |
+| A file with the bare outline of a JPEG, cut short | Refused when filed. |
+| A file with the whole outline of a JPEG and nothing a decoder can use inside, filed by the owner | Filed, and the round is decided. What the leading node did with the file is logged as an observation, not claimed: on this run it described a picture that is not there and cited it for nothing; on a rehearsal it set the file aside. |
 
 The page used for the approval is a real seller's catalogue page for the unit
 in the photographs. The self-published page is `fixtures/pages/` in this
 repository, read from a commit-pinned raw address: it says so in its last
 paragraph, and it is refused on its publisher, not on that paragraph.
 
-Four rehearsals on disposable deployments came before this run, and two of
-them changed the contract. In one, two of five validators withheld approval
+Four rehearsals of `icarus-rules-2` on disposable deployments came before
+its run, and two of them changed the contract. In one, two of five validators withheld approval
 because the product page could not show how the unit was wired on site; the
 question put to them now says that fitting is judged later, from photographs.
 In another, a leader hedged twice and the round rotated until a leader that
 found the page sufficient was confirmed. Both are what the rule is for: an
 approval nobody else reproduces is not recorded.
+
+One rehearsal of `icarus-rules-3` came before this run, of the unreadable
+file alone. There the leading node set the file aside. On the deployment of
+record the leading node described a picture that is not in the file, and the
+run's last check, which claimed the file had been set aside, failed. The
+check was the script's overstatement and not the contract's rule: the round
+was decided in both, which is what the contract promises. The script now
+claims that and logs the rest as an observation, the failed line is left in
+the log, and the run was resumed to its end.
 
 ## 4. The interface's write path
 
@@ -248,7 +257,7 @@ Every transaction is in `.data/` for the run and on the explorer; the log
 above is committed as `docs/appeal-settlement-run.txt`.
 
 **On the current deployment.** The same script was run again on the
-deployment of record on 5 October 2026, against the `icarus-rules-2` contract
+deployment of record on 6 October 2026, against the `icarus-rules-3` contract
 and the interface as it now stands: ten transactions, thirteen checks, none
 failed. The fresh panel upheld the acceptance, so the upheld path was shown:
 settling was not offered while the appeal was open and the contract refused

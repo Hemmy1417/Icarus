@@ -95,6 +95,13 @@ decision that falls short the installer can ask for a **cure round**, which
 keeps what that decision found in place and judges only what it left open.
 Both are set out in [`docs/substitution-and-cure.md`](docs/substitution-and-cure.md).
 
+The terms can name the sites both parties accept as sources for a product.
+On a line signed "or equivalent" a substitute's page anywhere else is then
+refused in code, and who published the page is nobody's judgment. And an
+image the owner or the inspector files that a node cannot read is set aside
+by that node, so a file nobody can open cannot keep a round from being
+decided. What the installer presents must still reach a node for it to vote.
+
 | State | Who moves it | If nobody acts |
 |---|---|---|
 | `AWAITING_TERMS` | the installer signs the terms in force | anyone closes it after the deadline |
@@ -160,7 +167,7 @@ Both are set out in [`docs/substitution-and-cure.md`](docs/substitution-and-cure
 ## Verified end to end
 
 Every line below is a transaction, not a local simulation.
-The deployment of record is `0x5Ea657820B3355E310BAf2f71282D518cD398cfc`.
+The deployment of record is `0xb476eeF34fe8800E546D140DA3412846DD0A1755`.
 `docs/proof-run.txt` is the full log and `web/lib/proof-log.json` pairs each reading with the
 transaction that produced it.
 
@@ -174,7 +181,7 @@ transaction that produced it.
 | Contested acceptance | the owner appeals, a fresh panel judges again | readjudicated | the acceptance held |
 
 Substitution and cure, in a run of their own (`scripts/substitution-cure.mjs`, logged in
-`docs/substitution-cure-run.txt`): 30 checks over 46 transactions, and every panel
+`docs/substitution-cure-run.txt`): 41 checks over 63 transactions, and every panel
 reached a majority on its first asking.
 
 | Case | What happens | Outcome |
@@ -188,6 +195,9 @@ reached a majority on its first asking.
 | A line signed for one product | the owner says no | declined, and no panel sits |
 | The parties agree | the owner says yes | in force at once, with no panel |
 | A decision in doubt, nothing substituted | the wall is shown but not the plate; then the plate is filed | the cure keeps the condition already met and judges only the open line: `ACCEPTED` |
+| Terms that name one site as a source | pages on another maker's site, a code host and a look-alike domain | each refused in code, and no proposal is recorded |
+| The fitted unit, on the named site | the owner objects; validators each fetch the page | approved, with the publisher recorded as the parties' choice |
+| A file no decoder can open | the owner files the outline of a JPEG with nothing usable inside | the round is decided, where one such file used to stop every round |
 
 Refusals proved live: a stranger cannot file evidence or ask for an assessment, the installer
 cannot contest their own acceptance, a milestone cannot be finalized inside its window, and a
@@ -225,7 +235,7 @@ not reporting.
 |---|---|
 | Contract | Python intelligent contract on GenLayer Studio Next, chain 61997 |
 | Reading and judging | `gl.nondet.exec_prompt` with images, under `gl.vm.run_nondet` |
-| Tests | 499 direct tests against a stubbed runtime, a 203 mutant sweep, and for the interface 234 tests and a 70 mutant sweep |
+| Tests | 613 direct tests against a stubbed runtime, a 261 mutant sweep, and for the interface 277 tests and an 86 mutant sweep |
 | Scripts | Node with `genlayer-js` 2.0.0-rc.1 |
 | Interface | Next.js App Router, TypeScript strict, Tailwind, Transaction Kit rc.2 |
 
@@ -233,8 +243,8 @@ not reporting.
 
 ```text
 contracts/icarus.py        the contract
-tests/direct/              499 tests against a stubbed runtime
-tests/mutation/mutate.py   203 mutants, each of which must fail the suite
+tests/direct/              613 tests against a stubbed runtime
+tests/mutation/mutate.py   261 mutants, each of which must fail the suite
 scripts/                   deploy, fixtures, the three live runs, the proof log
 fixtures/pages/            the self-published datasheet the substitution run is shown
 fixtures/images/           the photographs the demonstration files
