@@ -82,16 +82,19 @@ Applied to this build, with where each one is met.
   unless its structure is one a decoder opens: a PNG checked whole, a JPEG
   checked through its tables, frame and scans. The check is bounded for any file:
   nothing in it grows faster than the file, no image may be more than 8,192
-  pixels on a side, and a PNG's pixel data may inflate to 64 MB at most,
-  which costs a fraction of a second. That refuses the file met on an
+  pixels on a side, a PNG's pixel data may inflate to 64 MB at most and its
+  compressed profile and notes to a megabyte in all, and a JPEG may be cut
+  into 2,048 segments at most. The dearest file three reviewers could build
+  cost about a second of ordinary Python. That refuses the file met on an
   earlier deployment, where a node described a picture that was not in an
   undecodable file. It is a reading of structure and not a decoder, so a
   file it takes is very likely to open and is not certain to. It does not make a model truthful about a picture it can
   see, and the compressed picture inside a JPEG is not read, so a file of
   noise is filed and seen as noise. An image from the owner or the inspector
   that a node says it cannot read is set aside by that node. An image that
-  opens but draws from a node, twice, an answer that never says whether it
-  was read, is not set aside: that node does not vote, and a party who can
+  opens but draws from a node an answer that claims a reading and
+  describes nothing, or twice an answer that never says whether it was read,
+  is not set aside: that node does not vote, and a party who can
   make such an image can still cost a round its majority.
 - **Where a link leads.** A product page is fetched by the address the
   installer gave. The runtime follows redirects and returns only the

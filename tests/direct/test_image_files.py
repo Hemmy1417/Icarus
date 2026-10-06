@@ -18,6 +18,8 @@ from conftest import (  # noqa: F401
 GREY = b"\x08\x00\x08\x00\x08\x01\x01\x11\x00"                    # one 8 by 8 grey component
 COLOUR = b"\x08\x00\x10\x00\x10\x03\x01\x22\x00\x02\x11\x00\x03\x11\x00"
 ONE_CODE = b"\x01" + b"\x00" * 15
+NO_ZEROS = zlib.compress(bytes((i + 3) % 251 + 1 for i in range(300)), 9)
+assert 0 not in NO_ZEROS[:79]
 GOOD_COLOUR = b"\x08\x00\x10\x00\x10\x03\x01\x22\x00\x02\x11\x00\x03\x11\x00"   # 4:2:0
 
 
@@ -206,6 +208,14 @@ class TestAJpegADecoderOpens:
     def test_one_a_decoder_would_stop_on_is_refused(self, module, c, data, why):
         refused(module, c, data, "that JPEG is not one a decoder opens: .*" + why)
 
+    def test_a_file_cut_into_more_segments_than_a_photograph_has_is_refused(self, module, c):
+        """A small file can be thousands of empty segments, and every node
+        would walk each one. The six a picture needs and 2,042 comments
+        are taken; one comment more is not."""
+        assert filed(module, c, jpeg(note=seg(0xfe) * 2042))
+        refused(module, c, jpeg(note=seg(0xfe) * 2043),
+                "that JPEG is not one a decoder opens: it is cut into more segments than a round reads")
+
     def test_a_refining_pass_of_the_lowest_term_needs_no_table(self, module, c):
         data = jpeg(sof=seg(0xc2, GREY), ac=b"", sos=seg(0xda, b"\x01\x01\x00\x00\x00\x01"))[:-2] \
             + seg(0xda, b"\x01\x01\x30\x00\x00\x10") + b"\x00" * 4 + b"\xff\xd9"
@@ -235,7 +245,7 @@ class TestAPngADecoderOpens:
                  + chunk(b"sRGB", b"\x00") + chunk(b"cHRM", b"\x00" * 32)
                  + chunk(b"iCCP", b"name\x00\x00" + zlib.compress(b"profile"))
                  + chunk(b"tIME", b"\x00" * 7) + chunk(b"zzZz", b"anything a decoder skips")
-                 + chunk(b"zTXt", b"k\x00\x00" + zlib.compress(b"\x00" * (1024 * 1024)))
+                 + chunk(b"zTXt", b"k\x00\x00" + zlib.compress(b"\x00" * (1024 * 1024 - 18)))
                  + chunk(b"iTXt", b"k\x00\x00\x00en\x00t\x00plain text")
                  + chunk(b"iTXt", b"k\x00\x01\x00\x00\x00" + zlib.compress(b"packed text"))
                  + chunk(b"tEXt", b"k\x00v")),
@@ -246,6 +256,9 @@ class TestAPngADecoderOpens:
         # as tall and as wide as a round reads
         png_file(ihdr=ihdr(1, 8192, 1, 0), idat=rows(b"\x00\x00" * 8192)),
         png_file(ihdr=ihdr(8192, 1, 1, 0), idat=rows(b"\x00" + b"\x00" * 1024)),
+        # a profile that takes the whole allowance, and plain text beside it
+        png_file(note=chunk(b"iCCP", b"a\x00\x00" + zlib.compress(b"\x00" * (1024 * 1024)))
+                 + chunk(b"iTXt", b"k\x00\x00\x00\x00\x00plain") + chunk(b"tEXt", b"k\x00v")),
         # the image data in two chunks, with a chunk a decoder may skip before it
         png_file(note=chunk(b"gAMA", b"\x00\x00\xb1\x8f"),
                  idat=chunk(b"IDAT", zlib.compress(b"\x00\x00\x00" * 2)[:5])
@@ -351,6 +364,21 @@ class TestAPngADecoderOpens:
         (png_file(note=chunk(b"zTXt", b"k\x00\x01" + zlib.compress(b"p"))), "does not unpack"),
         (png_file(note=chunk(b"zTXt", b"k\x00\x00" + zlib.compress(b"\x00" * (1024 * 1024 + 1)))),
          "does not unpack"),
+        # each within the allowance, and together past it
+        (png_file(note=chunk(b"zTXt", b"k\x00\x00" + zlib.compress(b"\x00" * 600_000)) * 2),
+         "does not unpack"),
+        (png_file(note=chunk(b"iCCP", b"a\x00\x00" + zlib.compress(b"\x00" * (1024 * 1024)))
+                  + chunk(b"iTXt", b"k\x00\x01\x00\x00\x00" + zlib.compress(b"x"))),
+         "does not unpack"),
+        # a flag that is neither plain nor compressed, on text that would unpack
+        (png_file(note=chunk(b"iTXt", b"k\x00\x02\x00\x00\x00" + zlib.compress(b"x"))),
+         "does not unpack"),
+        # a name that is empty, with a second zero further on that is not its end
+        (png_file(note=chunk(b"iCCP", b"\x00\x01A\x00\x00" + zlib.compress(b"p"))), "does not unpack"),
+        (png_file(note=chunk(b"zTXt", b"\x00omment\x00\x00" + zlib.compress(b"p"))), "does not unpack"),
+        (png_file(note=chunk(b"iTXt", b"\x00\x01\x00\x00\x00plain")), "does not unpack"),
+        # no name at all: an empty one, then a stream with no zero byte to end a name on
+        (png_file(note=chunk(b"iCCP", b"\x00" + NO_ZEROS)), "does not unpack"),
         (png_file(note=chunk(b"iTXt", b"keyword with no end")), "does not unpack"),
         (png_file(note=chunk(b"iTXt", b"k\x00")), "does not unpack"),
         (png_file(note=chunk(b"iTXt", b"k\x00\x00")), "does not unpack"),

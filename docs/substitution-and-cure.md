@@ -278,13 +278,17 @@ image. On the deployment of record a node then described a picture that was
 not in a file with that outline. The contract now reads a file as far as a
 decoder does before pixels begin. A PNG is checked whole: every chunk against
 its checksum, the header for a depth and colour type that exist, the chunks
-a decoder reads before pixels against their sizes, and the pixel data
+a decoder reads before pixels against their sizes, a compressed profile or
+note unpacked, to a megabyte for the file in all, and the pixel data
 inflated and measured row by row against the size the header declares, up to
 64 MB. A JPEG is walked segment by segment: its quantisation and Huffman
 tables must be well formed, its frame must describe an 8-bit image of one,
 three or four components, and each scan must follow the rules a decoder
 holds a scan to and refer only to components and tables the file defines. Neither kind may be
-more than 8,192 pixels on a side. A file that fails is refused when it is
+more than 8,192 pixels on a side, and a JPEG may be cut into 2,048 segments
+at most. Those bounds are what the check costs a node: nothing in it grows
+faster than the file, and the dearest file found, in three rounds of trying,
+took about a second of ordinary Python. A file that fails is refused when it is
 filed, whoever files it.
 
 How far this goes was measured, not assumed, and the measuring is why the
@@ -307,8 +311,11 @@ decoders would open them: a JPEG that leaves out its Huffman tables, as a
 frame cut from some video streams does; a JPEG whose first segment is not
 JFIF, which leaves out CMYK files; a Huffman table holding a value no 8-bit
 picture uses, whether or not a scan uses the table; anything after a JPEG's
-closing marker or a PNG's closing chunk; an animated PNG; and a PNG palette
-or transparency chunk out of its place. The interface re-encodes every
+closing marker or a PNG's closing chunk; an animated PNG; a PNG palette or
+transparency chunk out of its place; a compressed profile or note that is
+cut short, names no keyword, or with the file's others unpacks to more than
+a megabyte; a JPEG cut into more than 2,048 segments; and Adobe or colour
+profile data too short to be what it says. The interface re-encodes every
 upload to a baseline JFIF JPEG, so what it files passes.
 
 What it does not read is the compressed picture inside a JPEG's scans, which
@@ -362,6 +369,15 @@ Rules 3 was reviewed the same way, three times, before its deployment.
 | 1 | Nothing that moved money. An answer in the wrong shape set a legible photograph aside; a named site covered every address under it, forums included | An image is set aside only on a plain statement that it could not be read, or a prompt the runtime refuses twice; a name covers its own host and its www |
 | 2 | Nothing that moved money. An answer that was no object at all still passed for a refused prompt; the docs did not say an image that opens can still cost a round its panel | The runtime's refusal and an unusable answer are told apart; the limit is stated |
 | 3 | Clean: nothing serious or medium. Four small points | A validator reads sight exactly as the contract does; other parties' images are asked first; the stored account says nothing about an image set aside |
+
+Rules 4 was reviewed three times more, each reviewer given a real decoder to
+set the check against.
+
+| Round | Worst finding | What changed |
+|---|---|---|
+| 1 | Nothing that moved money. A PNG of a few kilobytes declaring tens of millions of one-pixel rows kept a node in a loop for most of a minute; built files that a decoder refuses still passed | No image is more than 8,192 pixels on a side; scans and side chunks are held to more of what a decoder requires |
+| 2 | Nothing that moved money, no crash in a quarter of a million built files. Three more shapes of JPEG scan that a decoder refuses, and PNG profiles and animations | Each refused; the documents say "very likely to open" and no longer "opens" |
+| 3 | Clean on the code as it then stood: nothing serious or medium, no ordinary encoder's output refused in twenty-two thousand files | An empty keyword is refused; a JPEG's segments are counted; the list of where the check is stricter than a decoder was completed |
 
 The small changes made after round three were tested and swept, and not
 reviewed again. One thing no review could settle from the code was how the

@@ -374,6 +374,8 @@ export interface Config {
   max_image_bytes: number;
   max_image_side: number;
   png_raw_max: number;
+  png_text_max: number;
+  jpeg_segments_max: number;
   max_text_chars: number;
   max_schedule_lines: number;
   max_criteria: number;

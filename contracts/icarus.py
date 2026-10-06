@@ -123,6 +123,7 @@ MAX_TRUSTED_SOURCES = 8
 HOSTNAME_MAX = 253
 PNG_RAW_MAX = 64 * 1024 * 1024       # the most a PNG's pixel data may inflate to
 MAX_IMAGE_SIDE = 8192                # pixels, either way: no round reads a larger picture
+JPEG_SEGMENTS_MAX = 2048             # segments and scans in one JPEG; a photograph has a few dozen
 
 MIN_PAYMENT_WEI = 10**16                  # 0.01 GEN per milestone
 MIN_APPEAL_WINDOW_SECONDS = 600           # 10 minutes
@@ -306,34 +307,35 @@ _PNG_KINDS = {0: ((1, 2, 4, 8, 16), 1), 2: ((8, 16), 3), 3: ((1, 2, 4, 8), 1),
               4: ((8, 16), 2), 6: ((8, 16), 4)}
 # Chunks a decoder reads before pixels and may skip, and the one size each has.
 _PNG_SIZES = {b"gAMA": 4, b"cHRM": 32, b"sRGB": 1, b"pHYs": 9, b"tIME": 7}
-PNG_TEXT_MAX = 1024 * 1024           # the most a compressed profile or note may inflate to
+PNG_TEXT_MAX = 1024 * 1024           # the most a file's compressed profile and notes may inflate to
 
 
-def _png_packed(body: bytes, at: int) -> bool:
-    """Whether a compressed profile or note is one a decoder unpacks: the
-    method it names is the one there is, and it inflates, to no more than a
-    decoder allows."""
+def _png_packed(body: bytes, at: int, room: int) -> int:
+    """How much a compressed profile or note unpacks to, or -1 when a decoder
+    would not unpack it: the method it names is not the one there is, it
+    does not inflate, or it inflates past the room the file has left."""
     if at >= len(body) or body[at]:
-        return False
+        return -1
     try:
         stream = zlib.decompressobj()
-        return len(stream.decompress(body[at + 1:], PNG_TEXT_MAX + 1)) <= PNG_TEXT_MAX and stream.eof
+        size = len(stream.decompress(body[at + 1:], room + 1))
+        return size if stream.eof and size <= room else -1
     except Exception:
-        return False
+        return -1
 
 
-def _png_note(body: bytes) -> bool:
-    """Whether an international text chunk is one a decoder reads: a keyword,
-    a flag saying whether the text is compressed, and if it is, text that
-    unpacks."""
-    key = body.find(b"\x00", 1, 80)
-    if key < 0 or key + 2 >= len(body) or body[key + 1] > 1:
-        return False
+def _png_note(body: bytes, room: int) -> int:
+    """The same for an international text chunk: a keyword, a flag saying
+    whether the text is compressed, and if it is, text that unpacks. Plain
+    text unpacks to nothing."""
+    key = body.find(b"\x00", 0, 80)
+    if key < 1 or key + 2 >= len(body) or body[key + 1] > 1:
+        return -1
     if not body[key + 1]:
-        return True
+        return 0
     lang = body.find(b"\x00", key + 3)
     text = body.find(b"\x00", lang + 1) if lang >= 0 else -1
-    return text >= 0 and _png_packed(body[key + 2:key + 3] + body[text + 1:], 0)
+    return _png_packed(body[key + 2:key + 3] + body[text + 1:], 0, room) if text >= 0 else -1
 
 
 # Adam7: where each pass starts and how far apart its pixels are.
@@ -345,7 +347,7 @@ def _png_problem(data: bytes) -> str:
     end, at, seen_data, closed_data, palette, colours = len(data), 8, False, False, False, 0
     width = height = bits = samples = interlace = kind = 0
     packed = []
-    first = True
+    first, room = True, PNG_TEXT_MAX
     while True:
         if at + 12 > end:
             return "it ends before its closing chunk"
@@ -392,11 +394,13 @@ def _png_problem(data: bytes) -> str:
             return "a chunk a decoder reads is the wrong size"
         elif name in (b"acTL", b"fcTL", b"fdAT"):
             return "it is an animation, and a round reads a still image"
-        elif name in (b"iCCP", b"zTXt"):
-            if body.find(b"\x00", 1, 80) < 0 or not _png_packed(body, body.find(b"\x00", 1, 80) + 1):
+        elif name in (b"iCCP", b"zTXt", b"iTXt"):
+            key = body.find(b"\x00", 0, 80)
+            used = _png_note(body, room) if name == b"iTXt" \
+                else _png_packed(body, key + 1, room) if key >= 1 else -1
+            if used < 0:
                 return "a compressed chunk a decoder reads does not unpack"
-        elif name == b"iTXt" and not _png_note(body):
-            return "a compressed chunk a decoder reads does not unpack"
+            room -= used                    # one allowance for the whole file
         if seen_data and name != b"IDAT":
             closed_data = True
         at += 12 + size
@@ -450,7 +454,7 @@ def _jpeg_problem(data: bytes) -> str:
     end, at = len(data), 2
     if data[-2:] != b"\xff\xd9":
         return "it does not end at its closing marker"
-    quant, huff, parts, progressive, scans, whole = set(), set(), {}, False, 0, False
+    quant, huff, parts, progressive, scans, whole, pieces = set(), set(), {}, False, 0, False, 0
     while True:
         if at + 2 > end or data[at] != 0xff:
             return "a segment is missing where one must begin"
@@ -462,9 +466,11 @@ def _jpeg_problem(data: bytes) -> str:
                 return "it closes before it holds a scan" if not scans \
                     else "it carries data after its closing marker"
             return ""
-        size = _be(data, at + 2, 2)
+        size, pieces = _be(data, at + 2, 2), pieces + 1
         if size < 2 or at + 2 + size > end - 2:
             return "a segment runs past the end of the file"
+        if pieces > JPEG_SEGMENTS_MAX:
+            return "it is cut into more segments than a round reads"
         body = data[at + 4:at + 2 + size]
         if mark == 0xdb:                                    # quantisation tables
             i = 0
@@ -568,8 +574,9 @@ def _jpeg_problem(data: bytes) -> str:
             continue
         elif not (0xe0 <= mark <= 0xef or mark == 0xfe):    # not application data or a comment
             return "it uses a kind of JPEG a decoder may not read"
-        elif any(mark == m and body[:len(head)] == head and len(body) < least
-                 for m, head, least in _JPEG_APPS):
+        elif mark in (0xe0, 0xe2, 0xee) and any(
+                mark == m and body[:len(head)] == head and len(body) < least
+                for m, head, least in _JPEG_APPS):
             return "application data a decoder reads is cut short"
         at += 2 + size
 
@@ -1383,6 +1390,8 @@ class Icarus(gl.contract.Contract):
             "max_image_bytes": MAX_IMAGE_BYTES,
             "max_image_side": MAX_IMAGE_SIDE,
             "png_raw_max": PNG_RAW_MAX,
+            "png_text_max": PNG_TEXT_MAX,
+            "jpeg_segments_max": JPEG_SEGMENTS_MAX,
             "max_text_chars": MAX_TEXT_CHARS,
             "quotas": QUOTAS,
             "max_named": MAX_NAMED,
