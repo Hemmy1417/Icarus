@@ -305,8 +305,37 @@ def _be(data: bytes, at: int, size: int) -> int:
 _PNG_KINDS = {0: ((1, 2, 4, 8, 16), 1), 2: ((8, 16), 3), 3: ((1, 2, 4, 8), 1),
               4: ((8, 16), 2), 6: ((8, 16), 4)}
 # Chunks a decoder reads before pixels and may skip, and the one size each has.
-_PNG_SIZES = {b"gAMA": 4, b"cHRM": 32, b"sRGB": 1, b"pHYs": 9, b"tIME": 7, b"acTL": 8,
-              b"fcTL": 26}
+_PNG_SIZES = {b"gAMA": 4, b"cHRM": 32, b"sRGB": 1, b"pHYs": 9, b"tIME": 7}
+PNG_TEXT_MAX = 1024 * 1024           # the most a compressed profile or note may inflate to
+
+
+def _png_packed(body: bytes, at: int) -> bool:
+    """Whether a compressed profile or note is one a decoder unpacks: the
+    method it names is the one there is, and it inflates, to no more than a
+    decoder allows."""
+    if at >= len(body) or body[at]:
+        return False
+    try:
+        stream = zlib.decompressobj()
+        return len(stream.decompress(body[at + 1:], PNG_TEXT_MAX + 1)) <= PNG_TEXT_MAX and stream.eof
+    except Exception:
+        return False
+
+
+def _png_note(body: bytes) -> bool:
+    """Whether an international text chunk is one a decoder reads: a keyword,
+    a flag saying whether the text is compressed, and if it is, text that
+    unpacks."""
+    key = body.find(b"\x00", 1, 80)
+    if key < 0 or key + 2 >= len(body) or body[key + 1] > 1:
+        return False
+    if not body[key + 1]:
+        return True
+    lang = body.find(b"\x00", key + 3)
+    text = body.find(b"\x00", lang + 1) if lang >= 0 else -1
+    return text >= 0 and _png_packed(body[key + 2:key + 3] + body[text + 1:], 0)
+
+
 # Adam7: where each pass starts and how far apart its pixels are.
 _PNG_PASSES = ((0, 0, 8, 8), (4, 0, 8, 8), (0, 4, 4, 8), (2, 0, 4, 4),
                (0, 2, 2, 4), (1, 0, 2, 2), (0, 1, 1, 2))
@@ -359,8 +388,15 @@ def _png_problem(data: bytes) -> str:
         elif name == b"tRNS":
             if size != ({0: 2, 2: 6}.get(kind) or (1 <= size <= colours and size)):
                 return "a chunk a decoder reads is the wrong size"
-        elif size != _PNG_SIZES.get(name, size) or (name == b"iCCP" and b"\x00" not in body[1:80]):
+        elif size != _PNG_SIZES.get(name, size):
             return "a chunk a decoder reads is the wrong size"
+        elif name in (b"acTL", b"fcTL", b"fdAT"):
+            return "it is an animation, and a round reads a still image"
+        elif name in (b"iCCP", b"zTXt"):
+            if body.find(b"\x00", 1, 80) < 0 or not _png_packed(body, body.find(b"\x00", 1, 80) + 1):
+                return "a compressed chunk a decoder reads does not unpack"
+        elif name == b"iTXt" and not _png_note(body):
+            return "a compressed chunk a decoder reads does not unpack"
         if seen_data and name != b"IDAT":
             closed_data = True
         at += 12 + size
@@ -406,11 +442,15 @@ def _png_problem(data: bytes) -> str:
     return ""
 
 
+# Application data a decoder parses, and the least of it there must be.
+_JPEG_APPS = ((0xe0, b"JFIF\x00", 14), (0xe2, b"ICC_PROFILE\x00", 14), (0xee, b"Adobe", 12))
+
+
 def _jpeg_problem(data: bytes) -> str:
     end, at = len(data), 2
     if data[-2:] != b"\xff\xd9":
         return "it does not end at its closing marker"
-    quant, huff, parts, progressive, scans = set(), set(), {}, False, 0
+    quant, huff, parts, progressive, scans, whole = set(), set(), {}, False, 0, False
     while True:
         if at + 2 > end or data[at] != 0xff:
             return "a segment is missing where one must begin"
@@ -468,7 +508,11 @@ def _jpeg_problem(data: bytes) -> str:
                 if not 1 <= sampling >> 4 <= 4 or not 1 <= sampling & 15 <= 4 or table > 3 \
                         or ident in parts:
                     return "its frame describes no image a decoder knows"
-                parts[ident] = (table, (sampling >> 4) * (sampling & 15))
+                parts[ident] = (table, sampling >> 4, sampling & 15)
+            # Every component's sampling divides the largest, across and down.
+            across, down = max(p[1] for p in parts.values()), max(p[2] for p in parts.values())
+            if any(across % p[1] or down % p[2] for p in parts.values()):
+                return "its frame describes no image a decoder knows"
             progressive = mark == 0xc2
         elif mark == 0xdd:                                  # restart interval
             if size != 4:
@@ -476,6 +520,8 @@ def _jpeg_problem(data: bytes) -> str:
         elif mark == 0xda:                                  # a scan
             if not parts or not body:
                 return "a scan comes before its frame"
+            if whole:
+                return "it carries a scan after its picture is complete"
             count = body[0]
             if not 1 <= count <= len(parts) or len(body) != 4 + 2 * count:
                 return "a scan is malformed"
@@ -488,12 +534,16 @@ def _jpeg_problem(data: bytes) -> str:
             # of one component alone.
             if progressive and (last if not first else count > 1):
                 return "a scan is malformed"
-            named = [body[1 + 2 * k] for k in range(count)]
-            if len(set(named)) != count:
+            # A scan names components once each, in the order the frame did.
+            named, order = [body[1 + 2 * k] for k in range(count)], list(parts)
+            where = [order.index(i) for i in named if i in parts]
+            if any(b <= a for a, b in zip(where, where[1:])):
                 return "a scan is malformed"
             # Components read together share a unit of at most ten blocks.
-            if count > 1 and sum(parts[i][1] for i in named if i in parts) > 10:
+            if count > 1 and sum(parts[i][1] * parts[i][2] for i in named if i in parts) > 10:
                 return "a scan is malformed"
+            # A sequential picture is complete once one scan has read all of it.
+            whole = not progressive and count == len(parts)
             for k in range(count):
                 ident, tables = body[1 + 2 * k], body[2 + 2 * k]
                 if ident not in parts or parts[ident][0] not in quant:
@@ -512,14 +562,15 @@ def _jpeg_problem(data: bytes) -> str:
                     return "a scan runs past the end of the file"
                 if data[at + 1] == 0 or 0xd0 <= data[at + 1] <= 0xd7:
                     at += 2
-                elif data[at + 1] == 0xff:
-                    at += 1
                 else:
-                    break
+                    break                   # a marker, or fill before one
             scans += 1
             continue
         elif not (0xe0 <= mark <= 0xef or mark == 0xfe):    # not application data or a comment
             return "it uses a kind of JPEG a decoder may not read"
+        elif any(mark == m and body[:len(head)] == head and len(body) < least
+                 for m, head, least in _JPEG_APPS):
+            return "application data a decoder reads is cut short"
         at += 2 + size
 
 
@@ -531,7 +582,7 @@ def _readings(out, count: int) -> dict:
     also read when it is the answer itself, or sits under "images" with no
     list around it. An answer about a single image is read without its
     number too: there is only one image it can be about, so nothing is
-    guessed. With two images a row must say which one it describes, and the
+    guessed. A row that names some other image is not read as this one. With two images a row must say which one it describes, and the
     first to say so is taken."""
     if not isinstance(out, dict):
         return {}
@@ -545,10 +596,12 @@ def _readings(out, count: int) -> dict:
         if not isinstance(row, dict):
             continue
         if count == 1:
-            # The row that says it is about image 1, or failing that the first.
+            # The row that says it is about image 1, or failing that the
+            # first that does not say which image it is about.
             if row.get("n") in (1, "1") and not numbered:
                 found[1], numbered = row, True
-            found.setdefault(1, row)
+            elif row.get("n") is None:
+                found.setdefault(1, row)
             continue
         for n in range(1, count + 1):
             if row.get("n") in (n, str(n)):

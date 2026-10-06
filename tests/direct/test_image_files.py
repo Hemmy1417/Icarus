@@ -18,6 +18,7 @@ from conftest import (  # noqa: F401
 GREY = b"\x08\x00\x08\x00\x08\x01\x01\x11\x00"                    # one 8 by 8 grey component
 COLOUR = b"\x08\x00\x10\x00\x10\x03\x01\x22\x00\x02\x11\x00\x03\x11\x00"
 ONE_CODE = b"\x01" + b"\x00" * 15
+GOOD_COLOUR = b"\x08\x00\x10\x00\x10\x03\x01\x22\x00\x02\x11\x00\x03\x11\x00"   # 4:2:0
 
 
 def filed(module, c, data, who=INSTALLER):
@@ -70,6 +71,12 @@ class TestAJpegADecoderOpens:
              sos=seg(0xda, b"\x03\x01\x00\x02\x00\x03\x00\x00\x3f\x00")),
         # the same eighteen blocks, read one component to a scan
         jpeg(sof=seg(0xc0, b"\x08\x00\x10\x00\x10\x03\x01\x44\x00\x02\x11\x00\x03\x11\x00")),
+        # a colour picture read one component, then the other two together
+        jpeg(sof=seg(0xc0, GOOD_COLOUR))[:-2]
+        + seg(0xda, b"\x02\x02\x00\x03\x00\x00\x3f\x00") + b"\x00" * 4 + b"\xff\xd9",
+        # application data a decoder parses, at the least it needs
+        jpeg(note=seg(0xe2, b"ICC_PROFILE\x00\x01\x01") + seg(0xee, b"Adobe\x00\x64\x00\x00\x00\x00\x00\x00")
+             + seg(0xe0, b"JFXX\x00\x10") + seg(0xe2, b"MPF\x00")),
         # the most a Huffman table holds: 256 codes
         jpeg(dc=seg(0xc4, b"\x00" + b"\x00" * 8 + b"\xff\x01" + b"\x00" * 6 + b"\x00" * 256)),
     ])
@@ -143,6 +150,23 @@ class TestAJpegADecoderOpens:
         (jpeg(sos=seg(0xda, b"\x00\x00\x3f\x00")), "a scan is malformed"),
         (jpeg(sos=seg(0xda, b"\x01\x01\x00\x00\x3f\x00\x00")), "a scan is malformed"),
         (jpeg(sos=seg(0xda, b"\x01\x01\x00\x00\x00\x00")), "a scan is malformed"),
+        # sampling that does not divide the largest: three across beside two
+        (jpeg(sof=seg(0xc0, b"\x08\x00\x10\x00\x10\x03\x01\x31\x00\x02\x21\x00\x03\x11\x00")),
+         "frame describes no image"),
+        (jpeg(sof=seg(0xc0, b"\x08\x00\x10\x00\x10\x03\x01\x13\x00\x02\x12\x00\x03\x11\x00")),
+         "frame describes no image"),
+        # components named out of the order the frame gave them
+        (jpeg(sof=seg(0xc0, GOOD_COLOUR), sos=seg(0xda, b"\x03\x03\x00\x02\x00\x01\x00\x00\x3f\x00")),
+         "a scan is malformed"),
+        (jpeg(sof=seg(0xc0, GOOD_COLOUR), sos=seg(0xda, b"\x02\x02\x00\x01\x00\x00\x3f\x00")),
+         "a scan is malformed"),
+        # a second scan after one that read the whole picture
+        (jpeg()[:-2] + seg(0xda, b"\x01\x01\x00\x00\x3f\x00") + b"\x00" * 4 + b"\xff\xd9",
+         "a scan after its picture is complete"),
+        (jpeg(note=seg(0xe0, b"JFIF\x00\x01")), "application data a decoder reads is cut short"),
+        (jpeg(app0=seg(0xe0, b"JFIF\x00" + b"\x00" * 8)), "application data a decoder reads is cut short"),
+        (jpeg(note=seg(0xe2, b"ICC_PROFILE\x00\x01")), "application data a decoder reads is cut short"),
+        (jpeg(note=seg(0xee, b"Adobe\x00")), "application data a decoder reads is cut short"),
         # one component named twice in a scan
         (jpeg(sof=seg(0xc0, COLOUR), sos=seg(0xda, b"\x03\x01\x00\x01\x00\x03\x00\x00\x3f\x00")),
          "a scan is malformed"),
@@ -165,7 +189,7 @@ class TestAJpegADecoderOpens:
         (jpeg(sos=seg(0xda, b"\x01\x01\x00\x00\x3f\x01")), "a scan is malformed"),
         (jpeg(sof=seg(0xc2, GREY), sos=seg(0xda, b"\x01\x01\x00\x05\x02\x00")),
          "a scan is malformed"),
-        (jpeg(sof=seg(0xc2, GREY), sos=seg(0xda, b"\x01\x01\x00\x00\x40\x00")),
+        (jpeg(sof=seg(0xc2, GREY), sos=seg(0xda, b"\x01\x01\x00\x01\x40\x00")),
          "a scan is malformed"),
         (jpeg(sof=seg(0xc2, GREY), sos=seg(0xda, b"\x01\x01\x00\x00\x00\x0e")),
          "a scan is malformed"),
@@ -210,7 +234,11 @@ class TestAPngADecoderOpens:
         png_file(note=chunk(b"tRNS", b"\x00\x01") + chunk(b"pHYs", b"\x00" * 9)
                  + chunk(b"sRGB", b"\x00") + chunk(b"cHRM", b"\x00" * 32)
                  + chunk(b"iCCP", b"name\x00\x00" + zlib.compress(b"profile"))
-                 + chunk(b"tIME", b"\x00" * 7) + chunk(b"zzZz", b"anything a decoder skips")),
+                 + chunk(b"tIME", b"\x00" * 7) + chunk(b"zzZz", b"anything a decoder skips")
+                 + chunk(b"zTXt", b"k\x00\x00" + zlib.compress(b"\x00" * (1024 * 1024)))
+                 + chunk(b"iTXt", b"k\x00\x00\x00en\x00t\x00plain text")
+                 + chunk(b"iTXt", b"k\x00\x01\x00\x00\x00" + zlib.compress(b"packed text"))
+                 + chunk(b"tEXt", b"k\x00v")),
         png_file(ihdr=ihdr(2, 2, 8, 2), note=chunk(b"tRNS", b"\x00" * 6),
                  idat=rows(b"\x00" + b"\x01" * 6, b"\x00" + b"\x02" * 6)),
         png_file(ihdr=ihdr(2, 2, 8, 3), plte=chunk(b"PLTE", b"\x00" * 6),
@@ -284,6 +312,8 @@ class TestAPngADecoderOpens:
         (png_file(ihdr=ihdr(3, 3, 8, 0, interlace=1), idat=rows(b"\x00\x00\x00\x00" * 3)),
          "its header says"),
         (png_file(ihdr=ihdr(60_000, 60_000, 8, 6)), "more pixels than a round reads"),
+        # within the longest side, and four times the pixel data a round reads
+        (png_file(ihdr=ihdr(8192, 8192, 8, 6)), "more pixels than a round reads"),
         # a few thousand bytes that would cost every node a loop of millions of rows
         (png_file(ihdr=ihdr(1, 8193, 1, 0)), "more pixels than a round reads"),
         (png_file(ihdr=ihdr(8193, 1, 1, 0)), "more pixels than a round reads"),
@@ -305,10 +335,31 @@ class TestAPngADecoderOpens:
         (png_file(note=chunk(b"pHYs", b"\x00")), "a chunk a decoder reads is the wrong size"),
         (png_file(note=chunk(b"cHRM", b"\x00")), "a chunk a decoder reads is the wrong size"),
         (png_file(note=chunk(b"sRGB")), "a chunk a decoder reads is the wrong size"),
-        (png_file(note=chunk(b"acTL", b"\x00")), "a chunk a decoder reads is the wrong size"),
-        (png_file(note=chunk(b"fcTL", b"\x00")), "a chunk a decoder reads is the wrong size"),
+        (png_file(note=chunk(b"tIME", b"\x00")), "a chunk a decoder reads is the wrong size"),
+        (png_file(note=chunk(b"acTL", b"\x00" * 8)), "it is an animation"),
+        (png_file(note=chunk(b"fcTL", b"\x00" * 26)), "it is an animation"),
+        (png_file(pad=chunk(b"fdAT", b"\x00" * 8)), "it is an animation"),
         (png_file(note=chunk(b"iCCP", b"profile with no end to its name")),
-         "a chunk a decoder reads is the wrong size"),
+         "a compressed chunk a decoder reads does not unpack"),
+        (png_file(note=chunk(b"iCCP", b"a\x00")), "a compressed chunk a decoder reads does not unpack"),
+        (png_file(note=chunk(b"iCCP", b"a\x00\x01" + zlib.compress(b"p"))), "does not unpack"),
+        (png_file(note=chunk(b"iCCP", b"a\x00\x00not a stream")), "does not unpack"),
+        (png_file(note=chunk(b"iCCP", b"a\x00\x00" + zlib.compress(b"p")[:-1])), "does not unpack"),
+        (png_file(note=chunk(b"iCCP", b"\x00\x00" + zlib.compress(b"p"))), "does not unpack"),
+        (png_file(note=chunk(b"iCCP", b"n" * 80 + b"\x00\x00" + zlib.compress(b"p"))),
+         "does not unpack"),
+        (png_file(note=chunk(b"zTXt", b"k\x00\x01" + zlib.compress(b"p"))), "does not unpack"),
+        (png_file(note=chunk(b"zTXt", b"k\x00\x00" + zlib.compress(b"\x00" * (1024 * 1024 + 1)))),
+         "does not unpack"),
+        (png_file(note=chunk(b"iTXt", b"keyword with no end")), "does not unpack"),
+        (png_file(note=chunk(b"iTXt", b"k\x00")), "does not unpack"),
+        (png_file(note=chunk(b"iTXt", b"k\x00\x00")), "does not unpack"),
+        (png_file(note=chunk(b"iTXt", b"k\x00\x02\x00en\x00t\x00text")), "does not unpack"),
+        (png_file(note=chunk(b"iTXt", b"k\x00\x01\x00en\x00t\x00not a stream")), "does not unpack"),
+        (png_file(note=chunk(b"iTXt", b"k\x00\x01\x01en\x00t\x00" + zlib.compress(b"p"))),
+         "does not unpack"),
+        (png_file(note=chunk(b"iTXt", b"k\x00\x01\x00en")), "does not unpack"),
+        (png_file(note=chunk(b"iTXt", b"k\x00\x01\x00en\x00t")), "does not unpack"),
     ])
     def test_one_a_decoder_would_stop_on_is_refused(self, module, c, data, why):
         refused(module, c, data, "that PNG is not one a decoder opens: .*" + why)
@@ -321,5 +372,5 @@ class TestAPngADecoderOpens:
         body = b"".join(packer.compress(b"\x00" * (1 + wide)) for _ in range(side)) + packer.flush()
         assert side * (1 + wide) == 64 * 1024 * 1024
         assert filed(module, c, png_file(ihdr=ihdr(wide, side, 8, 0), idat=chunk(b"IDAT", body)))
-        refused(module, c, png_file(ihdr=ihdr(wide, side + 1, 8, 0), idat=chunk(b"IDAT", body)),
+        refused(module, c, png_file(ihdr=ihdr(wide + 1, side, 8, 0), idat=chunk(b"IDAT", body)),
                 "more pixels than a round reads")

@@ -80,12 +80,13 @@ Applied to this build, with where each one is met.
   validator's judgment. See `docs/substitution-and-cure.md`.
 - **What a node makes of an image.** A file is refused when it is filed
   unless its structure is one a decoder opens: a PNG checked whole, a JPEG
-  checked through its tables, frame and scans. The check costs a node the
-  same for any file: nothing in it grows faster than the file, and no image
-  may be more than 8,192 pixels on a side, so a small file cannot buy a
-  long loop. That closes the case met on an
+  checked through its tables, frame and scans. The check is bounded for any file:
+  nothing in it grows faster than the file, no image may be more than 8,192
+  pixels on a side, and a PNG's pixel data may inflate to 64 MB at most,
+  which costs a fraction of a second. That refuses the file met on an
   earlier deployment, where a node described a picture that was not in an
-  undecodable file. It does not make a model truthful about a picture it can
+  undecodable file. It is a reading of structure and not a decoder, so a
+  file it takes is very likely to open and is not certain to. It does not make a model truthful about a picture it can
   see, and the compressed picture inside a JPEG is not read, so a file of
   noise is filed and seen as noise. An image from the owner or the inspector
   that a node says it cannot read is set aside by that node. An image that

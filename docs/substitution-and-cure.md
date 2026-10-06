@@ -282,30 +282,38 @@ a decoder reads before pixels against their sizes, and the pixel data
 inflated and measured row by row against the size the header declares, up to
 64 MB. A JPEG is walked segment by segment: its quantisation and Huffman
 tables must be well formed, its frame must describe an 8-bit image of one,
-three or four components, and each scan must be one a decoder accepts and
-refer only to components and tables the file defines. Neither kind may be
+three or four components, and each scan must follow the rules a decoder
+holds a scan to and refer only to components and tables the file defines. Neither kind may be
 more than 8,192 pixels on a side. A file that fails is refused when it is
 filed, whoever files it.
 
-How far this goes was measured, not assumed. Against a real decoder, on six
-thousand copies of real photographs with bytes changed at random, none that
-the contract took failed to decode. A reviewer building files on purpose
-then found several that did: a scan naming one component twice, a
-progressive pass a decoder rejects, more blocks to a unit than a decoder
-holds, a header claiming billions of pixels, and small chunks of the wrong
-size in a PNG. Each of those is now refused. The check is a reading of the
-file's structure and not a decoder, so the claim it supports is that a file
-it takes is very likely to open, not that it must.
+How far this goes was measured, not assumed, and the measuring is why the
+claim is a modest one. Against a real decoder, on six thousand copies of real
+photographs with bytes changed at random, none that the contract took failed
+to decode. Two reviewers building files on purpose then found some that did,
+twice over: a scan naming a component twice or out of order, a progressive
+pass a decoder rejects, a second scan after a picture was complete, sampling
+factors that do not divide one another, more blocks to a unit than a decoder
+holds, a header claiming billions of pixels, and in a PNG a profile or a note
+that does not unpack and the chunks of an animation. Each is now refused. The
+check is a reading of the file's structure and not a decoder, and decoders
+differ among themselves, so what it supports is that a file it takes is very
+likely to open, not that it must. A file that does not open on some node is
+where rules 3 already stands: an image from the owner or the inspector is
+set aside by the node that cannot read it.
 
-It is stricter than a decoder in a few places, on purpose: a JPEG that
-leaves out its Huffman tables, as a frame cut from some video streams does,
-anything after the closing marker, and a JPEG whose first segment is not
-JFIF are refused. The interface re-encodes every upload, so what it files
-passes.
+It is stricter than a decoder in places, on purpose. Refused although most
+decoders would open them: a JPEG that leaves out its Huffman tables, as a
+frame cut from some video streams does; a JPEG whose first segment is not
+JFIF, which leaves out CMYK files; a Huffman table holding a value no 8-bit
+picture uses, whether or not a scan uses the table; anything after a JPEG's
+closing marker or a PNG's closing chunk; an animated PNG; and a PNG palette
+or transparency chunk out of its place. The interface re-encodes every
+upload to a baseline JFIF JPEG, so what it files passes.
 
 What it does not read is the compressed picture inside a JPEG's scans, which
-a decoder reads through even when it is noise. So a file that passes opens,
-and a node that looks at noise sees noise. Whether a model then describes it
+a decoder reads through even when it is noise. So a file of noise that
+passes opens as noise, and a node that looks at it sees noise. Whether a model then describes it
 truthfully is the limit `docs/security.md` has always stated, and no check
 on the file reaches it.
 

@@ -101,8 +101,8 @@ refused in code, and who published the page is nobody's judgment. And an
 image the owner or the inspector files that a node cannot read is set aside
 by that node, so it cannot keep a round from being decided. What the
 installer presents must still reach a node for it to vote. A file is refused
-when it is filed unless it is one a decoder opens: a PNG is checked whole,
-and a JPEG through its tables, its frame and its scans.
+when it is filed unless its structure is one a decoder opens: a PNG is
+checked whole, and a JPEG through its tables, its frame and its scans.
 
 | State | Who moves it | If nobody acts |
 |---|---|---|

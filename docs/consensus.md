@@ -35,7 +35,8 @@ sets it aside, grounds nothing on it and judges on the rest. An answer that
 is malformed, or is no object at all, is not that: the node failed, and it
 does not vote. A node counts as having read an image only when it answers
 `readable` with the boolean true and describes something. An answer that
-does not say this for every image is asked for once more, and an answer
+does not say, for every image, whether it was read is asked for once more,
+unless it says of any image that it was not; and an answer
 about a single image is read whether or not it kept the numbered list it was
 asked for, since there is only one image it can be about.
 Otherwise one file that no decoder can open, filed by a party with a reason

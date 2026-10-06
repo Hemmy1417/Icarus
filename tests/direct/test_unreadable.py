@@ -164,6 +164,10 @@ class TestAnImageNobodyCanRead:
         {"images": [{"n": 1, "readable": 0, "shows": ""}]},
         {"images": [{"n": 1, "readable": "false", "shows": ""}]},
         {"images": [5, "a row", None]},
+        # a row that names some other image is not read as this one
+        {"images": [{"n": 2, "readable": True, "shows": "An empty inverter bay."}]},
+        {"images": [{"n": "one", "readable": False}]},
+        {"images": [{"n": 0, "readable": False}, {"n": 3, "readable": True, "shows": "A roof."}]},
         {"images": 5},
         {"reading": "An empty inverter bay."},
         {},
@@ -187,8 +191,7 @@ class TestAnImageNobodyCanRead:
         {"readable": True, "shows": "An empty inverter bay."},
         {"images": {"n": 1, "readable": True, "shows": "An empty inverter bay."}},
         {"images": [{"readable": True, "shows": "An empty inverter bay."}]},
-        {"images": [{"n": "one", "readable": True, "shows": "An empty inverter bay."}]},
-        {"images": [{"n": 7, "readable": True, "shows": "An empty inverter bay."}]},
+        {"images": [{"n": None, "readable": True, "shows": "An empty inverter bay."}]},
         {"images": ["stray", {"readable": True, "shows": "An empty inverter bay."}]},
     ])
     def test_an_answer_about_one_image_is_read_whatever_wrapper_it_came_in(
