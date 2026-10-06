@@ -321,11 +321,12 @@ class TestConsensus:
     def test_a_forged_leader_result_is_refused(self, module, c):
         _, mid = active_milestone(module, c)
         items = two_images(module, c, mid)
-        with pytest.raises(err(module)):
+        with pytest.raises(err(module), match="did not agree"):
             llm(look=look_all(), judge=judge_all())
             as_(module, INSTALLER)
             forge_leader({"lines": "not a dict"})
             c.request_assessment(mid, json.dumps(items))
+        assert any("the leader's result is malformed" in p for p in prints())
         assert milestone(c, mid)["rounds_count"] == 0
 
     def test_a_blind_validator_disagrees_rather_than_deciding(self, module, c):

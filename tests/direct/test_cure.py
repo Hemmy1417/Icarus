@@ -665,7 +665,7 @@ class TestTheOwnersReach:
         prompt = prompts(kind="judge", role="leader")[0]["prompt"]
         assert "E1 module" in prompt and "E3 mounting" in prompt
         assert "This is an APPEAL of round 2" in prompt and "CURE" not in prompt
-        assert [p["images"] for p in prompts(kind="look", role="leader")] == [2, 1, 1]
+        assert [p["images"] for p in prompts(kind="look", role="leader")] == [1, 2, 1]
         assert claimable(c, INSTALLER) == 0
 
     def test_an_appeal_that_upholds_a_cured_acceptance_pays_at_once(self, module, c):

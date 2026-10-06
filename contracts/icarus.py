@@ -2157,10 +2157,11 @@ class Icarus(gl.contract.Contract):
         reading is a lost vote and rounds fail for want of sighted nodes.
         One retry costs a prompt and recovers most of them.
 
-        The two ways of failing are kept apart. A prompt the runtime would
-        not run, twice, is a prompt that failed on what it carried. An
-        answer that came back and could not be read as an object is the
-        node's own failure, and is never mistaken for the first."""
+        The two ways of failing are kept apart. A prompt the runtime raised
+        on, twice, is taken as a prompt that failed on what it carried,
+        whatever made the runtime raise. An answer the runtime handed back
+        that could not be read as an object is the node's own failure, and
+        is never mistaken for the first."""
         failed = 0
         for _ in range(2):
             try:
@@ -2185,9 +2186,12 @@ class Icarus(gl.contract.Contract):
         down with it and blind the node. A prompt that fails on what the
         installer presents leaves the node blind, as any unread image of
         theirs does."""
+        # The other parties' images go first. If a node runs out of time or
+        # allowance part way, it then fails on what the installer presents,
+        # which leaves it blind, and not on the evidence against them.
         mine = [pair for pair in ctx["images"] if pair[0]["role"] == "INSTALLER"]
-        batches = [mine[i:i + IMAGES_PER_PROMPT] for i in range(0, len(mine), IMAGES_PER_PROMPT)]
-        batches += [[pair] for pair in ctx["images"] if pair[0]["role"] != "INSTALLER"]
+        batches = [[pair] for pair in ctx["images"] if pair[0]["role"] != "INSTALLER"]
+        batches += [mine[i:i + IMAGES_PER_PROMPT] for i in range(0, len(mine), IMAGES_PER_PROMPT)]
         read, received = {}, True
         for pair in batches:
             out, refused = self._ask_about(self._look_prompt(pair), [data for _, data in pair])
@@ -2425,7 +2429,7 @@ class Icarus(gl.contract.Contract):
                     or not isinstance(theirs.get("criteria"), dict):
                 print("[DISAGREE] the leader's result is malformed")
                 return False
-            if not theirs.get("images_received"):
+            if theirs.get("images_received") is not True:
                 print("[DISAGREE] the leader did not receive the images")
                 return False
             try:
@@ -2508,12 +2512,15 @@ class Icarus(gl.contract.Contract):
         images = []
         for it, _ in ctx["images"]:
             row = said.get(it["item_id"], {})
+            aside = it["item_id"] in unread
             images.append({
                 "item_id": it["item_id"], "role": it["role"], "origin": it["origin"],
                 "claimed_line": it.get("equipment_id", ""), "caption": it.get("caption", ""),
-                "readable": row.get("readable") is True and it["item_id"] not in unread,
-                "shows": line(row.get("shows"), LONG_MAX),
-                "labels": words(row.get("labels"), 8), "concerns": words(row.get("concerns"), 4),
+                "readable": row.get("readable") is True and not aside,
+                # An image set aside was not read, so it is given no description.
+                "shows": "" if aside else line(row.get("shows"), LONG_MAX),
+                "labels": [] if aside else words(row.get("labels"), 8),
+                "concerns": [] if aside else words(row.get("concerns"), 4),
             })
         lines_raw, criteria_raw = section("lines_raw"), section("criteria_raw")
         basis, crit_basis, notes = section("basis"), section("criteria_basis"), section("line_notes")

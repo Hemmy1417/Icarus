@@ -83,8 +83,8 @@ Applied to this build, with where each one is met.
   or the inspector that a node cannot read is set aside by that node. Neither
   makes two different decoders agree. A damaged image that half a panel
   reads and half does not can still split it, and a split records nothing.
-  Nor is an image that opens, but draws answers the nodes cannot give in the
-  asked shape, set aside: those nodes do not vote, and a party who can make
+  Nor is an image that opens, but draws answers that reach the contract in
+  the wrong shape, set aside: those nodes do not vote, and a party who can make
   such an image can still cost a round its majority.
 - **Workmanship and safety.** A photograph showing the right inverter on the
   right wall is not an electrical inspection.

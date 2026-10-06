@@ -45,7 +45,10 @@ read it. The round records which images its leader set aside.
 For the same reason the two kinds never share a prompt. What the installer
 presents is read two images at a time, the runtime's limit, and each image
 from another party is read alone, so a file the runtime refuses to pass to a
-model fails only its own prompt and is set aside with it.
+model fails only its own prompt and is set aside with it. Those prompts are
+asked first, so a node that runs out of time part way fails on what the
+installer presents, which costs its vote, and not on the evidence against
+them.
 
 ## Where a validator disagrees
 

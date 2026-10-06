@@ -21,7 +21,7 @@ UNREAD = look_answer([{}], received=False)
 
 def three(module, c, who=OWNER, **kw):
     """Two photographs from the installer and one from another party. The
-    panel reads them two at a time, so the third comes in a prompt alone."""
+    other party's is read first, in a prompt of its own."""
     _, mid = active_milestone(module, c, **kw)
     a = image(module, c, mid, caption="The array", line="E1")
     b = image(module, c, mid, caption="The inverter", line="E2", origin="NAMEPLATE")
@@ -34,7 +34,7 @@ class TestAnImageNobodyCanRead:
     def test_it_is_set_aside_and_the_round_is_decided_on_the_rest(self, module, c, who):
         mid, a, b, other = three(module, c, who=who,
                                  inspector=INSPECTOR if who == INSPECTOR else "")
-        out = assess(module, c, mid, [a, b], look=[look_all(), UNREAD],
+        out = assess(module, c, mid, [a, b], look=[UNREAD, look_all()],
                      judge=judge_all(basis={k: [a, b] for k in ALL}))
         assert out["decision"] == "ACCEPTED"
         record = rounds(c, mid, 1)
@@ -50,7 +50,7 @@ class TestAnImageNobodyCanRead:
         mid, a, b, other = three(module, c)
         with pytest.raises(err(module), match="did not agree"):
             assess(module, c, mid, [a, b],
-                   look=[look_answer([{}, {}], received=False), look_all(n_images=1)],
+                   look=[look_all(n_images=1), look_answer([{}, {}], received=False)],
                    judge=judge_all(basis={k: [other] for k in ALL}))
         assert any("the leader did not receive the images" in p for p in prints())
         assert milestone(c, mid)["rounds_count"] == 0
@@ -60,14 +60,14 @@ class TestAnImageNobodyCanRead:
         half = {"images": [{"n": 1, "readable": True, "shows": "An array."},
                            {"n": 2, "readable": False, "shows": ""}]}
         with pytest.raises(err(module), match="did not agree"):
-            assess(module, c, mid, [a, b], look=[half, look_all(n_images=1)],
+            assess(module, c, mid, [a, b], look=[look_all(n_images=1), half],
                    judge=judge_all(basis={k: [a] for k in ALL}))
 
     def test_nothing_is_found_on_an_image_the_node_could_not_read(self, module, c):
         """The node says the line is absent and cites the file it could not
         open. Code does not take a finding from evidence nobody saw."""
         mid, a, b, other = three(module, c)
-        out = assess(module, c, mid, [a, b], look=[look_all(), UNREAD], judge=judge_answer(
+        out = assess(module, c, mid, [a, b], look=[UNREAD, look_all()], judge=judge_answer(
             {"E1": "INSTALLED", "E2": "ABSENT", "E3": "INSTALLED"}, {"C1": "NOT_MET"},
             basis={"E1": [a], "E2": [other], "E3": [a], "C1": [other]}))
         assert out["decision"] == "UNDETERMINED"
@@ -75,7 +75,7 @@ class TestAnImageNobodyCanRead:
 
     def test_nothing_is_established_on_it_either(self, module, c):
         mid, a, b, other = three(module, c)
-        out = assess(module, c, mid, [a, b], look=[look_all(), UNREAD], judge=judge_answer(
+        out = assess(module, c, mid, [a, b], look=[UNREAD, look_all()], judge=judge_answer(
             {"E1": "INSTALLED", "E2": "INSTALLED", "E3": "INSTALLED"}, {"C1": "MET"},
             basis={"E1": [a], "E2": [other], "E3": [a], "C1": [a]}))
         assert out["decision"] == "UNDETERMINED" and out["lines"]["E2"] == "NOT_SHOWN"
@@ -83,9 +83,9 @@ class TestAnImageNobodyCanRead:
     def test_a_leader_that_could_not_read_it_is_confirmed_by_one_that_found_nothing_in_it(
             self, module, c):
         mid, a, b, other = three(module, c)
-        out = assess(module, c, mid, [a, b], look=[look_all(), UNREAD],
+        out = assess(module, c, mid, [a, b], look=[UNREAD, look_all()],
                      judge=judge_all(basis={k: [a, b] for k in ALL}),
-                     v_look=[look_all(), look_all(n_images=1)],
+                     v_look=[look_all(n_images=1), look_all()],
                      v_judge=judge_all(basis={k: [a, b] for k in ALL}))
         assert out["decision"] == "ACCEPTED"
         assert rounds(c, mid, 1)["unread"] == [other], "the record is the leader's reading"
@@ -96,9 +96,9 @@ class TestAnImageNobodyCanRead:
         does not confirm that."""
         mid, a, b, other = three(module, c)
         with pytest.raises(err(module), match="did not agree"):
-            assess(module, c, mid, [a, b], look=[look_all(), UNREAD],
+            assess(module, c, mid, [a, b], look=[UNREAD, look_all()],
                    judge=judge_all(basis={k: [a, b] for k in ALL}),
-                   v_look=[look_all(), look_all(n_images=1)],
+                   v_look=[look_all(n_images=1), look_all()],
                    v_judge=judge_answer({"E1": "INSTALLED", "E2": "ABSENT", "E3": "INSTALLED"},
                                         {"C1": "MET"},
                                         basis={"E1": [a], "E2": [other], "E3": [a], "C1": [a]}))
@@ -110,8 +110,8 @@ class TestAnImageNobodyCanRead:
                                  {"C1": "MET"},
                                  basis={"E1": [a], "E2": [other], "E3": [a], "C1": [a]})
         with pytest.raises(err(module), match="did not agree"):
-            assess(module, c, mid, [a, b], look=[look_all(), look_all(n_images=1)],
-                   judge=rejecting, v_look=[look_all(), UNREAD], v_judge=rejecting)
+            assess(module, c, mid, [a, b], look=[look_all(n_images=1), look_all()],
+                   judge=rejecting, v_look=[UNREAD, look_all()], v_judge=rejecting)
         assert any("line E2: the leader finds it absent, this node finds it not_shown" in p
                    for p in prints())
 
@@ -124,12 +124,12 @@ class TestAnImageNobodyCanRead:
         theirs = [image(module, c, mid, who=INSPECTOR, req="", caption=f"Visit {n}")
                   for n in (1, 2)]
         out = assess(module, c, mid, mine,
-                     look=[look_all(), look_all(n_images=1), look_all(n_images=1),
+                     look=[look_all(n_images=1), look_all(n_images=1), look_all(),
                            look_all(n_images=1)],
                      judge=judge_all(basis={k: mine for k in ALL}))
         assert out["decision"] == "ACCEPTED"
         asked = prompts(kind="look", role="leader")
-        assert [p["images"] for p in asked] == [2, 1, 1, 1]
+        assert [p["images"] for p in asked] == [1, 1, 2, 1], "and they are asked first"
         assert [x["item_id"] for x in rounds(c, mid, 1)["notes"]["images"]] == mine + theirs
 
     @pytest.mark.parametrize("who", [OWNER, INSPECTOR])
@@ -139,21 +139,21 @@ class TestAnImageNobodyCanRead:
         mid, a, b, other = three(module, c, who=who,
                                  inspector=INSPECTOR if who == INSPECTOR else "")
         out = assess(module, c, mid, [a, b],
-                     look=[look_all(), RuntimeError("INVALID_IMAGE")],
+                     look=[RuntimeError("INVALID_IMAGE"), RuntimeError("INVALID_IMAGE"),
+                           look_all()],
                      judge=judge_all(basis={k: [a, b] for k in ALL}))
         assert out["decision"] == "ACCEPTED"
         record = rounds(c, mid, 1)
         assert record["unread"] == [other]
         assert [x["readable"] for x in record["notes"]["images"]] == [True, True, False]
-        assert [p["images"] for p in prompts(kind="look", role="leader")] == [2, 1, 1], \
+        assert [p["images"] for p in prompts(kind="look", role="leader")] == [1, 1, 2], \
             "the file was tried twice before it was set aside"
 
     def test_a_prompt_that_fails_on_what_the_installer_presents_decides_nothing(self, module, c):
         mid, a, b, other = three(module, c)
         with pytest.raises(err(module), match="did not agree"):
             assess(module, c, mid, [a, b],
-                   look=[RuntimeError("INVALID_IMAGE"), RuntimeError("INVALID_IMAGE"),
-                         look_all(n_images=1)],
+                   look=[look_all(n_images=1), RuntimeError("INVALID_IMAGE")],
                    judge=judge_all(basis={k: [other] for k in ALL}))
         assert any("the leader did not receive the images" in p for p in prints())
         assert milestone(c, mid)["rounds_count"] == 0
@@ -176,7 +176,7 @@ class TestAnImageNobodyCanRead:
         back in the wrong shape has not read the evidence, and does not vote."""
         mid, a, b, other = three(module, c)
         with pytest.raises(err(module), match="did not agree"):
-            assess(module, c, mid, [a, b], look=[look_all(), garbled],
+            assess(module, c, mid, [a, b], look=[garbled, look_all()],
                    judge=judge_all(basis={k: [a, b] for k in ALL}))
         assert any("the leader did not receive the images" in p for p in prints())
         assert milestone(c, mid)["rounds_count"] == 0
@@ -192,10 +192,10 @@ class TestAnImageNobodyCanRead:
         That is not a file nobody could read, whatever shape it came in."""
         mid, a, b, other = three(module, c)
         with pytest.raises(err(module), match="did not agree"):
-            assess(module, c, mid, [a, b], look=[look_all(), answer],
+            assess(module, c, mid, [a, b], look=[answer, answer, look_all()],
                    judge=judge_all(basis={k: [a, b] for k in ALL}))
         assert any("the leader did not receive the images" in p for p in prints())
-        assert [p["images"] for p in prompts(kind="look", role="leader")] == [2, 1, 1]
+        assert [p["images"] for p in prompts(kind="look", role="leader")] == [1, 1, 2]
 
     def test_one_refusal_by_the_runtime_is_not_two(self, module, c):
         """Refused once, then answered with something unusable: the node
@@ -203,14 +203,14 @@ class TestAnImageNobodyCanRead:
         mid, a, b, other = three(module, c)
         with pytest.raises(err(module), match="did not agree"):
             assess(module, c, mid, [a, b],
-                   look=[look_all(), RuntimeError("INVALID_IMAGE"), "not an object"],
+                   look=[RuntimeError("INVALID_IMAGE"), "not an object", look_all()],
                    judge=judge_all(basis={k: [a, b] for k in ALL}))
         assert milestone(c, mid)["rounds_count"] == 0
 
     def test_a_prompt_refused_once_and_then_answered_is_read(self, module, c):
         mid, a, b, other = three(module, c)
         out = assess(module, c, mid, [a, b],
-                     look=[look_all(), RuntimeError("TIMEOUT"), look_all(n_images=1)],
+                     look=[RuntimeError("TIMEOUT"), look_all(n_images=1), look_all()],
                      judge=judge_all(basis={k: [a, b] for k in ALL}))
         assert out["decision"] == "ACCEPTED" and rounds(c, mid, 1)["unread"] == []
 
@@ -238,7 +238,7 @@ class TestAnImageNobodyCanRead:
     ])
     def test_an_odd_but_usable_answer_is_read_for_what_it_holds(self, module, c, row):
         mid, a, b, other = three(module, c)
-        out = assess(module, c, mid, [a, b], look=[look_all(), {"images": [row]}],
+        out = assess(module, c, mid, [a, b], look=[{"images": [row]}, look_all()],
                      judge=judge_all(basis={k: [a, b] for k in ALL}))
         assert out["decision"] == "ACCEPTED"
         seen = rounds(c, mid, 1)["notes"]["images"][2]
@@ -256,7 +256,7 @@ class TestAnImageNobodyCanRead:
         c.open_appeal(mid, "The inverter is not the one specified.")
         junk = image(module, c, mid, who=OWNER, req="", caption="Proof")
         set_now("2026-09-20T10:00:01Z")
-        llm(look=[look_all(), UNREAD], judge=judge_all(basis={k: [a, b] for k in ALL}))
+        llm(look=[UNREAD, look_all()], judge=judge_all(basis={k: [a, b] for k in ALL}))
         as_(module, STRANGER)
         assert json.loads(c.decide_appeal(mid))["decision"] == "ACCEPTED"
         assert rounds(c, mid, 2)["unread"] == [junk]
@@ -400,6 +400,28 @@ class TestWhatARoundStores:
         assert notes["basis"] == {"E1": [a], "E2": [], "E3": []}
         assert notes["criteria_basis"] == {"C1": [b]}
 
+    def test_the_account_describes_nothing_it_says_was_set_aside(self, module, c):
+        mid, a, b, other = three(module, c)
+        llm(look=look_all(), judge=judge_all(basis={k: [a, b] for k in ALL}))
+        as_(module, INSTALLER)
+        forge_leader(self.forged(a, b, unread=[other], notes={"images": [
+            {"item_id": other, "readable": False, "shows": "An empty inverter bay.",
+             "labels": ["VT-99X"], "concerns": ["No unit fitted"]}]}))
+        c.request_assessment(mid, json.dumps([a, b]))
+        seen = rounds(c, mid, 1)["notes"]["images"][2]
+        assert (seen["readable"], seen["shows"], seen["labels"], seen["concerns"]) == \
+            (False, "", [], [])
+
+    def test_a_validator_reads_sight_as_the_contract_does(self, module, c):
+        """One result is never read two ways: a leader whose word for having
+        seen the images is not a plain yes is refused by the validator, not
+        agreed with and then thrown out."""
+        mid, a, b = self.two(module, c)
+        forge_leader(self.forged(a, b, images_received=1))
+        with pytest.raises(err(module), match="did not agree"):
+            c.request_assessment(mid, json.dumps([a, b]))
+        assert any("the leader did not receive the images" in p for p in prints())
+
     @pytest.mark.parametrize("flag", [False, None, 0, "true", 1])
     def test_a_blind_leaders_result_is_never_recorded(self, module, c, flag):
         """A validator refuses a leader that saw nothing. The contract
@@ -421,6 +443,8 @@ class TestWhatARoundStores:
     ])
     def test_the_contract_checks_what_the_network_hands_back(self, module, c, accepted):
         mid, a, b = self.two(module, c)
+        if isinstance(accepted, dict):
+            accepted = {"images_received": True, **accepted}
         network_accepts(accepted)
         with pytest.raises(err(module), match="no usable result"):
             c.request_assessment(mid, json.dumps([a, b]))
