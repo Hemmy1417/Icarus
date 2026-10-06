@@ -238,7 +238,7 @@ not reporting.
 |---|---|
 | Contract | Python intelligent contract on GenLayer Studio Next, chain 61997 |
 | Reading and judging | `gl.nondet.exec_prompt` with images, under `gl.vm.run_nondet` |
-| Tests | 613 direct tests against a stubbed runtime, a 261 mutant sweep, and for the interface 277 tests and an 86 mutant sweep |
+| Tests | 810 direct tests against a stubbed runtime, a 397 mutant sweep, and for the interface 277 tests and an 86 mutant sweep |
 | Scripts | Node with `genlayer-js` 2.0.0-rc.1 |
 | Interface | Next.js App Router, TypeScript strict, Tailwind, Transaction Kit rc.2 |
 
@@ -246,8 +246,8 @@ not reporting.
 
 ```text
 contracts/icarus.py        the contract
-tests/direct/              613 tests against a stubbed runtime
-tests/mutation/mutate.py   261 mutants, each of which must fail the suite
+tests/direct/              810 tests against a stubbed runtime
+tests/mutation/mutate.py   397 mutants, each of which must fail the suite
 scripts/                   deploy, fixtures, the three live runs, the proof log
 fixtures/pages/            the self-published datasheet the substitution run is shown
 fixtures/images/           the photographs the demonstration files

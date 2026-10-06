@@ -14,7 +14,7 @@ where they differed, which is impossible against a live panel.
 .venv/Scripts/python -m pytest tests/direct -q
 ```
 
-613 tests. They cover the state machine, who may do what and when, quotas and
+810 tests. They cover the state machine, who may do what and when, quotas and
 caps, the grounding floors in both directions, the derivation table, every
 condition under which a validator disagrees, prompt fencing, and the
 randomized walk in `test_invariants.py` that drives arbitrary legal sequences
@@ -31,9 +31,9 @@ A passing suite proves the tests run, not that they would notice a change.
 .venv/Scripts/python tests/mutation/mutate.py
 ```
 
-261 mutants. Each one removes or inverts a rule that matters, and the sweep
+397 mutants. Each one removes or inverts a rule that matters, and the sweep
 requires the suite to **fail** for every one, plus a control run on the
-unmodified contract that must pass. At the deployment of record: 261 of 261
+unmodified contract that must pass. At the deployment of record: 397 of 397
 killed, control passes. The sweep runs in CI on every push; a survivor is
 named on the run's own page.
 
@@ -146,14 +146,14 @@ In another, a leader hedged twice and the round rotated until a leader that
 found the page sufficient was confirmed. Both are what the rule is for: an
 approval nobody else reproduces is not recorded.
 
-One rehearsal of `icarus-rules-3` came before this run, of the unreadable
-file alone. There the leading node set the file aside. On the deployment of
-record the leading node described a picture that is not in the file, and the
-run's last check, which claimed the file had been set aside, failed. The
-check was the script's overstatement and not the contract's rule: the round
-was decided in both, which is what the contract promises. The script now
-claims that and logs the rest as an observation, the failed line is left in
-the log, and the run was resumed to its end.
+On the `icarus-rules-3` deployment the unreadable-file case was run twice,
+and the two runs disagreed: on a rehearsal the leading node set the file
+aside, and on the record it described a picture that was not in the file.
+That is why `icarus-rules-4` refuses that file when it is filed, and why this
+run claims only what the contract promises about the file of noise that can
+still be filed: the round is decided. What the leading node made of it is
+logged as an observation. One rehearsal of `icarus-rules-4` came before this
+run, of these file cases alone, with the same outcome.
 
 ## 4. The interface's write path
 
