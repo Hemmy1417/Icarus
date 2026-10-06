@@ -203,6 +203,7 @@ class TestReading:
         cfg = json.loads(c.get_config())
         assert cfg["ruleset"] == "icarus-rules-4"
         assert cfg["max_trusted_sources"] == 8
+        assert cfg["max_image_side"] == 8192 and cfg["png_raw_max"] == 64 * 1024 * 1024
         assert cfg["max_substitutions_per_version"] == 3
         assert cfg["model_key_min"] == 4 and cfg["url_max"] == 300
         assert "CONTESTED" in cfg["substitution_states"]

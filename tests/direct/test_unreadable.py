@@ -217,6 +217,47 @@ class TestAnImageNobodyCanRead:
                      judge=judge_all(basis={k: [a, b] for k in ALL}))
         assert out["decision"] == "ACCEPTED" and rounds(c, mid, 1)["unread"] == [other]
 
+    def test_a_row_that_says_it_is_about_the_image_is_preferred(self, module, c):
+        """One image, two rows. The one numbered for it is the one read,
+        wherever it sits, and a stray row before it is not taken instead."""
+        mid, a, b, other = three(module, c)
+        answer = {"images": [{"n": 2, "readable": True, "shows": "A roof."},
+                             {"n": 1, "readable": False},
+                             {"n": "1", "readable": True, "shows": "Another roof."}]}
+        out = assess(module, c, mid, [a, b], look=[answer, look_all()],
+                     judge=judge_all(basis={k: [a, b] for k in ALL}))
+        assert out["decision"] == "ACCEPTED" and rounds(c, mid, 1)["unread"] == [other]
+        stray = {"images": [{"note": 1}, {"n": 1, "readable": True, "shows": "An empty bay."}]}
+        mid, a, b, other = three(module, c)
+        assess(module, c, mid, [a, b], look=[stray, look_all()],
+               judge=judge_all(basis={k: [a, b] for k in ALL}))
+        record = rounds(c, mid, 1)
+        assert record["unread"] == [] and record["notes"]["images"][2]["shows"] == "An empty bay."
+
+    def test_a_node_that_says_an_image_was_unread_is_not_asked_again(self, module, c):
+        """It answered. Asking again could only fish for a different answer."""
+        _, mid = active_milestone(module, c)
+        a = image(module, c, mid, caption="The array", line="E1")
+        b = image(module, c, mid, caption="The inverter", line="E2")
+        with pytest.raises(err(module), match="did not agree"):
+            assess(module, c, mid, [a, b],
+                   look=[{"images": [{"n": 1, "readable": False}]}, look_all()],
+                   judge=judge_all(basis={k: [a, b] for k in ALL}))
+        assert [p["images"] for p in prompts(kind="look", role="leader")] == [2]
+
+    def test_the_first_answer_stands_when_the_second_is_no_better(self, module, c):
+        """Two answers, neither saying whether both images were read. What
+        the first one did say is kept, and the node is blind on the rest."""
+        _, mid = active_milestone(module, c)
+        a = image(module, c, mid, caption="The array", line="E1")
+        b = image(module, c, mid, caption="The inverter", line="E2")
+        with pytest.raises(err(module), match="did not agree"):
+            assess(module, c, mid, [a, b],
+                   look=[{"images": [{"n": 1, "readable": True, "shows": "An array."}]}, {}],
+                   judge=judge_all(basis={k: [a, b] for k in ALL}))
+        assert any("the leader did not receive the images" in p for p in prints())
+        assert [p["images"] for p in prompts(kind="look", role="leader")] == [2, 2]
+
     def test_with_two_images_a_row_must_say_which_it_describes(self, module, c):
         """Two photographs from the installer, and rows that do not say
         which is which. Nothing is assumed from their order."""

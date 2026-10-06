@@ -122,6 +122,7 @@ MAX_SUBSTITUTIONS_PER_VERSION = 3
 MAX_TRUSTED_SOURCES = 8
 HOSTNAME_MAX = 253
 PNG_RAW_MAX = 64 * 1024 * 1024       # the most a PNG's pixel data may inflate to
+MAX_IMAGE_SIDE = 8192                # pixels, either way: no round reads a larger picture
 
 MIN_PAYMENT_WEI = 10**16                  # 0.01 GEN per milestone
 MIN_APPEAL_WINDOW_SECONDS = 600           # 10 minutes
@@ -281,8 +282,9 @@ def _image_problem(data: bytes) -> str:
     The contract cannot look at a picture, but it can read a file the way a
     decoder does up to the point where pixels begin, and refuse one a
     decoder would stop on. A PNG is checked whole: every chunk against its
-    checksum, and the pixel data inflated and measured against the size the
-    header declares. A JPEG is walked segment by segment: its tables, its
+    checksum, the chunks a decoder reads before pixels against their sizes,
+    and the pixel data inflated and measured against the size the header
+    declares. A JPEG is walked segment by segment: its tables, its
     frame and each scan must be well formed and refer only to what the file
     defines. What is left unchecked is the compressed picture inside a
     JPEG's scans, which decoders read through even when it is noise."""
@@ -302,13 +304,16 @@ def _be(data: bytes, at: int, size: int) -> int:
 # Bit depths a PNG may carry for each colour type, and samples per pixel.
 _PNG_KINDS = {0: ((1, 2, 4, 8, 16), 1), 2: ((8, 16), 3), 3: ((1, 2, 4, 8), 1),
               4: ((8, 16), 2), 6: ((8, 16), 4)}
+# Chunks a decoder reads before pixels and may skip, and the one size each has.
+_PNG_SIZES = {b"gAMA": 4, b"cHRM": 32, b"sRGB": 1, b"pHYs": 9, b"tIME": 7, b"acTL": 8,
+              b"fcTL": 26}
 # Adam7: where each pass starts and how far apart its pixels are.
 _PNG_PASSES = ((0, 0, 8, 8), (4, 0, 8, 8), (0, 4, 4, 8), (2, 0, 4, 4),
                (0, 2, 2, 4), (1, 0, 2, 2), (0, 1, 1, 2))
 
 
 def _png_problem(data: bytes) -> str:
-    end, at, seen_data, closed_data, palette = len(data), 8, False, False, False
+    end, at, seen_data, closed_data, palette, colours = len(data), 8, False, False, False, 0
     width = height = bits = samples = interlace = kind = 0
     packed = []
     first = True
@@ -333,22 +338,29 @@ def _png_problem(data: bytes) -> str:
                     or bits not in _PNG_KINDS[kind][0] or body[10] or body[11] \
                     or interlace not in (0, 1):
                 return "its header describes no image a decoder knows"
+            if width > MAX_IMAGE_SIDE or height > MAX_IMAGE_SIDE:
+                return "it has more pixels than a round reads"
             samples = _PNG_KINDS[kind][1]
         elif name == b"PLTE":
             if seen_data or palette or not size or size % 3 or size > 768:
                 return "its palette is malformed or out of place"
-            palette = True
+            palette, colours = True, size // 3
         elif name == b"IDAT":
             if closed_data:
                 return "its image data is split by another chunk"
             seen_data = True
             packed.append(body)
         elif name == b"IEND":
-            if size or at + 12 != end:
+            if at + 12 != end:
                 return "it does not end at its closing chunk"
             break
         elif not name[:1].islower() or not name.isalpha():
             return "it carries a chunk a decoder must understand and does not"
+        elif name == b"tRNS":
+            if size != ({0: 2, 2: 6}.get(kind) or (1 <= size <= colours and size)):
+                return "a chunk a decoder reads is the wrong size"
+        elif size != _PNG_SIZES.get(name, size) or (name == b"iCCP" and b"\x00" not in body[1:80]):
+            return "a chunk a decoder reads is the wrong size"
         if seen_data and name != b"IDAT":
             closed_data = True
         at += 12 + size
@@ -402,6 +414,8 @@ def _jpeg_problem(data: bytes) -> str:
     while True:
         if at + 2 > end or data[at] != 0xff:
             return "a segment is missing where one must begin"
+        while data[at + 1] == 0xff and at + 2 < end:        # fill bytes before a marker
+            at += 1
         mark = data[at + 1]
         if mark == 0xd9:
             if at + 2 != end or not scans:
@@ -447,12 +461,14 @@ def _jpeg_problem(data: bytes) -> str:
             if body[0] != 8 or not _be(body, 1, 2) or not _be(body, 3, 2) \
                     or count not in (1, 3, 4) or len(body) != 6 + 3 * count:
                 return "its frame describes no image a decoder knows"
+            if _be(body, 1, 2) > MAX_IMAGE_SIDE or _be(body, 3, 2) > MAX_IMAGE_SIDE:
+                return "it has more pixels than a round reads"
             for k in range(count):
                 ident, sampling, table = body[6 + 3 * k:9 + 3 * k]
                 if not 1 <= sampling >> 4 <= 4 or not 1 <= sampling & 15 <= 4 or table > 3 \
                         or ident in parts:
                     return "its frame describes no image a decoder knows"
-                parts[ident] = table
+                parts[ident] = (table, (sampling >> 4) * (sampling & 15))
             progressive = mark == 0xc2
         elif mark == 0xdd:                                  # restart interval
             if size != 4:
@@ -468,9 +484,19 @@ def _jpeg_problem(data: bytes) -> str:
             if first > last or last > 63 or low > 13 or high not in (0, low + 1) \
                     or (not progressive and (first, last, high, low) != (0, 63, 0, 0)):
                 return "a scan is malformed"
+            # A progressive pass is the lowest term alone, or the later terms
+            # of one component alone.
+            if progressive and (last if not first else count > 1):
+                return "a scan is malformed"
+            named = [body[1 + 2 * k] for k in range(count)]
+            if len(set(named)) != count:
+                return "a scan is malformed"
+            # Components read together share a unit of at most ten blocks.
+            if count > 1 and sum(parts[i][1] for i in named if i in parts) > 10:
+                return "a scan is malformed"
             for k in range(count):
                 ident, tables = body[1 + 2 * k], body[2 + 2 * k]
-                if ident not in parts or parts[ident] not in quant:
+                if ident not in parts or parts[ident][0] not in quant:
                     return "a scan uses a table the file never defines"
                 refining = progressive and body[3 + 2 * count] >> 4
                 if not refining or first:
@@ -514,11 +540,14 @@ def _readings(out, count: int) -> dict:
         rows = [rows]
     if not isinstance(rows, list):
         rows = [out] if "readable" in out or "shows" in out else []
-    found = {}
+    found, numbered = {}, False
     for row in rows:
         if not isinstance(row, dict):
             continue
         if count == 1:
+            # The row that says it is about image 1, or failing that the first.
+            if row.get("n") in (1, "1") and not numbered:
+                found[1], numbered = row, True
             found.setdefault(1, row)
             continue
         for n in range(1, count + 1):
@@ -528,9 +557,13 @@ def _readings(out, count: int) -> dict:
 
 
 def _answers_all(out, count: int) -> bool:
-    """Whether an answer says, for every image, that it was read or was not."""
-    rows = _readings(out, count)
-    return all(isinstance(rows.get(n, {}).get("readable"), bool) for n in range(1, count + 1))
+    """Whether an answer settles the prompt it was given: it says, for every
+    image, that it was read or was not, or it says of any image that it was
+    not. A node that reports an image unread has answered, and is not asked
+    again in the hope of a different answer."""
+    said = [_readings(out, count).get(n, {}).get("readable") for n in range(1, count + 1)]
+    return False in [x for x in said if isinstance(x, bool)] \
+        or all(isinstance(x, bool) for x in said)
 
 
 def _bucket(kind: str) -> str:
@@ -1295,6 +1328,8 @@ class Icarus(gl.contract.Contract):
             "max_deadline_days_ahead": MAX_DEADLINE_DAYS_AHEAD,
             "images_per_prompt": IMAGES_PER_PROMPT,
             "max_image_bytes": MAX_IMAGE_BYTES,
+            "max_image_side": MAX_IMAGE_SIDE,
+            "png_raw_max": PNG_RAW_MAX,
             "max_text_chars": MAX_TEXT_CHARS,
             "quotas": QUOTAS,
             "max_named": MAX_NAMED,
@@ -2414,11 +2449,12 @@ class Icarus(gl.contract.Contract):
                 failed += 1
                 continue
             try:
-                last = _llm_object(raw, "the image reading")
+                got = _llm_object(raw, "the image reading")
             except Exception:
                 continue
-            if _answers_all(last, len(images)):
-                break
+            if _answers_all(got, len(images)):
+                return got, False
+            last = last or got                  # the first answer stands if neither settles
         return last, failed == 2
 
     def _look_all(self, ctx: dict) -> tuple:

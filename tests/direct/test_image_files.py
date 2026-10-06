@@ -60,6 +60,16 @@ class TestAJpegADecoderOpens:
         jpeg(note=seg(0xc4) + seg(0xdb)),
         # a fill byte before the closing marker
         jpeg(scan=b"\x12\x34\xff"),
+        # fill bytes before a segment
+        jpeg(note=b"\xff\xff" + seg(0xfe, b"after fill")),
+        # as tall and as wide as a round reads
+        jpeg(sof=seg(0xc0, b"\x08\x20\x00\x20\x00\x01\x01\x11\x00")),
+        # three components read together, ten blocks to the unit
+        jpeg(dqt=seg(0xdb, b"\x00" + b"\x01" * 64),
+             sof=seg(0xc0, b"\x08\x00\x10\x00\x10\x03\x01\x42\x00\x02\x11\x00\x03\x11\x00"),
+             sos=seg(0xda, b"\x03\x01\x00\x02\x00\x03\x00\x00\x3f\x00")),
+        # the same eighteen blocks, read one component to a scan
+        jpeg(sof=seg(0xc0, b"\x08\x00\x10\x00\x10\x03\x01\x44\x00\x02\x11\x00\x03\x11\x00")),
         # the most a Huffman table holds: 256 codes
         jpeg(dc=seg(0xc4, b"\x00" + b"\x00" * 8 + b"\xff\x01" + b"\x00" * 6 + b"\x00" * 256)),
     ])
@@ -111,7 +121,7 @@ class TestAJpegADecoderOpens:
         (jpeg(sof=seg(0xc0, GREY[:8] + b"\x01")), "uses a table the file never defines"),
         (jpeg(dqt=seg(0xdb, b"\x00" + b"\x01" * 63)), "a quantisation table is malformed"),
         (jpeg(dqt=seg(0xdb, b"\x04" + b"\x01" * 64)), "a quantisation table is malformed"),
-        (jpeg(dqt=seg(0xdb, b"\x20" + b"\x01" * 64)), "a quantisation table is malformed"),
+        (jpeg(dqt=seg(0xdb, b"\x20" + b"\x01" * 192)), "a quantisation table is malformed"),
         (jpeg(dc=seg(0xc4, b"\x00\x03" + b"\x00" * 15 + b"\x00\x01\x02")),
          "a Huffman table is malformed"),
         (jpeg(dc=seg(0xc4, b"\x00\x02" + b"\x00" * 15 + b"\x00\x01")),
@@ -133,6 +143,25 @@ class TestAJpegADecoderOpens:
         (jpeg(sos=seg(0xda, b"\x00\x00\x3f\x00")), "a scan is malformed"),
         (jpeg(sos=seg(0xda, b"\x01\x01\x00\x00\x3f\x00\x00")), "a scan is malformed"),
         (jpeg(sos=seg(0xda, b"\x01\x01\x00\x00\x00\x00")), "a scan is malformed"),
+        # one component named twice in a scan
+        (jpeg(sof=seg(0xc0, COLOUR), sos=seg(0xda, b"\x03\x01\x00\x01\x00\x03\x00\x00\x3f\x00")),
+         "a scan is malformed"),
+        # more blocks to the unit than a decoder holds
+        (jpeg(sof=seg(0xc0, b"\x08\x00\x10\x00\x10\x03\x01\x33\x00\x02\x11\x00\x03\x11\x00"),
+              sos=seg(0xda, b"\x03\x01\x00\x02\x00\x03\x00\x00\x3f\x00")),
+         "a scan is malformed"),
+        # a progressive pass that takes the whole spectrum at once
+        (jpeg(sof=seg(0xc2, GREY), sos=seg(0xda, b"\x01\x01\x00\x00\x3f\x00")),
+         "a scan is malformed"),
+        # a progressive pass of the later terms for two components together
+        (jpeg(sof=seg(0xc2, COLOUR), sos=seg(0xda, b"\x02\x01\x00\x02\x00\x01\x3f\x00")),
+         "a scan is malformed"),
+        (jpeg(sof=seg(0xc0, b"\x08\x20\x01\x00\x08\x01\x01\x11\x00")),
+         "more pixels than a round reads"),
+        (jpeg(sof=seg(0xc0, b"\x08\x00\x08\x20\x01\x01\x01\x11\x00")),
+         "more pixels than a round reads"),
+        (jpeg(sof=seg(0xc0, b"\x08\xff\xff\xff\xff\x01\x01\x11\x00")),
+         "more pixels than a round reads"),
         (jpeg(sos=seg(0xda, b"\x01\x01\x00\x00\x3f\x01")), "a scan is malformed"),
         (jpeg(sof=seg(0xc2, GREY), sos=seg(0xda, b"\x01\x01\x00\x05\x02\x00")),
          "a scan is malformed"),
@@ -177,6 +206,18 @@ class TestAPngADecoderOpens:
         png_file(ihdr=ihdr(3, 2, 1, 0), idat=rows(b"\x00\xa0", b"\x00\x40")),
         png_file(ihdr=ihdr(2, 2, 8, 3), plte=chunk(b"PLTE", b"\x00" * 6),
                  idat=rows(b"\x00\x00\x01", b"\x00\x01\x00")),
+        # the chunks a decoder reads before pixels, each at its own size
+        png_file(note=chunk(b"tRNS", b"\x00\x01") + chunk(b"pHYs", b"\x00" * 9)
+                 + chunk(b"sRGB", b"\x00") + chunk(b"cHRM", b"\x00" * 32)
+                 + chunk(b"iCCP", b"name\x00\x00" + zlib.compress(b"profile"))
+                 + chunk(b"tIME", b"\x00" * 7) + chunk(b"zzZz", b"anything a decoder skips")),
+        png_file(ihdr=ihdr(2, 2, 8, 2), note=chunk(b"tRNS", b"\x00" * 6),
+                 idat=rows(b"\x00" + b"\x01" * 6, b"\x00" + b"\x02" * 6)),
+        png_file(ihdr=ihdr(2, 2, 8, 3), plte=chunk(b"PLTE", b"\x00" * 6),
+                 note=chunk(b"tRNS", b"\x00" * 2), idat=rows(b"\x00\x00\x01", b"\x00\x01\x00")),
+        # as tall and as wide as a round reads
+        png_file(ihdr=ihdr(1, 8192, 1, 0), idat=rows(b"\x00\x00" * 8192)),
+        png_file(ihdr=ihdr(8192, 1, 1, 0), idat=rows(b"\x00" + b"\x00" * 1024)),
         # the image data in two chunks, with a chunk a decoder may skip before it
         png_file(note=chunk(b"gAMA", b"\x00\x00\xb1\x8f"),
                  idat=chunk(b"IDAT", zlib.compress(b"\x00\x00\x00" * 2)[:5])
@@ -228,6 +269,12 @@ class TestAPngADecoderOpens:
         (png_file(idat=chunk(b"IDAT", zlib.compress(b"\x00\x00\x00" * 2)[:-6])),
          "not the size its header says"),
         (png_file(idat=rows(b"\x00\x00\x00")), "not the size its header says"),
+        # every row is there and the stream never says it has ended
+        (png_file(idat=chunk(b"IDAT", zlib.compress(b"\x00\x00\x00" * 2)[:-1])),
+         "not the size its header says"),
+        # the first pass of an interlaced image, whole, and none of the others
+        (png_file(ihdr=ihdr(3, 3, 8, 0, interlace=1), idat=rows(b"\x00\x01")),
+         "not the size its header says"),
         (png_file(idat=rows(b"\x00\x00\x00", b"\x00\x00")), "not the size its header says"),
         (png_file(idat=rows(b"\x00\x00\x00", b"\x00\x00\x00", b"\x00")),
          "longer than its header says"),
@@ -237,6 +284,31 @@ class TestAPngADecoderOpens:
         (png_file(ihdr=ihdr(3, 3, 8, 0, interlace=1), idat=rows(b"\x00\x00\x00\x00" * 3)),
          "its header says"),
         (png_file(ihdr=ihdr(60_000, 60_000, 8, 6)), "more pixels than a round reads"),
+        # a few thousand bytes that would cost every node a loop of millions of rows
+        (png_file(ihdr=ihdr(1, 8193, 1, 0)), "more pixels than a round reads"),
+        (png_file(ihdr=ihdr(8193, 1, 1, 0)), "more pixels than a round reads"),
+        (png_file(note=chunk(b"tRNS", b"\x00")), "a chunk a decoder reads is the wrong size"),
+        (png_file(note=chunk(b"tRNS")), "a chunk a decoder reads is the wrong size"),
+        (png_file(ihdr=ihdr(2, 2, 8, 2), note=chunk(b"tRNS", b"\x00" * 3),
+                  idat=rows(b"\x00" + b"\x01" * 6, b"\x00" + b"\x02" * 6)),
+         "a chunk a decoder reads is the wrong size"),
+        (png_file(ihdr=ihdr(2, 2, 8, 6), note=chunk(b"tRNS", b"\x00" * 2),
+                  idat=rows(b"\x00" + b"\x01" * 8, b"\x00" + b"\x02" * 8)),
+         "a chunk a decoder reads is the wrong size"),
+        (png_file(ihdr=ihdr(2, 2, 8, 3), plte=chunk(b"PLTE", b"\x00" * 6),
+                  note=chunk(b"tRNS", b"\x00" * 3), idat=rows(b"\x00\x00\x01", b"\x00\x01\x00")),
+         "a chunk a decoder reads is the wrong size"),
+        (png_file(ihdr=ihdr(2, 2, 8, 3), plte=chunk(b"tRNS", b"\x00") + chunk(b"PLTE", b"\x00" * 6),
+                  idat=rows(b"\x00\x00\x01", b"\x00\x01\x00")),
+         "a chunk a decoder reads is the wrong size"),
+        (png_file(note=chunk(b"gAMA", b"\x00")), "a chunk a decoder reads is the wrong size"),
+        (png_file(note=chunk(b"pHYs", b"\x00")), "a chunk a decoder reads is the wrong size"),
+        (png_file(note=chunk(b"cHRM", b"\x00")), "a chunk a decoder reads is the wrong size"),
+        (png_file(note=chunk(b"sRGB")), "a chunk a decoder reads is the wrong size"),
+        (png_file(note=chunk(b"acTL", b"\x00")), "a chunk a decoder reads is the wrong size"),
+        (png_file(note=chunk(b"fcTL", b"\x00")), "a chunk a decoder reads is the wrong size"),
+        (png_file(note=chunk(b"iCCP", b"profile with no end to its name")),
+         "a chunk a decoder reads is the wrong size"),
     ])
     def test_one_a_decoder_would_stop_on_is_refused(self, module, c, data, why):
         refused(module, c, data, "that PNG is not one a decoder opens: .*" + why)

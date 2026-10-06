@@ -372,6 +372,8 @@ export interface Config {
   milestone_types: string[];
   images_per_prompt: number;
   max_image_bytes: number;
+  max_image_side: number;
+  png_raw_max: number;
   max_text_chars: number;
   max_schedule_lines: number;
   max_criteria: number;

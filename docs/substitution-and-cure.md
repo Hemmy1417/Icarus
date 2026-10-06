@@ -277,18 +277,34 @@ was measured and cannot be closed in code.
 image. On the deployment of record a node then described a picture that was
 not in a file with that outline. The contract now reads a file as far as a
 decoder does before pixels begin. A PNG is checked whole: every chunk against
-its checksum, the header for a depth and colour type that exist, and the
-pixel data inflated and measured row by row against the size the header
-declares, up to 64 MB. A JPEG is walked segment by segment: its quantisation
-and Huffman tables must be well formed, its frame must describe an 8-bit
-image of one, three or four components, and each scan must refer only to
-components and tables the file defines. A file that fails is refused when it
-is filed, whoever files it.
+its checksum, the header for a depth and colour type that exist, the chunks
+a decoder reads before pixels against their sizes, and the pixel data
+inflated and measured row by row against the size the header declares, up to
+64 MB. A JPEG is walked segment by segment: its quantisation and Huffman
+tables must be well formed, its frame must describe an 8-bit image of one,
+three or four components, and each scan must be one a decoder accepts and
+refer only to components and tables the file defines. Neither kind may be
+more than 8,192 pixels on a side. A file that fails is refused when it is
+filed, whoever files it.
 
-Measured against a real decoder on six thousand corrupted copies of real
-photographs: none that the contract took was refused by the decoder. What it
-does not read is the compressed picture inside a JPEG's scans, which a
-decoder reads through even when it is noise. So a file that passes opens,
+How far this goes was measured, not assumed. Against a real decoder, on six
+thousand copies of real photographs with bytes changed at random, none that
+the contract took failed to decode. A reviewer building files on purpose
+then found several that did: a scan naming one component twice, a
+progressive pass a decoder rejects, more blocks to a unit than a decoder
+holds, a header claiming billions of pixels, and small chunks of the wrong
+size in a PNG. Each of those is now refused. The check is a reading of the
+file's structure and not a decoder, so the claim it supports is that a file
+it takes is very likely to open, not that it must.
+
+It is stricter than a decoder in a few places, on purpose: a JPEG that
+leaves out its Huffman tables, as a frame cut from some video streams does,
+anything after the closing marker, and a JPEG whose first segment is not
+JFIF are refused. The interface re-encodes every upload, so what it files
+passes.
+
+What it does not read is the compressed picture inside a JPEG's scans, which
+a decoder reads through even when it is noise. So a file that passes opens,
 and a node that looks at noise sees noise. Whether a model then describes it
 truthfully is the limit `docs/security.md` has always stated, and no check
 on the file reaches it.
@@ -299,7 +315,8 @@ wrong shape left the node unable to vote. The answer is now read for what it
 says: a row that left out its number, or the list around it, can only be
 about the one image in the prompt. And an answer that does not say, for
 every image, whether it was read is asked for once more before it costs the
-node its vote. With two images in a prompt a row must still say which one it
+node its vote; a node that says outright an image was not read has answered,
+and is not asked again. With two images in a prompt a row must still say which one it
 describes. An answer that fails twice still blinds the node: the alternative
 is to set a legible photograph aside, which review round one of rules 3
 found and closed.
