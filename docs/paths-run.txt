@@ -1,8 +1,8 @@
 ICARUS terms and escrow paths, against the deployment of record
-contract  0xb476eeF34fe8800E546D140DA3412846DD0A1755
+contract  0xE09F8E2440FF22D0586632Ec35a3Fd49ea0261b9
 chain     61997, GenLayer Studio Next
-explorer  https://explorer-studio-dev.genlayer.com/address/0xb476eeF34fe8800E546D140DA3412846DD0A1755
-source    contracts/icarus.py, sha256 4801f35b9e4d1f1891eb9805025b47e7072cdce519c591c5a1ddc618ae9a5b3e
+explorer  https://explorer-studio-dev.genlayer.com/address/0xE09F8E2440FF22D0586632Ec35a3Fd49ea0261b9
+source    contracts/icarus.py, sha256 ed4526aaa8c032f8d8eb5783a3659ba27280eb7f40a12c5e52f1ef2b546711d9
 
 docs/proof-run.txt proves the adjudication: evidence in, a panel's reading, a
 decision, an appeal, a settlement. That path never touches eight of the
@@ -16,54 +16,54 @@ milestone whose schedule is revised gets ninety minutes, since a write on
 this network was measured taking fifty nine; the milestone that is closed
 gets three, proposed immediately before it is waited out.
 
-[02:23:34] paths on 0xb476eeF34fe8800E546D140DA3412846DD0A1755
-[02:23:38] open: OWNER create_project
-[02:24:19] open: FINALIZED
-[02:24:19] project pr-00013
-[02:24:22] inspector.accepts: INSPECTOR accept_inspector_role
-[02:25:01] inspector.accepts: FINALIZED
-[02:25:04] installer.signs: INSTALLER accept_project
-[02:25:45] installer.signs: FINALIZED
-[02:25:49] escrow.add: OWNER fund_project
-[02:26:28] escrow.add: FINALIZED
-[02:26:29] escrow funded from 2000000000000000000 to 4000000000000000000 wei
-[02:26:29] the terms milestone runs until 2026-10-06T03:56:29Z
-[02:26:31] milestone.propose: OWNER add_milestone
-[02:27:12] milestone.propose: FINALIZED
-[02:27:15] terms.sign: INSTALLER accept_version
-[02:27:56] terms.sign: FINALIZED
-[02:27:59] terms.revise: OWNER propose_version
-[02:28:40] terms.revise: FINALIZED
-[02:28:42] revised terms await the installer's signature; the old ones still stand
-[02:28:44] terms.countersign: INSTALLER accept_version
-[02:29:20] terms.countersign: FINALIZED
-[02:29:21] the revision binds only once both parties have signed it
-[02:29:25] escrow.withdraw: OWNER withdraw_escrow
-[02:30:00] escrow.withdraw: FINALIZED
-[02:30:01] withdrew 2000000000000000000 wei; the milestone's reservation was untouched
-[02:30:03] wall.stranger_revises: STRANGER propose_version
-[02:30:45] wall.stranger_revises: refused, "only the owner proposes new terms"
-[02:30:47] wall.stranger_withdraws: STRANGER withdraw_escrow
-[02:31:27] wall.stranger_withdraws: refused, "only the owner withdraws escrow"
-[02:31:29] wall.lapse_without_appeal: STRANGER lapse_appeal
-[02:32:10] wall.lapse_without_appeal: refused, "no appeal is open on this milestone"
-[02:32:12] wall.close_before_deadline: STRANGER close_milestone
-[02:32:51] wall.close_before_deadline: refused, "the deadline has not passed"
-[02:32:53] closeable.propose: OWNER add_milestone
-[02:33:32] closeable.propose: FINALIZED
-[02:33:33] waiting 138 s for its deadline, to close a milestone nobody accepted
-[02:35:59] milestone.close: STRANGER close_milestone
-[02:36:35] milestone.close: FINALIZED
-[02:36:38] closed by a stranger, and the reservation returned to the owner's free escrow
-[02:36:40] wall.cancel_signed: OWNER cancel_project
-[02:37:17] wall.cancel_signed: refused, "a project the installer signed cannot be cancelled"
-[02:37:18] spare.open: OWNER create_project
-[02:37:59] spare.open: FINALIZED
-[02:38:02] project.cancel: OWNER cancel_project
-[02:38:42] project.cancel: FINALIZED
-[02:38:43] cancelled before the installer signed; the signed project stands
-[02:38:43]
-[02:38:43] proved live: fund_project, accept_inspector_role, propose_version, accept_version,
-[02:38:43] withdraw_escrow, close_milestone, cancel_project, and five refusal walls.
-[02:38:43] not reachable in a run: lapse_appeal, which needs three days to pass.
-[02:38:43] every path passed
+[09:36:24] paths on 0xE09F8E2440FF22D0586632Ec35a3Fd49ea0261b9
+[09:36:28] open: OWNER create_project
+[09:37:07] open: FINALIZED
+[09:37:07] project pr-00013
+[09:37:13] inspector.accepts: INSPECTOR accept_inspector_role
+[09:37:51] inspector.accepts: FINALIZED
+[09:37:55] installer.signs: INSTALLER accept_project
+[09:38:37] installer.signs: FINALIZED
+[09:38:41] escrow.add: OWNER fund_project
+[09:39:26] escrow.add: FINALIZED
+[09:39:27] escrow funded from 2000000000000000000 to 4000000000000000000 wei
+[09:39:27] the terms milestone runs until 2026-10-07T11:09:27Z
+[09:39:29] milestone.propose: OWNER add_milestone
+[09:40:04] milestone.propose: FINALIZED
+[09:40:08] terms.sign: INSTALLER accept_version
+[09:40:48] terms.sign: FINALIZED
+[09:40:52] terms.revise: OWNER propose_version
+[09:41:31] terms.revise: FINALIZED
+[09:41:33] revised terms await the installer's signature; the old ones still stand
+[09:41:35] terms.countersign: INSTALLER accept_version
+[09:42:18] terms.countersign: FINALIZED
+[09:42:19] the revision binds only once both parties have signed it
+[09:42:23] escrow.withdraw: OWNER withdraw_escrow
+[09:43:05] escrow.withdraw: FINALIZED
+[09:43:06] withdrew 2000000000000000000 wei; the milestone's reservation was untouched
+[09:43:08] wall.stranger_revises: STRANGER propose_version
+[09:43:48] wall.stranger_revises: refused, "only the owner proposes new terms"
+[09:43:49] wall.stranger_withdraws: STRANGER withdraw_escrow
+[09:44:31] wall.stranger_withdraws: refused, "only the owner withdraws escrow"
+[09:44:34] wall.lapse_without_appeal: STRANGER lapse_appeal
+[09:45:12] wall.lapse_without_appeal: refused, "no appeal is open on this milestone"
+[09:45:14] wall.close_before_deadline: STRANGER close_milestone
+[09:45:50] wall.close_before_deadline: refused, "the deadline has not passed"
+[09:45:52] closeable.propose: OWNER add_milestone
+[09:46:36] closeable.propose: FINALIZED
+[09:46:37] waiting 133 s for its deadline, to close a milestone nobody accepted
+[09:48:59] milestone.close: STRANGER close_milestone
+[09:49:40] milestone.close: FINALIZED
+[09:49:44] closed by a stranger, and the reservation returned to the owner's free escrow
+[09:49:46] wall.cancel_signed: OWNER cancel_project
+[09:50:22] wall.cancel_signed: refused, "a project the installer signed cannot be cancelled"
+[09:50:24] spare.open: OWNER create_project
+[09:51:05] spare.open: FINALIZED
+[09:51:08] project.cancel: OWNER cancel_project
+[09:51:49] project.cancel: FINALIZED
+[09:51:50] cancelled before the installer signed; the signed project stands
+[09:51:50]
+[09:51:50] proved live: fund_project, accept_inspector_role, propose_version, accept_version,
+[09:51:50] withdraw_escrow, close_milestone, cancel_project, and five refusal walls.
+[09:51:50] not reachable in a run: lapse_appeal, which needs three days to pass.
+[09:51:50] every path passed

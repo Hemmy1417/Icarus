@@ -1,8 +1,8 @@
 ICARUS live proof run against the deployment of record
-contract  0xb476eeF34fe8800E546D140DA3412846DD0A1755
+contract  0xE09F8E2440FF22D0586632Ec35a3Fd49ea0261b9
 chain     61997, GenLayer Studio Next
-explorer  https://explorer-studio-dev.genlayer.com/address/0xb476eeF34fe8800E546D140DA3412846DD0A1755
-source    contracts/icarus.py, sha256 4801f35b9e4d1f1891eb9805025b47e7072cdce519c591c5a1ddc618ae9a5b3e
+explorer  https://explorer-studio-dev.genlayer.com/address/0xE09F8E2440FF22D0586632Ec35a3Fd49ea0261b9
+source    contracts/icarus.py, sha256 ed4526aaa8c032f8d8eb5783a3659ba27280eb7f40a12c5e52f1ef2b546711d9
 
 Every line below is a signed transaction. The run is resumable: each write is
 remembered by name, so a segment that stops resumes at the step that had not
@@ -10,218 +10,229 @@ landed. Where a case turns on what a photograph shows, the run asserts that
 the panel actually read the evidence and asks again if it did not, because a
 blind panel reaching the right outcome proves nothing about the rule.
 
-[01:32:08] proofs on 0xb476eeF34fe8800E546D140DA3412846DD0A1755
-[01:32:12] flagship.create: OWNER create_project 0x815ca001f52061f588b646fe159702a06c254b7d954c4457e0b2ab45d8fb1215
-[01:32:48] flagship.create: FINALIZED MAJORITY_AGREE leader=SUCCESS in 36 s
-[01:32:50] flagship.milestone: OWNER add_milestone 0x46623f7a74152c2cc1d307dfabcfb472b8d71af3d94ee399f7a94b338a3c2329
-[01:33:24] flagship.milestone: FINALIZED MAJORITY_AGREE leader=SUCCESS in 35 s
-[01:33:26] flagship.sign: INSTALLER accept_project 0xc85b4b0f28a65493deefa90621f75966efea0d06b615b2486eb3e93230c8eebb
-[01:34:06] flagship.sign: FINALIZED MAJORITY_AGREE leader=SUCCESS in 39 s
-[01:34:12] flagship.inverter: INSTALLER submit_image 0x3ed068b1418f6ca3708e043fca806a32c08c3993942aa18c6022ea4fb1cb309c
-[01:34:49] flagship.inverter: FINALIZED MAJORITY_AGREE leader=SUCCESS in 36 s
-[01:34:53] flagship.plate: INSTALLER submit_image 0xe3c9638dec1b4c9c924b7769cf4c868e17c77489151ab296e94d579028afccab
-[01:35:35] flagship.plate: FINALIZED MAJORITY_AGREE leader=SUCCESS in 42 s
-[01:35:37] flagship.assess: INSTALLER request_assessment 0xa990e76508a5d2394118f7bad4ec2fafa3e72795137594218ed60c45ad51b168
+[08:51:20] proofs on 0xE09F8E2440FF22D0586632Ec35a3Fd49ea0261b9
+[08:51:25] flagship.create: OWNER create_project 0x5eb5d2bfffd00be37c5d0513b608bdd37a792185620862a2087594f58d1da261
+[08:52:02] flagship.create: FINALIZED MAJORITY_AGREE leader=SUCCESS in 37 s
+[08:52:04] flagship.milestone: OWNER add_milestone 0x5a84970a5ff14ae15cb22a9ee27118acabebb906038706211fb20cf14939c9eb
+[08:52:40] flagship.milestone: FINALIZED MAJORITY_AGREE leader=SUCCESS in 36 s
+[08:52:43] flagship.sign: INSTALLER accept_project 0x638d7fae4706cdcfa901852b81203efe4ad4e98745b9a5457792f5d6f5ba850b
+[08:53:20] flagship.sign: FINALIZED MAJORITY_AGREE leader=SUCCESS in 37 s
+[08:53:25] flagship.inverter: INSTALLER submit_image 0x6a3713975f8a4f5bb54c4c43fec2b49dc366d362356f544361dd1839f2091fba
+[08:54:07] flagship.inverter: FINALIZED MAJORITY_AGREE leader=SUCCESS in 42 s
+[08:54:14] flagship.plate: INSTALLER submit_image 0x39b4973b6479412ef44791684c601f58c94262170895c5797023d39ef917e0f9
+[08:54:52] flagship.plate: FINALIZED MAJORITY_AGREE leader=SUCCESS in 38 s
+[08:54:56] flagship.assess: INSTALLER request_assessment 0x7af076debde10a935fc765b167c7884904775b83cec85979cdc24a673af4db07
+  … flagship.assess PROPOSING
   … flagship.assess COMMITTING
-[01:37:03] flagship.assess: FINALIZED MAJORITY_AGREE leader=SUCCESS in 86 s
-receipt 0xa990e76508a5d2394118f7bad4ec2fafa3e72795137594218ed60c45ad51b168 status=FINALIZED result=MAJORITY_AGREE rotations=1
- rotation 1: Accepted
-  leader/leader vote=? model=openai/gpt-5.4 exec=SUCCESS
-     [ROUND] leader {"images_received": true, "lines": {"E1": "INSTALLED"}, "criteria": {"C1": "MET"}, "conflicts": false} why: The images show a wall-mounted Growatt inverter installed indoors with cables/conduits entering at the underside, matching the specified installation arrangement. A second image provides a legible rating label identifying the unit as a Growatt MOD 4000TL3-X, which matches the scheduled equipment
-  leader/validator vote=agree model=openai/gpt-5.4 exec=SUCCESS
-  validator/validator vote=agree model=policy:dev-gemini exec=SUCCESS
-  validator/validator vote=disagree model=policy:dev-sonnet exec=SUCCESS
-     [DISAGREE] this validator did not receive the images
+  … flagship.assess ACCEPTED
+[08:57:45] flagship.assess: FINALIZED MAJORITY_AGREE leader=SUCCESS in 170 s
+receipt 0x7af076debde10a935fc765b167c7884904775b83cec85979cdc24a673af4db07 status=FINALIZED result=MAJORITY_AGREE rotations=2
+ rotation 1: Leader Rotation
+  leader/leader vote=? model=policy:dev-deepseek exec=SUCCESS
+     [ROUND] leader {"images_received": true, "lines": {"E1": "ABSENT"}, "criteria": {"C1": "NOT_MET"}, "conflicts": false} why: The evidence does not show the specified Growatt string inverter installed. Image ev-000009 shows a solar panel, not an inverter, and its caption is incorrect. Image ev-000010 shows a label for a microinverter, which is a different product type and model from the required string inverter. Theref
+  leader/validator vote=disagree model=policy:dev-deepseek exec=SUCCESS
+     [DISAGREE] this node sees a conflict the leader does not report; mine={"E1": "ABSENT"} {"C1": "NOT_MET"} conflicts=True why: The equipment schedule requires a Growatt MOD 4000TL3-X inverter with a legible nameplate. The evidence shows an inverter installed on a wall, but the labels identify it as either a Solis or an SMA model, not the specified Growatt. Therefore, the specified item is absent. Criterion C1 is partia
+  validator/validator vote=disagree model=openai/gpt-5.4 exec=SUCCESS
+     [DISAGREE] line E1: the leader finds it absent, this node finds it installed; mine={"E1": "INSTALLED"} {"C1": "MET"} conflicts=False why: The images show a wall-mounted Growatt inverter installed indoors, with cabling/conduits connected beneath the unit. A second image shows the equipment label clearly enough to read the manufacturer and model as Growatt MOD 4000TL3-X, matching the schedule and satisfying the namepla
+  validator/validator vote=idle model=policy:dev-deepseek exec=ERROR
   validator/validator vote=disagree model=policy:dev-mistral exec=SUCCESS
      [DISAGREE] this validator did not receive the images
-  validator/validator vote=agree model=google/gemini-3-flash-preview exec=SUCCESS
-[01:37:04] flagship.assess: ACCEPTED  lines {"E1":"INSTALLED"}  criteria {"C1":"MET"}  quality SUFFICIENT  read 2 of 2 images
-[01:37:06] walls.finalize_early: STRANGER finalize 0xd9c11b534443586c23e077dbd9db39c31da1eabbe7103d816c56555ae3545536
-[01:37:43] walls.finalize_early: FINALIZED MAJORITY_AGREE leader=ERROR in 37 s
-[01:37:45] walls.installer_appeals_own_acceptance: INSTALLER open_appeal 0xa393d8def019fb4ba975e655ec15fb1a1d14a3f4bdc8e8128411c88c44ad57da
-[01:38:22] walls.installer_appeals_own_acceptance: FINALIZED MAJORITY_AGREE leader=ERROR in 37 s
-[01:38:24] walls.files_against_acceptance: OWNER submit_document 0x70e9e958fb1ecf3812465a3f18f33275a95dedda114f74b6c4887d99290097da
-[01:38:59] walls.files_against_acceptance: FINALIZED MAJORITY_AGREE leader=ERROR in 35 s
-[01:39:01] appealcase.create: OWNER create_project 0x9b129e27176a09fe6e3ae9f7fc10b78108c47888dd872db36cabfae129a40054
-[01:39:43] appealcase.create: FINALIZED MAJORITY_AGREE leader=SUCCESS in 42 s
-[01:39:45] appealcase.milestone: OWNER add_milestone 0x7b052026ccf295dc666271967ea6f1ba5538639ce2555498dedefe9f426bdcec
-[01:40:24] appealcase.milestone: FINALIZED MAJORITY_AGREE leader=SUCCESS in 40 s
-[01:40:27] appealcase.sign: INSTALLER accept_project 0x5383ec8a4619f5851256d236278cc1760a7bd6d56fd1e116940459d33a0c9572
-[01:41:06] appealcase.sign: FINALIZED MAJORITY_AGREE leader=SUCCESS in 39 s
-[01:41:10] appealcase.inverter: INSTALLER submit_image 0xf9ba4b4c09f53a5d7b45f4c86076a7adddd9d87194277d995357a8f80277daca
-[01:41:53] appealcase.inverter: FINALIZED MAJORITY_AGREE leader=SUCCESS in 43 s
-[01:41:57] appealcase.plate: INSTALLER submit_image 0x36a2adea5563f52cbd7fe3ec1eccc1204f0ad9811236b493c413a9c8cd93f632
-[01:42:38] appealcase.plate: FINALIZED MAJORITY_AGREE leader=SUCCESS in 41 s
-[01:42:40] appealcase.assess: INSTALLER request_assessment 0x4f3619cf579225da60047d477cc558492866971263b66546ffafa5413469801e
-  … appealcase.assess COMMITTING
-  … appealcase.assess COMMITTING
-  … appealcase.assess ACCEPTED
-[01:45:21] appealcase.assess: FINALIZED MAJORITY_AGREE leader=SUCCESS in 161 s
-receipt 0x4f3619cf579225da60047d477cc558492866971263b66546ffafa5413469801e status=FINALIZED result=MAJORITY_AGREE rotations=3
- rotation 1: Leader Rotation
-  leader/leader vote=? model=policy:dev-sonnet exec=ERROR
-     [ROUND] leader {"images_received": false, "lines": {"E1": "NOT_SHOWN"}, "criteria": {"C1": "UNCLEAR"}, "conflicts": false} why: Both submitted images (ev-000011 and ev-000012) could not be processed and show nothing either way. There are no documents that can serve as site evidence, and no inspector's report exists. Without any usable image or inspector's report, there is no evidence that the Growatt MOD 4000TL3-X in
-  leader/validator vote=disagree model=policy:dev-sonnet exec=ERROR
-     [DISAGREE] the leader did not receive the images
   validator/validator vote=idle model=openai/gpt-5.4 exec=ERROR
-  validator/validator vote=disagree model=policy:dev-deepseek exec=ERROR
-     [DISAGREE] the leader did not receive the images
-  validator/validator vote=idle model=policy:dev-deepseek exec=ERROR
-  validator/validator vote=disagree model=policy:dev-gpt-5-4 exec=ERROR
-     [DISAGREE] the leader did not receive the images
- rotation 2: Leader Rotation
-  leader/leader vote=? model=policy:dev-deepseek exec=SUCCESS
-     [ROUND] leader {"images_received": true, "lines": {"E1": "ABSENT"}, "criteria": {"C1": "UNCLEAR"}, "conflicts": false} why: The evidence does not show a Growatt MOD 4000TL3-X inverter installed. ev-000011 shows a solar panel, not an inverter on a wall. ev-000012 shows a label for a different inverter model (SMA SUNNY TRIPOWER 15000TL-US). Since the schedule requires the specific Growatt model and its legible nameplat
-  leader/validator vote=idle model=policy:dev-deepseek exec=ERROR
-  validator/validator vote=disagree model=openai/gpt-5.4 exec=SUCCESS
-     [DISAGREE] line E1: the leader finds it absent, this node finds it installed; mine={"E1": "INSTALLED"} {"C1": "MET"} conflicts=False why: The images show a wall-mounted Growatt inverter installed indoors with cabling/conduits connected beneath the unit, which matches the required installation form. A second image shows the equipment rating label and makes the manufacturer and model legible as Growatt MOD 4000TL3-X, s
-  validator/validator vote=disagree model=policy:dev-gpt-5-4 exec=SUCCESS
-     [DISAGREE] line E1: the leader finds it absent, this node finds it installed; mine={"E1": "INSTALLED"} {"C1": "MET"} conflicts=False why: The images show a wall-mounted Growatt string inverter at the site, and ev-000012 provides a legible rating label identifying it as model MOD 4000TL3-X, which matches the scheduled equipment E1. Ev-000011 shows the unit mounted on a wall with cables/conduits connected beneath it, s
-  validator/validator vote=disagree model=policy:dev-sonnet exec=SUCCESS
-     [DISAGREE] this validator did not receive the images
-  validator/validator vote=idle model=policy:dev-deepseek exec=ERROR
- rotation 3: Accepted
+ rotation 2: Accepted
   leader/leader vote=? model=openai/gpt-5.4 exec=SUCCESS
-     [ROUND] leader {"images_received": true, "lines": {"E1": "INSTALLED"}, "criteria": {"C1": "MET"}, "conflicts": false} why: The images show a wall-mounted Growatt inverter installed indoors, with cabling/conduits connected beneath the unit. The second image includes a legible rating plate identifying the model as Growatt MOD 4000TL3-X, which matches the scheduled equipment E1. This is sufficient to establish that the
+     [ROUND] leader {"images_received": true, "lines": {"E1": "INSTALLED"}, "criteria": {"C1": "MET"}, "conflicts": false} why: The images show a wall-mounted Growatt inverter installed indoors, and ev-000009 clearly shows cabling entering from the underside of the unit. The schedule requires a Growatt MOD 4000TL3-X with a legible nameplate, and ev-000010 provides label text identifying the unit as model MOD 4000TL3-X. To
   leader/validator vote=agree model=openai/gpt-5.4 exec=SUCCESS
-  validator/validator vote=agree model=policy:dev-gpt-5-4 exec=SUCCESS
-  validator/validator vote=agree model=policy:dev-gpt-5-4 exec=SUCCESS
-  validator/validator vote=disagree model=policy:dev-sonnet exec=SUCCESS
+  validator/validator vote=disagree model=policy:dev-mistral exec=SUCCESS
      [DISAGREE] this validator did not receive the images
   validator/validator vote=disagree model=policy:dev-deepseek exec=SUCCESS
-     [DISAGREE] the leader accepts; this node finds rejected; mine={"E1": "ABSENT"} {"C1": "MET"} conflicts=False why: The evidence shows an inverter installed on a wall, but it is not the model specified in the schedule. The schedule requires a Growatt MOD 4000TL3-X with a legible nameplate. Image ev-000012 shows a legible nameplate for a different model, HELIOS HYD 10.0 TL3. Image ev-000011 shows a wall-mounted un
-[01:45:23] appealcase.assess: ACCEPTED  lines {"E1":"INSTALLED"}  criteria {"C1":"MET"}  quality SUFFICIENT  read 2 of 2 images
-[01:45:27] appeal.open: OWNER open_appeal 0xedce0bf3664a91d88b1dc68e88ae4563c5f82b49768e5c1758e5aba84868c37d
-[01:46:04] appeal.open: FINALIZED MAJORITY_AGREE leader=SUCCESS in 36 s
-[01:46:05] paper.create: OWNER create_project 0x0e51dadf5745ee38d66b6c187257d9acb0134976ea25160a7acb5eef2c2d1e1a
-[01:46:48] paper.create: FINALIZED MAJORITY_AGREE leader=SUCCESS in 42 s
-[01:46:50] paper.milestone: OWNER add_milestone 0xc808adedfcd13473ebe582f460f679b63373b536798d97cd565a67aa0dca9a2d
-[01:47:27] paper.milestone: FINALIZED MAJORITY_AGREE leader=SUCCESS in 38 s
-[01:47:29] paper.sign: INSTALLER accept_project 0x7a107bce34fde88161422b91a9f05a3272ee814394abe7305867ff6c5051d749
-[01:48:10] paper.sign: FINALIZED MAJORITY_AGREE leader=SUCCESS in 40 s
-[01:48:14] paper.inverter: INSTALLER submit_image 0x04010d0ea14f0b0c330fe759193bda45b5d2d243a4bafed455ffb1005b9608a2
-[01:48:56] paper.inverter: FINALIZED MAJORITY_AGREE leader=SUCCESS in 42 s
-[01:48:59] paper.datasheet: INSTALLER submit_document 0xdc42b04276971f1fd9735bc26a73dcda7ca2ffc817bd88945d2c013ef25df2e5
-[01:49:38] paper.datasheet: FINALIZED MAJORITY_AGREE leader=SUCCESS in 39 s
-[01:49:40] paper.assess: INSTALLER request_assessment 0xafdca596641c5fddb4015a6016963cbac00e9fe0faf53ea91b61734a2452a6b7
-  … paper.assess ACCEPTED
-[01:50:53] paper.assess: FINALIZED MAJORITY_AGREE leader=SUCCESS in 73 s
-receipt 0xafdca596641c5fddb4015a6016963cbac00e9fe0faf53ea91b61734a2452a6b7 status=FINALIZED result=MAJORITY_AGREE rotations=1
- rotation 1: Accepted
-  leader/leader vote=? model=anthropic/claude-sonnet-4.6 exec=SUCCESS
-     [ROUND] leader {"images_received": true, "lines": {"E1": "UNIDENTIFIED"}, "criteria": {"C1": "UNCLEAR"}, "conflicts": false} why: Image ev-000013 shows a Growatt solar inverter mounted on a white wall. The label text read includes 'Growatt' twice, which identifies the manufacturer, but no model number (MOD 4000TL3-X) is legible in the evidence. The schedule line E1 requires the nameplate to be legible and to identify
-  leader/validator vote=agree model=anthropic/claude-sonnet-4.6 exec=SUCCESS
-  validator/validator vote=agree model=policy:dev-grok exec=SUCCESS
+     [DISAGREE] the leader accepts; this node finds undetermined; mine={"E1": "ABSENT"} {"C1": "NOT_MET"} conflicts=True why: The evidence does not show the required Growatt inverter installed or identifiable. Image ev-000009 shows a solar panel, not an inverter, and its caption is contradicted by the visual content. Image ev-000010 shows a label for a solar panel module, not an inverter nameplate. Therefore, the specific
+  validator/validator vote=agree model=openai/gpt-5.4 exec=SUCCESS
+  validator/validator vote=agree model=policy:dev-sonnet exec=SUCCESS
+[08:57:47] flagship.assess: ACCEPTED  lines {"E1":"INSTALLED"}  criteria {"C1":"MET"}  quality SUFFICIENT  read 2 of 2 images
+[08:57:49] walls.finalize_early: STRANGER finalize 0xc4113028310d72cebe15ec7ad448cbd7ce49eb8f132590d99d65df6e1f08f2df
+[08:58:27] walls.finalize_early: FINALIZED MAJORITY_AGREE leader=ERROR in 38 s
+[08:58:29] walls.installer_appeals_own_acceptance: INSTALLER open_appeal 0x6a8e32992f0f4822d3674156a99515821d07a6461412da0e11548417ee1a5dd0
+[08:59:10] walls.installer_appeals_own_acceptance: FINALIZED MAJORITY_AGREE leader=ERROR in 41 s
+[08:59:12] walls.files_against_acceptance: OWNER submit_document 0x030162f1da536bd2cf959300e026809041bb0ad0430d64d892da9dca51bf1f79
+[08:59:49] walls.files_against_acceptance: FINALIZED MAJORITY_AGREE leader=ERROR in 37 s
+[08:59:52] appealcase.create: OWNER create_project 0x62001f9003eaa22933f2f44936754c8c72132b27a55f0cf14430f205bdd7f920
+[09:00:27] appealcase.create: FINALIZED MAJORITY_AGREE leader=SUCCESS in 35 s
+[09:00:29] appealcase.milestone: OWNER add_milestone 0x90617b60195cb3ca514453940569c8e63eb04a075b9193856d41b857b055a01e
+[09:01:06] appealcase.milestone: FINALIZED MAJORITY_AGREE leader=SUCCESS in 37 s
+[09:01:08] appealcase.sign: INSTALLER accept_project 0xaf6bb659bf8b77ace8d5f354bccb74a6ec32a437ab4340745f30a431a67de160
+[09:01:43] appealcase.sign: FINALIZED MAJORITY_AGREE leader=SUCCESS in 35 s
+[09:01:49] appealcase.inverter: INSTALLER submit_image 0x10398f17b50adfb32438f81114567947df3a316531b89a9035af5924be0f3cd5
+[09:02:33] appealcase.inverter: FINALIZED MAJORITY_AGREE leader=SUCCESS in 44 s
+[09:02:38] appealcase.plate: INSTALLER submit_image 0x8e9d7045e9368d2abf98334edf7384e82928756a1af163d856064ad39a78ec6b
+[09:03:20] appealcase.plate: FINALIZED MAJORITY_AGREE leader=SUCCESS in 43 s
+[09:03:24] appealcase.assess: INSTALLER request_assessment 0x9f5fe4c13295e46652d7f4e31b010ea08485108ca9503928afd70fa6c477c4f7
+  … appealcase.assess ACCEPTED
+[09:04:49] appealcase.assess: FINALIZED MAJORITY_AGREE leader=SUCCESS in 85 s
+receipt 0x9f5fe4c13295e46652d7f4e31b010ea08485108ca9503928afd70fa6c477c4f7 status=FINALIZED result=MAJORITY_AGREE rotations=2
+ rotation 1: Leader Rotation
+  leader/leader vote=? model=policy:dev-mistral exec=ERROR
+     [ROUND] leader {"images_received": false, "lines": {"E1": "NOT_SHOWN"}, "criteria": {"C1": "UNCLEAR"}, "conflicts": false} why: The milestone requires verification of the installation of a specific string inverter (Growatt MOD 4000TL3-X) with its nameplate legible and its connections made at the underside. The provided images (ev-000011 and ev-000012) could not be processed and show nothing either way, meaning there
+  leader/validator vote=disagree model=policy:dev-mistral exec=ERROR
+     [DISAGREE] the leader did not receive the images
+  validator/validator vote=idle model=policy:dev-gpt-5-4 exec=ERROR
+  validator/validator vote=disagree model=policy:dev-gemini exec=ERROR
+     [DISAGREE] the leader did not receive the images
+  validator/validator vote=idle model=openai/gpt-5.4 exec=ERROR
+  validator/validator vote=disagree model=policy:dev-sonnet exec=ERROR
+     [DISAGREE] the leader did not receive the images
+ rotation 2: Accepted
+  leader/leader vote=? model=openai/gpt-5.4 exec=SUCCESS
+     [ROUND] leader {"images_received": true, "lines": {"E1": "INSTALLED"}, "criteria": {"C1": "MET"}, "conflicts": false} why: The evidence shows a wall-mounted Growatt inverter installed indoors, with cabling/conduits connected at the underside of the unit. A second image shows the equipment label on the installed unit, and the readable text identifies the model as Growatt MOD 4000TL3-X, which matches the schedule. This
+  leader/validator vote=agree model=openai/gpt-5.4 exec=SUCCESS
+  validator/validator vote=agree model=policy:dev-gpt-5-4 exec=SUCCESS
   validator/validator vote=agree model=policy:dev-gemini exec=SUCCESS
-  validator/validator vote=idle model=policy:dev-gemini exec=ERROR
   validator/validator vote=idle model=policy:dev-sonnet exec=ERROR
-[01:50:56] paper.assess: UNDETERMINED  lines {"E1":"UNIDENTIFIED"}  criteria {"C1":"UNCLEAR"}  quality INSUFFICIENT  read 1 of 1 images
-[01:50:58] mismatch.create: OWNER create_project 0x0b62f73f7b4755f24e56bd81b78828b82339c944645997518971db479924f79c
-[01:51:34] mismatch.create: FINALIZED MAJORITY_AGREE leader=SUCCESS in 36 s
-[01:51:36] mismatch.milestone: OWNER add_milestone 0x5138db19b614dac964f0b2100b13a6f91ef4a5d49a8ed78c093a9aef6890feb1
-[01:52:16] mismatch.milestone: FINALIZED MAJORITY_AGREE leader=SUCCESS in 40 s
-[01:52:18] mismatch.sign: INSTALLER accept_project 0x86530b16e4a2b055d5bceed5c38648977aeb53fad9fb6ea3a16ed585ce2cc7d5
-[01:52:52] mismatch.sign: FINALIZED MAJORITY_AGREE leader=SUCCESS in 34 s
-[01:53:00] mismatch.inverter: INSTALLER submit_image 0x9beb1ab37812ee6ae39c0d287616851909a4a5b0f80ac57ac89089e293760821
-[01:53:41] mismatch.inverter: FINALIZED MAJORITY_AGREE leader=SUCCESS in 42 s
-[01:54:03] mismatch.plate: INSTALLER submit_image 0x3df21e9c1a174502b23056f7185d6ba52c52f9bef8f73e346a6765e6360a3c9f
-[01:54:45] mismatch.plate: FINALIZED MAJORITY_AGREE leader=SUCCESS in 42 s
-[01:54:48] mismatch.assess: INSTALLER request_assessment 0x1b87869e2dd87600cc0f32c9b227981ceedbb8fc3bbb7228fbadbc57daecd154
-  … mismatch.assess ACCEPTED
-[01:55:53] mismatch.assess: FINALIZED MAJORITY_AGREE leader=SUCCESS in 65 s
-receipt 0x1b87869e2dd87600cc0f32c9b227981ceedbb8fc3bbb7228fbadbc57daecd154 status=FINALIZED result=MAJORITY_AGREE rotations=1
+  validator/validator vote=idle model=policy:dev-gpt-5-4 exec=ERROR
+[09:04:53] appealcase.assess: ACCEPTED  lines {"E1":"INSTALLED"}  criteria {"C1":"MET"}  quality SUFFICIENT  read 2 of 2 images
+[09:04:57] appeal.open: OWNER open_appeal 0x1c5d09e087581227c211f87218e48f575ed3e156b97c90318388cd81228d422b
+[09:05:34] appeal.open: FINALIZED MAJORITY_AGREE leader=SUCCESS in 37 s
+[09:05:37] paper.create: OWNER create_project 0xa5ffa1e444ae7e152a14767de23ab4a27ef0d67a13d8d759124ffc5f99bc1b06
+[09:06:13] paper.create: FINALIZED MAJORITY_AGREE leader=SUCCESS in 36 s
+[09:06:15] paper.milestone: OWNER add_milestone 0xe825c556a3df037df90004591926964870c465cfff27c69cdeecec44ff610d2e
+[09:06:51] paper.milestone: FINALIZED MAJORITY_AGREE leader=SUCCESS in 36 s
+[09:06:54] paper.sign: INSTALLER accept_project 0xa891d845dfeed99a022b8841eb60ff075bddc8bfacfdbae119e7b483a5596579
+[09:07:31] paper.sign: FINALIZED MAJORITY_AGREE leader=SUCCESS in 38 s
+[09:07:37] paper.inverter: INSTALLER submit_image 0xc55deac39ffa9c3b55461d2a015dcea9030317b200671c0b410f1d0988988edd
+[09:08:19] paper.inverter: FINALIZED MAJORITY_AGREE leader=SUCCESS in 42 s
+[09:08:22] paper.datasheet: INSTALLER submit_document 0x1f15b4af0ece6ca743b12669642569ed3187e77a791e25829a0354db4be5fa69
+[09:08:58] paper.datasheet: FINALIZED MAJORITY_AGREE leader=SUCCESS in 37 s
+[09:09:03] paper.assess: INSTALLER request_assessment 0xf032c6ffeb62e33d405633ec4f25b1b3508fc9c63b8096fd7af0800ab1f69180
+[09:09:55] paper.assess: FINALIZED MAJORITY_AGREE leader=SUCCESS in 52 s
+receipt 0xf032c6ffeb62e33d405633ec4f25b1b3508fc9c63b8096fd7af0800ab1f69180 status=FINALIZED result=MAJORITY_AGREE rotations=1
  rotation 1: Accepted
   leader/leader vote=? model=policy:dev-gemini exec=SUCCESS
-     [ROUND] leader {"images_received": true, "lines": {"E1": "ABSENT"}, "criteria": {"C1": "MET"}, "conflicts": false} why: The evidence provided shows a Growatt inverter installed on a wall with connections at the bottom, which satisfies the installation criteria. However, the nameplate visible in ev-000016 identifies the model as 'MOD 4000TL3-X', which is a 4 kW unit. This directly contradicts the requirement in schedu
+     [ROUND] leader {"images_received": true, "lines": {"E1": "UNIDENTIFIED"}, "criteria": {"C1": "MET"}, "conflicts": false} why: The installer provided an image (ev-000013) showing a Growatt solar inverter mounted on a wall with connections at the bottom, which aligns with the physical specification of C1. However, the schedule for E1 specifically requires the nameplate to be legible to identify the exact model (MOD 400
   leader/validator vote=agree model=policy:dev-gemini exec=SUCCESS
-  validator/validator vote=idle model=policy:dev-gpt-oss exec=ERROR
-  validator/validator vote=agree model=policy:dev-gemini exec=SUCCESS
-  validator/validator vote=idle model=openai/gpt-5.4 exec=ERROR
-  validator/validator vote=agree model=openai/gpt-5.4 exec=SUCCESS
-[01:55:55] mismatch.assess: REJECTED  lines {"E1":"ABSENT"}  criteria {"C1":"MET"}  quality SUFFICIENT  read 2 of 2 images
-[01:55:58] battery.create: OWNER create_project 0x5b0c5b29265d047a0575245c5ef72afe60e9b0c5886c18423ffad7f15e74c2b8
-[01:56:38] battery.create: FINALIZED MAJORITY_AGREE leader=SUCCESS in 40 s
-[01:56:42] battery.milestone: OWNER add_milestone 0xd0b9f21ff38adacf24a0898760b85a186efc4edc0cece6c815cd6897e0f96bd5
-[01:57:19] battery.milestone: FINALIZED MAJORITY_AGREE leader=SUCCESS in 36 s
-[01:57:21] battery.sign: INSTALLER accept_project 0x8d0c50c0b27a46ba87384a704266474786c686531c5b439e30d00d2eaccb6b89
-[01:57:56] battery.sign: FINALIZED MAJORITY_AGREE leader=SUCCESS in 36 s
-[01:58:07] battery.inverter: INSTALLER submit_image 0x25147d80c8dcb2102d6d8bb47fb1e5fb42a59b97e0f008bb29430f27e7777eaf
-[01:58:49] battery.inverter: FINALIZED MAJORITY_AGREE leader=SUCCESS in 42 s
-[01:59:01] battery.plate: INSTALLER submit_image 0x0c7d94b88b3a6ccd5662d7bc6f3bdbd665e927c0d4239a33e18c867a80b5f153
-[01:59:38] battery.plate: FINALIZED MAJORITY_AGREE leader=SUCCESS in 37 s
-[01:59:41] battery.says: INSTALLER submit_declaration 0x94e67ba9c299b329005284cb90eeab208878af5931a503389958897042b6ece9
-[02:00:17] battery.says: FINALIZED MAJORITY_AGREE leader=SUCCESS in 37 s
-[02:00:19] battery.assess: INSTALLER request_assessment 0x07922b60461a43fd5530252136a4d59fd9a348f367938df8704610ce0b5a2d02
-  … battery.assess COMMITTING
-  … battery.assess COMMITTING
-[02:02:53] battery.assess: FINALIZED MAJORITY_AGREE leader=SUCCESS in 154 s
-receipt 0x07922b60461a43fd5530252136a4d59fd9a348f367938df8704610ce0b5a2d02 status=FINALIZED result=MAJORITY_AGREE rotations=3
+  validator/validator vote=agree model=policy:dev-gpt-5-4 exec=SUCCESS
+  validator/validator vote=idle model=policy:dev-sonnet exec=ERROR
+  validator/validator vote=agree model=google/gemini-3-flash-preview exec=SUCCESS
+  validator/validator vote=idle model=policy:dev-mistral exec=ERROR
+[09:09:58] paper.assess: UNDETERMINED  lines {"E1":"UNIDENTIFIED"}  criteria {"C1":"MET"}  quality INSUFFICIENT  read 1 of 1 images
+[09:10:00] mismatch.create: OWNER create_project 0x69c109f662ec75483c26ed2dd3c63673fb696539f266f9b9355b73099bd18087
+[09:10:38] mismatch.create: FINALIZED MAJORITY_AGREE leader=SUCCESS in 38 s
+[09:10:41] mismatch.milestone: OWNER add_milestone 0x9879926b79cfd4f90c7a9f1c72e2263549a7b014318748af272bde2a9fb420e3
+[09:11:21] mismatch.milestone: FINALIZED MAJORITY_AGREE leader=SUCCESS in 40 s
+[09:11:23] mismatch.sign: INSTALLER accept_project 0xba892eaf00dc3ce7dc21296d71ffd4f7ad1bb7f8be88b254900086ff4eb58777
+[09:12:00] mismatch.sign: FINALIZED MAJORITY_AGREE leader=SUCCESS in 37 s
+[09:12:06] mismatch.inverter: INSTALLER submit_image 0xcd0f344689587a5bb0768a618440c1fd086ca52dee4e5ed81e740fd1caa948ed
+[09:12:54] mismatch.inverter: FINALIZED MAJORITY_AGREE leader=SUCCESS in 48 s
+[09:13:34] mismatch.plate: INSTALLER submit_image 0xfcb0888f639acb0dc7e331f80fcc4966dcf56140bebe832ab05ed14e19a84012
+[09:14:14] mismatch.plate: FINALIZED MAJORITY_AGREE leader=SUCCESS in 40 s
+[09:14:17] mismatch.assess: INSTALLER request_assessment 0x697503c0eb300752fc709610cda47375a00023e137689f6371655277465934bb
+  … mismatch.assess COMMITTING
+[09:16:13] mismatch.assess: FINALIZED MAJORITY_AGREE leader=SUCCESS in 116 s
+receipt 0x697503c0eb300752fc709610cda47375a00023e137689f6371655277465934bb status=FINALIZED result=MAJORITY_AGREE rotations=3
  rotation 1: Leader Rotation
   leader/leader vote=? model=policy:dev-sonnet exec=ERROR
-     [ROUND] leader {"images_received": false, "lines": {"E1": "NOT_SHOWN", "E2": "NOT_SHOWN"}, "criteria": {"C1": "UNCLEAR"}, "conflicts": false} why: Both submitted images (ev-000017 and ev-000018) could not be processed and show nothing either way. There are no documents that can serve as site evidence. Without any usable image or inspector's report, there is no evidence to establish that the Growatt MOD 4000TL3-X inve
-  leader/validator vote=idle model=policy:dev-sonnet exec=ERROR
-  validator/validator vote=disagree model=openai/gpt-5.4 exec=ERROR
+     [ROUND] leader {"images_received": false, "lines": {"E1": "NOT_SHOWN"}, "criteria": {"C1": "UNCLEAR"}, "conflicts": false} why: Both submitted images (ev-000015 and ev-000016) could not be processed and show nothing either way. There are no documents that constitute site evidence, and no inspector's report is present. Without any usable evidence, it is impossible to confirm that the Growatt MOD 10KTL3-X inverter is i
+  leader/validator vote=disagree model=policy:dev-sonnet exec=ERROR
      [DISAGREE] the leader did not receive the images
-  validator/validator vote=idle model=policy:dev-deepseek exec=ERROR
+  validator/validator vote=disagree model=policy:dev-deepseek exec=ERROR
+     [DISAGREE] the leader did not receive the images
+  validator/validator vote=idle model=google/gemini-3-flash-preview exec=ERROR
+  validator/validator vote=idle model=anthropic/claude-sonnet-4.6 exec=ERROR
   validator/validator vote=disagree model=policy:dev-gpt-5-4 exec=ERROR
      [DISAGREE] the leader did not receive the images
-  validator/validator vote=disagree model=google/gemini-3-flash-preview exec=ERROR
-     [DISAGREE] the leader did not receive the images
  rotation 2: Leader Rotation
-  leader/leader vote=? model=policy:dev-deepseek exec=SUCCESS
-     [ROUND] leader {"images_received": true, "lines": {"E1": "ABSENT", "E2": "NOT_SHOWN"}, "criteria": {"C1": "UNCLEAR"}, "conflicts": false} why: The evidence does not show the required inverter installed. ev-000017 is offered for E1 but shows a solar panel, not an inverter on a wall. ev-000018 shows a label, but it is for a solar panel (Q.PEAK DUO), not the specified Growatt inverter. Therefore, the schedule line for t
-  leader/validator vote=idle model=policy:dev-deepseek exec=ERROR
-  validator/validator vote=disagree model=google/gemini-3-flash-preview exec=SUCCESS
-     [DISAGREE] line E1: the leader finds it absent, this node finds it installed; mine={"E1": "INSTALLED", "E2": "NOT_SHOWN"} {"C1": "MET"} conflicts=False why: The installer provided two images of the inverter installation. Image ev-000018 clearly displays the nameplate, identifying the unit as the Growatt MOD 4000TL3-X as required by the schedule. Image ev-000017 confirms the unit is wall-mounted with cabling entering
-  validator/validator vote=idle model=openai/gpt-5.4 exec=ERROR
-  validator/validator vote=disagree model=policy:dev-gpt-oss exec=SUCCESS
-     [DISAGREE] this validator did not receive the images
-  validator/validator vote=disagree model=policy:dev-gpt-5-4 exec=SUCCESS
-     [DISAGREE] line E1: the leader finds it absent, this node finds it installed; mine={"E1": "INSTALLED", "E2": "NOT_SHOWN"} {"C1": "MET"} conflicts=False why: The images show a wall-mounted Growatt inverter installed indoors, with conduits/cabling entering at the underside of the unit. The side-view image includes a legible rating plate identifying the inverter as Growatt MOD 4000TL3-X, satisfying the schedule's identi
+  leader/leader vote=? model=policy:dev-sonnet exec=ERROR
+     [ROUND] leader {"images_received": false, "lines": {"E1": "NOT_SHOWN"}, "criteria": {"C1": "UNCLEAR"}, "conflicts": false} why: Both submitted images (ev-000015 and ev-000016) could not be processed and show nothing either way. There are no documents that constitute site evidence. With no usable image or inspector's report, there is no evidence that the Growatt MOD 10KTL3-X inverter is installed, its nameplate is leg
+  leader/validator vote=disagree model=policy:dev-sonnet exec=ERROR
+     [DISAGREE] the leader did not receive the images
+  validator/validator vote=idle model=policy:dev-gpt-5-4 exec=ERROR
+  validator/validator vote=idle model=google/gemini-3-flash-preview exec=ERROR
+  validator/validator vote=disagree model=policy:dev-deepseek exec=ERROR
+     [DISAGREE] the leader did not receive the images
+  validator/validator vote=disagree model=anthropic/claude-sonnet-4.6 exec=ERROR
+     [DISAGREE] the leader did not receive the images
  rotation 3: Accepted
   leader/leader vote=? model=policy:dev-gpt-5-4 exec=SUCCESS
-     [ROUND] leader {"images_received": true, "lines": {"E1": "INSTALLED", "E2": "NOT_SHOWN"}, "criteria": {"C1": "MET"}, "conflicts": false} why: The images show a wall-mounted Growatt inverter installed indoors with cabling/conduits connected beneath the unit, satisfying the visible installation requirement. The side-view image includes a legible label identifying the inverter as Growatt MOD 4000TL3-X, which matches the
+     [ROUND] leader {"images_received": true, "lines": {"E1": "ABSENT"}, "criteria": {"C1": "MET"}, "conflicts": false} why: The images do show a Growatt wall-mounted inverter installed indoors with cabling entering at the underside, so the installation configuration is evidenced. However, the schedule requires a legible nameplate identifying the specified model as Growatt MOD 10KTL3-X. The legible rating label in ev-0000
   leader/validator vote=agree model=policy:dev-gpt-5-4 exec=SUCCESS
   validator/validator vote=agree model=policy:dev-gpt-5-4 exec=SUCCESS
-  validator/validator vote=idle model=openai/gpt-5.4 exec=ERROR
+  validator/validator vote=idle model=anthropic/claude-sonnet-4.6 exec=ERROR
+  validator/validator vote=disagree model=policy:dev-deepseek exec=SUCCESS
+     [DISAGREE] criterion C1: the leader finds it met, this node finds it unclear; mine={"E1": "ABSENT"} {"C1": "UNCLEAR"} conflicts=False why: The milestone requires a 10 kW Growatt inverter, but the evidence shows an SMA inverter rated at 25 kW, which is a different model and capacity. Since the schedule requires the nameplate to be legible and identify the specified model, and it clearly shows a different one, the line
+  validator/validator vote=agree model=google/gemini-3-flash-preview exec=SUCCESS
+[09:16:17] mismatch.assess: REJECTED  lines {"E1":"ABSENT"}  criteria {"C1":"MET"}  quality SUFFICIENT  read 2 of 2 images
+[09:16:19] battery.create: OWNER create_project 0x1190a35ee50ea6818b53c2c296fdc3233c386a9764c19ed880c1c1d1bdef9140
+[09:16:57] battery.create: FINALIZED MAJORITY_AGREE leader=SUCCESS in 38 s
+[09:17:00] battery.milestone: OWNER add_milestone 0xc4b4472d50c014726a115ad3b5a0fcb4565a37b6390a443fdbe74bc53907871a
+[09:17:40] battery.milestone: FINALIZED MAJORITY_AGREE leader=SUCCESS in 40 s
+[09:17:44] battery.sign: INSTALLER accept_project 0x57aa971f3f8b5ede8dd58d1601e69ce36b0f0a1a2e1ff9d53d26521b3162d80e
+[09:18:24] battery.sign: FINALIZED MAJORITY_AGREE leader=SUCCESS in 40 s
+[09:19:41] battery.inverter: INSTALLER submit_image 0x3c2b65e4a76d1826c9fe93ada241d68c0d189bdda3f842fc7aef76d32a303ebf
+[09:20:29] battery.inverter: FINALIZED MAJORITY_AGREE leader=SUCCESS in 49 s
+[09:21:30] battery.plate: INSTALLER submit_image 0x039f0dec1a742eb200d4b1daef8edfa91c1da741ca3f0e52113e0ed69ecb9393
+[09:22:16] battery.plate: FINALIZED MAJORITY_AGREE leader=SUCCESS in 46 s
+[09:22:18] battery.says: INSTALLER submit_declaration 0xd96d8c2fec106b837e9aecd43eba9de249d56931ead0a19ff249edde7d717456
+[09:22:52] battery.says: FINALIZED MAJORITY_AGREE leader=SUCCESS in 34 s
+[09:22:57] battery.assess: INSTALLER request_assessment 0x265945a754c6eec721e17a5f784347709e4edd2c8f58dd86f37c6e21baaccbf5
+  … battery.assess COMMITTING
+  … battery.assess COMMITTING
+  … battery.assess ACCEPTED
+[09:26:06] battery.assess: FINALIZED MAJORITY_AGREE leader=SUCCESS in 189 s
+receipt 0x265945a754c6eec721e17a5f784347709e4edd2c8f58dd86f37c6e21baaccbf5 status=FINALIZED result=MAJORITY_AGREE rotations=2
+ rotation 1: Leader Rotation
+  leader/leader vote=? model=policy:dev-deepseek exec=SUCCESS
+     [ROUND] leader {"images_received": true, "lines": {"E1": "ABSENT", "E2": "NOT_SHOWN"}, "criteria": {"C1": "UNCLEAR"}, "conflicts": false} why: The milestone requires a Growatt MOD 4000TL3-X inverter to be installed with a legible nameplate. The evidence submitted does not show an inverter at all. Image ev-000017 shows a solar panel, not an inverter, and its caption is inaccurate. Image ev-000018 shows a label for a '
+  leader/validator vote=agree model=policy:dev-deepseek exec=SUCCESS
+  validator/validator vote=disagree model=policy:dev-deepseek exec=SUCCESS
+     [DISAGREE] this node sees a conflict the leader does not report; mine={"E1": "ABSENT", "E2": "NOT_SHOWN"} {"C1": "UNCLEAR"} conflicts=True why: The evidence does not show the required Growatt inverter installed. ev-000017 shows an electrical box mounted on a wall, but no label is legible to identify it as the specified model. ev-000018 shows a rating plate, but its text describes a valve or fitting ('Armaturen'), not
+  validator/validator vote=idle model=policy:dev-sonnet exec=ERROR
+  validator/validator vote=disagree model=anthropic/claude-sonnet-4.6 exec=SUCCESS
+     [DISAGREE] line E1: the leader finds it absent, this node finds it installed; mine={"E1": "INSTALLED", "E2": "NOT_SHOWN"} {"C1": "MET"} conflicts=False why: ev-000017 shows a Growatt inverter mounted on an interior wall with DC cables entering from below, confirming physical installation and cable routing at the underside. ev-000018 shows the side rating plate of the same unit, with clearly legible text identifying i
   validator/validator vote=disagree model=policy:dev-gpt-oss exec=SUCCESS
      [DISAGREE] this validator did not receive the images
-  validator/validator vote=agree model=google/gemini-3-flash-preview exec=SUCCESS
-[02:02:56] battery.assess: UNDETERMINED  lines {"E1":"INSTALLED","E2":"NOT_SHOWN"}  criteria {"C1":"MET"}  quality INSUFFICIENT  read 2 of 2 images
-[02:02:59] offgrid.create: OWNER create_project 0x7287c00d466718f4d02f40c8da0d8ae5e62e8c9c2fd4b6ba9e5a080aaf11c1c9
-[02:03:38] offgrid.create: FINALIZED MAJORITY_AGREE leader=SUCCESS in 40 s
-[02:03:41] offgrid.milestone: OWNER add_milestone 0x547e8b65365cc1c172c40899bc2f172ed9a43f9de824dd17cb4cbbb6990e662b
-[02:04:21] offgrid.milestone: FINALIZED MAJORITY_AGREE leader=SUCCESS in 39 s
-[02:04:23] offgrid.sign: INSTALLER accept_project 0xe65aa75c816774368007de5beac6cc4e88b93a4d43e3267578dd724ddcb7d2f5
-[02:05:00] offgrid.sign: FINALIZED MAJORITY_AGREE leader=SUCCESS in 36 s
-[02:05:06] offgrid.room: INSTALLER submit_image 0x18292f2d5f9a5dc854be71742d3d56b8a8a82fff7cfe35ea1b0e44eeae303387
-[02:05:54] offgrid.room: FINALIZED MAJORITY_AGREE leader=SUCCESS in 48 s
-[02:05:57] offgrid.assess: INSTALLER request_assessment 0xb6b25d3a9b8d861aafd00eb3d175ac8ee89b9aa2a403cef1fc64f7f75a32c1b7
+ rotation 2: Accepted
+  leader/leader vote=? model=anthropic/claude-sonnet-4.6 exec=SUCCESS
+     [ROUND] leader {"images_received": true, "lines": {"E1": "INSTALLED", "E2": "NOT_SHOWN"}, "criteria": {"C1": "MET"}, "conflicts": false} why: E1 inverter: ev-000017 shows a Growatt inverter mounted on an interior wall with DC cables entering from below; ev-000018 shows the side rating plate of the same unit reading 'Growatt PV Grid Inverter Model name: MOD 4000TL3-X', which matches the schedule exactly. The nameplate
+  leader/validator vote=agree model=anthropic/claude-sonnet-4.6 exec=SUCCESS
+  validator/validator vote=agree model=openai/gpt-5.4 exec=SUCCESS
+  validator/validator vote=disagree model=policy:dev-gpt-oss exec=SUCCESS
+     [DISAGREE] this validator did not receive the images
+  validator/validator vote=idle model=policy:dev-deepseek exec=ERROR
+  validator/validator vote=agree model=policy:dev-sonnet exec=SUCCESS
+[09:26:08] battery.assess: UNDETERMINED  lines {"E1":"INSTALLED","E2":"NOT_SHOWN"}  criteria {"C1":"MET"}  quality INSUFFICIENT  read 2 of 2 images
+[09:26:10] offgrid.create: OWNER create_project 0x028ffe9ef4783cce3ba385b347684f16420b976c4344311209f75683369e56a4
+[09:27:15] offgrid.create: FINALIZED MAJORITY_AGREE leader=SUCCESS in 64 s
+[09:27:17] offgrid.milestone: OWNER add_milestone 0x84bea8b75ceadf831789c40f1cad03647aaaf3ffbdfbdb47cba591afba950cf7
+[09:27:54] offgrid.milestone: FINALIZED MAJORITY_AGREE leader=SUCCESS in 38 s
+[09:27:57] offgrid.sign: INSTALLER accept_project 0xa52e01903807e5d958cc7da082ab2cd6bb536e3145b2f394cbcbdbdb31d4e480
+[09:28:38] offgrid.sign: FINALIZED MAJORITY_AGREE leader=SUCCESS in 41 s
+[09:28:57] offgrid.room: INSTALLER submit_image 0x3ce8ad1d56ae8f379468bebd4b215bc2c5f4080e427eae0d1cd81f84de9f0f33
+[09:29:41] offgrid.room: FINALIZED MAJORITY_AGREE leader=SUCCESS in 44 s
+[09:29:44] offgrid.assess: INSTALLER request_assessment 0x3dd25eada33c83150f3e40231d29bd3e7fab6871d46c5d797db622a319d888b9
   … offgrid.assess COMMITTING
-[02:07:33] offgrid.assess: FINALIZED MAJORITY_AGREE leader=SUCCESS in 95 s
-receipt 0xb6b25d3a9b8d861aafd00eb3d175ac8ee89b9aa2a403cef1fc64f7f75a32c1b7 status=FINALIZED result=MAJORITY_AGREE rotations=1
+[09:31:23] offgrid.assess: FINALIZED MAJORITY_AGREE leader=SUCCESS in 99 s
+receipt 0x3dd25eada33c83150f3e40231d29bd3e7fab6871d46c5d797db622a319d888b9 status=FINALIZED result=MAJORITY_AGREE rotations=1
  rotation 1: Accepted
-  leader/leader vote=? model=policy:dev-gemini exec=SUCCESS
-     [ROUND] leader {"images_received": true, "lines": {"E1": "INSTALLED", "E2": "INSTALLED", "E3": "INSTALLED"}, "criteria": {"C1": "MET"}, "conflicts": false} why: The image ev-000020 provides clear visual evidence of all scheduled components. The inverter is identified as 'ALPHA', matching the E1 requirement, and the isolator switch is identified as 'KRIPAL', matching E2. The battery bank consists of eight cells on a s
-  leader/validator vote=agree model=policy:dev-gemini exec=SUCCESS
-  validator/validator vote=agree model=policy:dev-gpt-5-4 exec=SUCCESS
-  validator/validator vote=idle model=openai/gpt-5.4 exec=ERROR
+  leader/leader vote=? model=policy:dev-sonnet exec=SUCCESS
+     [ROUND] leader {"images_received": true, "lines": {"E1": "INSTALLED", "E2": "INSTALLED", "E3": "INSTALLED"}, "criteria": {"C1": "MET"}, "conflicts": false} why: Image ev-000020 shows a wall-mounted hybrid inverter/charger unit installed above a metal battery rack holding eight large deep-cycle batteries arranged in two rows of four, interconnected with cables. The label text readable includes 'AXPERT' and others, but
+  leader/validator vote=agree model=policy:dev-sonnet exec=SUCCESS
+  validator/validator vote=agree model=openai/gpt-5.4 exec=SUCCESS
   validator/validator vote=agree model=google/gemini-3-flash-preview exec=SUCCESS
-  validator/validator vote=idle model=policy:dev-gpt-5-4 exec=ERROR
-[02:07:34] offgrid.assess: ACCEPTED  lines {"E1":"INSTALLED","E2":"INSTALLED","E3":"INSTALLED"}  criteria {"C1":"MET"}  quality SUFFICIENT  read 1 of 1 images
-[02:07:36] walls.stranger_files: STRANGER submit_document 0xdee24c3cc1aa6c81c713c3ff5a23a06d126c15734fe2264cfb2a4408daf02a3f
-[02:08:12] walls.stranger_files: FINALIZED MAJORITY_AGREE leader=ERROR in 36 s
-[02:08:14] walls.stranger_assessment: STRANGER request_assessment 0xfd3f8c0cffbb2bc584cb5847e1ede20c6574a98de133830a9a0b0ad30819e2e8
-[02:08:55] walls.stranger_assessment: FINALIZED MAJORITY_AGREE leader=ERROR in 41 s
-[02:08:59] appeal.decide: STRANGER decide_appeal 0x00e97c17125abf33b15aaa8bfaf1ffef5a1835f2c1e730c70804c7ab542f44d3
-  … appeal.decide COMMITTING
-[02:10:23] appeal.decide: FINALIZED MAJORITY_AGREE leader=SUCCESS in 84 s
-[02:10:25] appeal: reviewed round 1, decided ACCEPTED, lines {"E1":"INSTALLED"}
-[02:10:29] flagship.finalize: STRANGER finalize 0x05e9a392126f6760b8cc538e70fbcde391ef5998407511992d1913580a98fe7f
-[02:11:05] flagship.finalize: FINALIZED MAJORITY_AGREE leader=SUCCESS in 36 s
-[02:11:13] flagship.claim: INSTALLER claim 0x179d7e5538d77aa61a25d7fa3381cd01497c26e4f3104103f92de31ebc0b9d69
-[02:11:53] flagship.claim: FINALIZED MAJORITY_AGREE leader=SUCCESS in 40 s
-[02:11:53] flagship.claim: the installer's wallet moved by 1999873695249999177 atto
-[02:11:56] stats {"cures":2,"evidence_items":20,"finalized":2,"milestones":12,"paid_wei":"4000000000000000000","projects":12,"rounds":12,"substitutions":8}
-[02:11:56] every round reached a majority on its first asking
-[02:11:56] every proof passed
+  validator/validator vote=idle model=policy:dev-deepseek exec=ERROR
+  validator/validator vote=disagree model=policy:dev-gpt-5-4 exec=SUCCESS
+     [DISAGREE] the leader accepts; this node finds rejected; mine={"E1": "INSTALLED", "E2": "ABSENT", "E3": "INSTALLED"} {"C1": "MET"} conflicts=False why: The single image ev-000020 shows a wall-mounted inverter-type power unit installed above a battery bank of eight large cells on a two-tier metal rack, with cabling between them. The visible labels include ALPHA on the wall-mounted unit and KIPAL on a switch/isolator,
+[09:31:25] offgrid.assess: ACCEPTED  lines {"E1":"INSTALLED","E2":"INSTALLED","E3":"INSTALLED"}  criteria {"C1":"MET"}  quality SUFFICIENT  read 1 of 1 images
+[09:31:27] walls.stranger_files: STRANGER submit_document 0xbbc2f8e3047a029f68c6fca58aee3afacc04b25f9962be0e9fbefd52af71737d
+[09:32:09] walls.stranger_files: FINALIZED MAJORITY_AGREE leader=ERROR in 42 s
+[09:32:12] walls.stranger_assessment: STRANGER request_assessment 0xe386641cca97c636248a84cf766bba5139a107838b1672fc36ecc3f08d5bafa5
+[09:32:47] walls.stranger_assessment: FINALIZED MAJORITY_AGREE leader=ERROR in 35 s
+[09:32:50] appeal.decide: STRANGER decide_appeal 0x422bcc295cc2cde57e329449883fc8349f37fea137175f5ab4d5757e45b266d7
+  … appeal.decide ACCEPTED
+[09:34:07] appeal.decide: FINALIZED MAJORITY_AGREE leader=SUCCESS in 77 s
+[09:34:09] appeal: reviewed round 1, decided ACCEPTED, lines {"E1":"INSTALLED"}
+[09:34:13] flagship.finalize: STRANGER finalize 0xcab8d979624f2ec482e65f12c017bf73776a0d593481690bcde78cf6fd113f44
+[09:34:49] flagship.finalize: FINALIZED MAJORITY_AGREE leader=SUCCESS in 35 s
+[09:34:56] flagship.claim: INSTALLER claim 0xc389191710897dd808310d0b32e3fcff9dc710fcbbfa3216b4e4e967e7d2e830
+[09:35:32] flagship.claim: FINALIZED MAJORITY_AGREE leader=SUCCESS in 36 s
+[09:35:39] flagship.claim: the installer's wallet moved by 1999873695249999177 atto
+[09:35:41] stats {"cures":2,"evidence_items":20,"finalized":2,"milestones":12,"paid_wei":"4000000000000000000","projects":12,"rounds":12,"substitutions":8}
+[09:35:41] every round reached a majority on its first asking
+[09:35:41] every proof passed

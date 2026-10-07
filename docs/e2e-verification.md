@@ -54,7 +54,7 @@ node scripts/proof-log.mjs <address>
 ```
 
 Every step is a signed transaction on Studio Next.
-The deployment of record is `0xb476eeF34fe8800E546D140DA3412846DD0A1755`. The run is resumable: each write is remembered by name, so a segment
+The deployment of record is `0xE09F8E2440FF22D0586632Ec35a3Fd49ea0261b9`. The run is resumable: each write is remembered by name, so a segment
 that stops resumes at the step that had not landed rather than repeating the
 ones that had.
 
@@ -93,7 +93,7 @@ window, nor contested after it. Evidence cannot be filed against a decision
 that already stands. Each of these is a real transaction whose refusal text is
 checked, not a local assertion.
 
-### On the deployment of record, 6 October 2026
+### On the deployment of record, 7 October 2026
 
 Six cases and the appeal, all with the outcome the table above requires, in
 one sitting. Every round reached a majority on its first asking, and the
@@ -107,8 +107,8 @@ node scripts/substitution-cure.mjs <address>
 ```
 
 The two rules added in `icarus-rules-2` and what `icarus-rules-3` and `icarus-rules-4` narrowed, set out in
-[substitution-and-cure.md](substitution-and-cure.md). 41 checks over
-63 transactions on the deployment of record, every panel reaching a
+[substitution-and-cure.md](substitution-and-cure.md). 42 checks over
+64 transactions on the deployment of record, every panel reaching a
 majority on its first asking. The log is `docs/substitution-cure-run.txt`.
 
 | Case | What must happen |
@@ -154,6 +154,10 @@ run claims only what the contract promises about the file of noise that can
 still be filed: the round is decided. What the leading node made of it is
 logged as an observation. One rehearsal of `icarus-rules-4` came before this
 run, of these file cases alone, with the same outcome.
+
+The run on the deployment of record is two sittings. The first stopped
+when the machine running it lost its connection, with no check failed, and
+the run was resumed to its end from the step that had not landed.
 
 ## 4. The interface's write path
 
@@ -258,7 +262,7 @@ Every transaction is in `.data/` for the run and on the explorer; the log
 above is committed as `docs/appeal-settlement-run.txt`.
 
 **On the current deployment.** The same script was run again on the
-deployment of record on 6 October 2026, against the `icarus-rules-3` contract
+deployment of record on 7 October 2026, against the `icarus-rules-4` contract
 and the interface as it now stands: ten transactions, thirteen checks, none
 failed. The fresh panel upheld the acceptance, so the upheld path was shown:
 settling was not offered while the appeal was open and the contract refused

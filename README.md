@@ -169,7 +169,7 @@ checked whole, and a JPEG through its tables, its frame and its scans.
 ## Verified end to end
 
 Every line below is a transaction, not a local simulation.
-The deployment of record is `0xb476eeF34fe8800E546D140DA3412846DD0A1755`.
+The deployment of record is `0xE09F8E2440FF22D0586632Ec35a3Fd49ea0261b9`.
 `docs/proof-run.txt` is the full log and `web/lib/proof-log.json` pairs each reading with the
 transaction that produced it.
 
@@ -183,7 +183,7 @@ transaction that produced it.
 | Contested acceptance | the owner appeals, a fresh panel judges again | readjudicated | the acceptance held |
 
 Substitution and cure, in a run of their own (`scripts/substitution-cure.mjs`, logged in
-`docs/substitution-cure-run.txt`): 41 checks over 63 transactions, and every panel
+`docs/substitution-cure-run.txt`): 42 checks over 64 transactions, and every panel
 reached a majority on its first asking.
 
 | Case | What happens | Outcome |

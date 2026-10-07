@@ -1,20 +1,20 @@
 {
-  "address": "0xb476eeF34fe8800E546D140DA3412846DD0A1755",
-  "source_commit": "8ebaf6c",
-  "finished_at": "2026-10-06T02:58:12.097Z",
+  "address": "0xE09F8E2440FF22D0586632Ec35a3Fd49ea0261b9",
+  "source_commit": "f20848f",
+  "finished_at": "2026-10-07T10:10:47.443Z",
   "rounds": {
-    "ms-00007/1": "0xa990e76508a5d2394118f7bad4ec2fafa3e72795137594218ed60c45ad51b168",
-    "ms-00008/1": "0x4f3619cf579225da60047d477cc558492866971263b66546ffafa5413469801e",
-    "ms-00009/1": "0xafdca596641c5fddb4015a6016963cbac00e9fe0faf53ea91b61734a2452a6b7",
-    "ms-00010/1": "0x1b87869e2dd87600cc0f32c9b227981ceedbb8fc3bbb7228fbadbc57daecd154",
-    "ms-00011/1": "0x07922b60461a43fd5530252136a4d59fd9a348f367938df8704610ce0b5a2d02",
-    "ms-00012/1": "0xb6b25d3a9b8d861aafd00eb3d175ac8ee89b9aa2a403cef1fc64f7f75a32c1b7",
-    "ms-00008/2": "0x00e97c17125abf33b15aaa8bfaf1ffef5a1835f2c1e730c70804c7ab542f44d3",
-    "ms-00001/1": "0xa90b154a7a0467e7198c75cca4fb828f210039fe61f3673105e8b62449c13eba",
-    "ms-00001/2": "0xae1175560f475284833fdf8c850b6edbba61fd0ec0291e0ce8be5504f11eda36",
-    "ms-00004/1": "0xbed3cfeb41ed7a24741a071f83b3472a619a578cc4b2f27dbce03eec327d4402",
-    "ms-00004/2": "0x16af8c5bcdfc0f8a7337e9f4ac43a0d6f3c8e00c0d34621cced7583085419c46",
-    "ms-00006/1": "0x5f0e2adf49abcf62947bf6effd9d4b2fba9504cbceb9ea0a2facb47298691800"
+    "ms-00007/1": "0x7af076debde10a935fc765b167c7884904775b83cec85979cdc24a673af4db07",
+    "ms-00008/1": "0x9f5fe4c13295e46652d7f4e31b010ea08485108ca9503928afd70fa6c477c4f7",
+    "ms-00009/1": "0xf032c6ffeb62e33d405633ec4f25b1b3508fc9c63b8096fd7af0800ab1f69180",
+    "ms-00010/1": "0x697503c0eb300752fc709610cda47375a00023e137689f6371655277465934bb",
+    "ms-00011/1": "0x265945a754c6eec721e17a5f784347709e4edd2c8f58dd86f37c6e21baaccbf5",
+    "ms-00012/1": "0x3dd25eada33c83150f3e40231d29bd3e7fab6871d46c5d797db622a319d888b9",
+    "ms-00008/2": "0x422bcc295cc2cde57e329449883fc8349f37fea137175f5ab4d5757e45b266d7",
+    "ms-00001/1": "0x210ad37caf979d8e4a9968d91d3f4fe6670fa4d345a169838dc5c39a5b5c35b7",
+    "ms-00001/2": "0x88525bd80a9c0ef0af7493fee951d2ec0406d8b00367763c507ea07a15c52f1a",
+    "ms-00004/1": "0x2ba74b02f5df30b4be7bde720255248576b9b8a213db9a211a0617abcf39d6c4",
+    "ms-00004/2": "0xb98fa100c9bc78f8f0bb8f507d4d9b113cc33ba8557af57e9b79ec3539369b49",
+    "ms-00006/1": "0x106f560bd9ac890fcdc8a4476a080f0108443b043718a9d76f5c2fcd0399898b"
   },
   "proofs": [
     {
@@ -25,9 +25,9 @@
       "lines": {
         "E1": "ABSENT"
       },
-      "seconds": 86,
-      "hash": "0xa90b154a7a0467e7198c75cca4fb828f210039fe61f3673105e8b62449c13eba",
-      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0xa90b154a7a0467e7198c75cca4fb828f210039fe61f3673105e8b62449c13eba"
+      "seconds": 75,
+      "hash": "0x210ad37caf979d8e4a9968d91d3f4fe6670fa4d345a169838dc5c39a5b5c35b7",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x210ad37caf979d8e4a9968d91d3f4fe6670fa4d345a169838dc5c39a5b5c35b7"
     },
     {
       "step": "story.cure",
@@ -37,9 +37,9 @@
       "lines": {
         "E1": "INSTALLED"
       },
-      "seconds": 75,
-      "hash": "0xae1175560f475284833fdf8c850b6edbba61fd0ec0291e0ce8be5504f11eda36",
-      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0xae1175560f475284833fdf8c850b6edbba61fd0ec0291e0ce8be5504f11eda36"
+      "seconds": 149,
+      "hash": "0x88525bd80a9c0ef0af7493fee951d2ec0406d8b00367763c507ea07a15c52f1a",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x88525bd80a9c0ef0af7493fee951d2ec0406d8b00367763c507ea07a15c52f1a"
     },
     {
       "step": "kept.assess",
@@ -49,9 +49,9 @@
       "lines": {
         "E1": "UNIDENTIFIED"
       },
-      "seconds": 62,
-      "hash": "0xbed3cfeb41ed7a24741a071f83b3472a619a578cc4b2f27dbce03eec327d4402",
-      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0xbed3cfeb41ed7a24741a071f83b3472a619a578cc4b2f27dbce03eec327d4402"
+      "seconds": 101,
+      "hash": "0x2ba74b02f5df30b4be7bde720255248576b9b8a213db9a211a0617abcf39d6c4",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x2ba74b02f5df30b4be7bde720255248576b9b8a213db9a211a0617abcf39d6c4"
     },
     {
       "step": "kept.cure",
@@ -61,9 +61,9 @@
       "lines": {
         "E1": "INSTALLED"
       },
-      "seconds": 82,
-      "hash": "0x16af8c5bcdfc0f8a7337e9f4ac43a0d6f3c8e00c0d34621cced7583085419c46",
-      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x16af8c5bcdfc0f8a7337e9f4ac43a0d6f3c8e00c0d34621cced7583085419c46"
+      "seconds": 94,
+      "hash": "0xb98fa100c9bc78f8f0bb8f507d4d9b113cc33ba8557af57e9b79ec3539369b49",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0xb98fa100c9bc78f8f0bb8f507d4d9b113cc33ba8557af57e9b79ec3539369b49"
     },
     {
       "step": "blocked.assess",
@@ -73,9 +73,9 @@
       "lines": {
         "E1": "INSTALLED"
       },
-      "seconds": 131,
-      "hash": "0x5f0e2adf49abcf62947bf6effd9d4b2fba9504cbceb9ea0a2facb47298691800",
-      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x5f0e2adf49abcf62947bf6effd9d4b2fba9504cbceb9ea0a2facb47298691800"
+      "seconds": 104,
+      "hash": "0x106f560bd9ac890fcdc8a4476a080f0108443b043718a9d76f5c2fcd0399898b",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x106f560bd9ac890fcdc8a4476a080f0108443b043718a9d76f5c2fcd0399898b"
     },
     {
       "step": "flagship.assess",
@@ -85,9 +85,9 @@
       "lines": {
         "E1": "INSTALLED"
       },
-      "seconds": 86,
-      "hash": "0xa990e76508a5d2394118f7bad4ec2fafa3e72795137594218ed60c45ad51b168",
-      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0xa990e76508a5d2394118f7bad4ec2fafa3e72795137594218ed60c45ad51b168"
+      "seconds": 170,
+      "hash": "0x7af076debde10a935fc765b167c7884904775b83cec85979cdc24a673af4db07",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x7af076debde10a935fc765b167c7884904775b83cec85979cdc24a673af4db07"
     },
     {
       "step": "appealcase.assess",
@@ -97,9 +97,9 @@
       "lines": {
         "E1": "INSTALLED"
       },
-      "seconds": 161,
-      "hash": "0x4f3619cf579225da60047d477cc558492866971263b66546ffafa5413469801e",
-      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x4f3619cf579225da60047d477cc558492866971263b66546ffafa5413469801e"
+      "seconds": 85,
+      "hash": "0x9f5fe4c13295e46652d7f4e31b010ea08485108ca9503928afd70fa6c477c4f7",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x9f5fe4c13295e46652d7f4e31b010ea08485108ca9503928afd70fa6c477c4f7"
     },
     {
       "step": "appeal.decide",
@@ -107,9 +107,9 @@
       "round": 2,
       "decision": "ACCEPTED",
       "lines": null,
-      "seconds": 84,
-      "hash": "0x00e97c17125abf33b15aaa8bfaf1ffef5a1835f2c1e730c70804c7ab542f44d3",
-      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x00e97c17125abf33b15aaa8bfaf1ffef5a1835f2c1e730c70804c7ab542f44d3"
+      "seconds": 77,
+      "hash": "0x422bcc295cc2cde57e329449883fc8349f37fea137175f5ab4d5757e45b266d7",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x422bcc295cc2cde57e329449883fc8349f37fea137175f5ab4d5757e45b266d7"
     },
     {
       "step": "paper.assess",
@@ -119,9 +119,9 @@
       "lines": {
         "E1": "UNIDENTIFIED"
       },
-      "seconds": 73,
-      "hash": "0xafdca596641c5fddb4015a6016963cbac00e9fe0faf53ea91b61734a2452a6b7",
-      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0xafdca596641c5fddb4015a6016963cbac00e9fe0faf53ea91b61734a2452a6b7"
+      "seconds": 52,
+      "hash": "0xf032c6ffeb62e33d405633ec4f25b1b3508fc9c63b8096fd7af0800ab1f69180",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0xf032c6ffeb62e33d405633ec4f25b1b3508fc9c63b8096fd7af0800ab1f69180"
     },
     {
       "step": "mismatch.assess",
@@ -131,9 +131,9 @@
       "lines": {
         "E1": "ABSENT"
       },
-      "seconds": 65,
-      "hash": "0x1b87869e2dd87600cc0f32c9b227981ceedbb8fc3bbb7228fbadbc57daecd154",
-      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x1b87869e2dd87600cc0f32c9b227981ceedbb8fc3bbb7228fbadbc57daecd154"
+      "seconds": 116,
+      "hash": "0x697503c0eb300752fc709610cda47375a00023e137689f6371655277465934bb",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x697503c0eb300752fc709610cda47375a00023e137689f6371655277465934bb"
     },
     {
       "step": "battery.assess",
@@ -144,9 +144,9 @@
         "E1": "INSTALLED",
         "E2": "NOT_SHOWN"
       },
-      "seconds": 154,
-      "hash": "0x07922b60461a43fd5530252136a4d59fd9a348f367938df8704610ce0b5a2d02",
-      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x07922b60461a43fd5530252136a4d59fd9a348f367938df8704610ce0b5a2d02"
+      "seconds": 189,
+      "hash": "0x265945a754c6eec721e17a5f784347709e4edd2c8f58dd86f37c6e21baaccbf5",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x265945a754c6eec721e17a5f784347709e4edd2c8f58dd86f37c6e21baaccbf5"
     },
     {
       "step": "offgrid.assess",
@@ -158,9 +158,9 @@
         "E2": "INSTALLED",
         "E3": "INSTALLED"
       },
-      "seconds": 95,
-      "hash": "0xb6b25d3a9b8d861aafd00eb3d175ac8ee89b9aa2a403cef1fc64f7f75a32c1b7",
-      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0xb6b25d3a9b8d861aafd00eb3d175ac8ee89b9aa2a403cef1fc64f7f75a32c1b7"
+      "seconds": 99,
+      "hash": "0x3dd25eada33c83150f3e40231d29bd3e7fab6871d46c5d797db622a319d888b9",
+      "explorer": "https://explorer-studio-dev.genlayer.com/tx/0x3dd25eada33c83150f3e40231d29bd3e7fab6871d46c5d797db622a319d888b9"
     }
   ],
   "no_consensus": []
